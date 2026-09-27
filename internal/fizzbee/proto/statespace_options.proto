@@ -1,0 +1,35 @@
+// Copied from https://github.com/fizzbee-io/fizzbee/blob/v0.5.2/proto/statespace_options.proto.
+syntax = "proto3";
+
+option go_package = "github.com/mrasu/spec-guardian/internal/fizzbee/pb";
+
+message StateSpaceOptions {
+  Options options = 1;
+  // Set options like max_actions for individual action instead.
+  map<string, Options> action_options = 2;
+
+  // If true, continue exploring the state space of other paths that did not fail.
+  bool continue_on_invariant_failures = 3;
+
+  // If true, continue the failed path as well, ignoring the invariant failure.
+  // This is almost equivalent to not having the invariant at all, but it can be useful
+  // for debugging
+  bool continue_path_on_invariant_failures = 4;
+
+  // Default is 'strict' implies liveness check is done TLA+, the other options are 'probabilistic'
+  // The probabilisitic model checker is not integrated into the playground but has to be run
+  // separately in commandline.
+  string liveness = 5;
+
+  // Enable (default/true) or disable deadlock detection
+  // Note: explicitly setting it optional, makes this tristate
+  optional bool deadlock_detection = 6;
+}
+
+message Options {
+  int64 max_actions = 1;
+  int64 max_concurrent_actions = 2;
+
+  // If true (default), model checker would evaluate the possibility of a crash at yield points.
+  optional bool crash_on_yield = 3;
+}

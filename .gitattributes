@@ -1,0 +1,9 @@
+examples/idempotent_request/docs/spec/fizzbee_output/adjacency_lists_000000_of_000000.pb filter=lfs diff=lfs merge=lfs -text
+examples/idempotent_request/docs/spec/fizzbee_output/nodes_000000_of_000000.pb filter=lfs diff=lfs merge=lfs -text
+examples/idempotent_request/docs/spec/fizzbee_output/spec_ast.json filter=lfs diff=lfs merge=lfs -text
+examples/idempotent_request/docs/spec/fizzbee_output/state_config.json filter=lfs diff=lfs merge=lfs -text
+examples/iceberg/docs/spec/fizzbee_output/adjacency_lists_000000_of_000000.pb filter=lfs diff=lfs merge=lfs -text
+examples/iceberg/docs/spec/fizzbee_output/communication.dot filter=lfs diff=lfs merge=lfs -text
+examples/iceberg/docs/spec/fizzbee_output/nodes_000000_of_000000.pb filter=lfs diff=lfs merge=lfs -text
+examples/iceberg/docs/spec/fizzbee_output/spec_ast.json filter=lfs diff=lfs merge=lfs -text
+examples/iceberg/docs/spec/fizzbee_output/state_config.json filter=lfs diff=lfs merge=lfs -text

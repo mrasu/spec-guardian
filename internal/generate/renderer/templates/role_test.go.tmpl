@@ -1,0 +1,81 @@
+//go:build specguardian
+
+package specguardian_test
+
+import (
+	"errors"
+	"testing"
+
+	"github.com/mrasu/spec-guardian/guardian"
+	"github.com/stretchr/testify/require"
+)
+
+// {{.Role}}Environment holds application-specific test resources. SpecGuardian generated this initial scaffold, but application owners may freely change its fields and helpers.
+type {{.Role}}Environment struct{}
+
+// Build{{.Role}}ConformanceComponents constructs the action adapter and its test resources. Add SpecGuardian hooks to every dependency whose failures should be injected.
+func Build{{.Role}}ConformanceComponents(t *testing.T, controller *guardian.InjectionController) ({{.Role}}Actions, *{{.Role}}Environment) {
+	t.Helper()
+	require.NoError(t, errors.New("TODO: implement me"))
+	return nil, nil
+}
+
+// ObserveCurrentState captures the application state.
+func (e *{{.Role}}Environment) ObserveCurrentState(t *testing.T) {{.Role}}ObservedState {
+	t.Helper()
+	require.NoError(t, errors.New("TODO: implement me"))
+	return {{.Role}}ObservedState{}
+}
+
+{{range .Actions}}
+// {{.Role}}{{.Name}}Input is the concrete application input for {{.Role}}.{{.Name}}.
+// Replace this scaffold with a type alias or local type as needed.
+type {{.Role}}{{.Name}}Input struct{}
+
+// {{.Role}}{{.Name}}Output is the concrete application output for {{.Role}}.{{.Name}}.
+// Replace this scaffold with a type alias or local type as needed.
+type {{.Role}}{{.Name}}Output struct{}
+
+// Setup{{.Name}}Case prepares resources and test settings for one conformance case.
+func (e *{{.Role}}Environment) Setup{{.Name}}Case(t *testing.T) {
+	t.Helper()
+}
+
+// Cleanup{{.Name}}Case cleans up after one conformance case.
+func (e *{{.Role}}Environment) Cleanup{{.Name}}Case(t *testing.T) {
+	t.Helper()
+}
+
+// Setup{{.Name}}Attempt prepares application state before {{.Role}}.{{.Name}}.
+func (e *{{.Role}}Environment) Setup{{.Name}}Attempt(t *testing.T, input Fizzbee{{.Role}}State) {
+	t.Helper()
+	require.NoError(t, errors.New("TODO: implement me"))
+}
+
+// Cleanup{{.Name}}Attempt removes state left by this attempt. It runs through t.Cleanup, so use a context independent of t.Context when needed.
+func (e *{{.Role}}Environment) Cleanup{{.Name}}Attempt(t *testing.T) {
+	t.Helper()
+	require.NoError(t, errors.New("TODO: implement me"))
+}
+
+// Build{{.Name}}Input maps the abstract FizzBee input to the application's concrete argument.
+func (e *{{.Role}}Environment) Build{{.Name}}Input(t *testing.T, input Fizzbee{{.Role}}State) {{.Role}}{{.Name}}Input {
+	t.Helper()
+	require.NoError(t, errors.New("TODO: implement me"))
+	return {{.Role}}{{.Name}}Input{}
+}
+
+// BuildObserved{{.Name}}State combines observed resources with the action input, output, and error.
+func (e *{{.Role}}Environment) BuildObserved{{.Name}}State(t *testing.T, observedState {{.Role}}ObservedState, input Fizzbee{{.Role}}State, output {{.Role}}{{.Name}}Output, actionErr error) {{.Role}}ObservedState {
+	t.Helper()
+	require.NoError(t, errors.New("TODO: implement me"))
+	return {{.Role}}ObservedState{}
+}
+
+// BuildAllowed{{.Name}}State maps an allowed model state to field comparisons.
+func (e *{{.Role}}Environment) BuildAllowed{{.Name}}State(t *testing.T, allowed Fizzbee{{.Role}}State) {{.Role}}ComparisonState {
+	t.Helper()
+	require.NoError(t, errors.New("TODO: implement me"))
+	return {{.Role}}ComparisonState{}
+}
+{{end}}

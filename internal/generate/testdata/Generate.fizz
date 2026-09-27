@@ -1,0 +1,43 @@
+---
+deadlock_detection: false
+---
+
+Status = enum("INIT", "DONE")
+
+role DB:
+  action Init:
+    self.value = "before"
+
+  atomic func read():
+    return self.value
+
+  atomic func write(value):
+    self.value = value
+    return True
+
+@conformance
+role Reader:
+  action Init:
+    self.status = Status.INIT
+    self.value = None
+
+  atomic action Read:
+    require self.status == Status.INIT
+    value = db.read()
+    self.value = value
+    self.status = Status.DONE
+
+@conformance
+role Writer:
+  action Init:
+    self.status = Status.INIT
+
+  atomic action Write:
+    require self.status == Status.INIT
+    written = db.write("after")
+    self.status = Status.DONE
+
+action Init:
+  db = DB()
+  reader = Reader()
+  writer = Writer()

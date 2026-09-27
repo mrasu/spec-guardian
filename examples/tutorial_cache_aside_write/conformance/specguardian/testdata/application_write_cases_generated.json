@@ -1,0 +1,202 @@
+[
+  {
+    "name": "case1",
+    "input": {
+      "fields": {
+        "Application": {
+          "write_status": "INIT"
+        },
+        "Cache": {
+          "cached_records": {
+            "cached": "old"
+          }
+        },
+        "DB": {
+          "records": {
+            "cached": "old",
+            "uncached": "old"
+          }
+        }
+      },
+      "params": {
+        "Application": {
+          "key": "cached",
+          "write_value": "new"
+        }
+      }
+    },
+    "allowed": [
+      {
+        "fields": {
+          "Application": {
+            "write_status": "FAILED"
+          },
+          "Cache": {
+            "cached_records": {
+              "cached": "old"
+            }
+          },
+          "DB": {
+            "records": {
+              "cached": "new",
+              "uncached": "old"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "cached",
+            "write_value": "new"
+          }
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "write_status": "DONE"
+          },
+          "Cache": {
+            "cached_records": {}
+          },
+          "DB": {
+            "records": {
+              "cached": "new",
+              "uncached": "old"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "cached",
+            "write_value": "new"
+          }
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "write_status": "FAILED"
+          },
+          "Cache": {
+            "cached_records": {
+              "cached": "old"
+            }
+          },
+          "DB": {
+            "records": {
+              "cached": "old",
+              "uncached": "old"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "cached",
+            "write_value": "new"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "case2",
+    "input": {
+      "fields": {
+        "Application": {
+          "write_status": "INIT"
+        },
+        "Cache": {
+          "cached_records": {
+            "cached": "old"
+          }
+        },
+        "DB": {
+          "records": {
+            "cached": "old",
+            "uncached": "old"
+          }
+        }
+      },
+      "params": {
+        "Application": {
+          "key": "uncached",
+          "write_value": "new"
+        }
+      }
+    },
+    "allowed": [
+      {
+        "fields": {
+          "Application": {
+            "write_status": "DONE"
+          },
+          "Cache": {
+            "cached_records": {
+              "cached": "old"
+            }
+          },
+          "DB": {
+            "records": {
+              "cached": "old",
+              "uncached": "new"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "uncached",
+            "write_value": "new"
+          }
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "write_status": "FAILED"
+          },
+          "Cache": {
+            "cached_records": {
+              "cached": "old"
+            }
+          },
+          "DB": {
+            "records": {
+              "cached": "old",
+              "uncached": "new"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "uncached",
+            "write_value": "new"
+          }
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "write_status": "FAILED"
+          },
+          "Cache": {
+            "cached_records": {
+              "cached": "old"
+            }
+          },
+          "DB": {
+            "records": {
+              "cached": "old",
+              "uncached": "old"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "uncached",
+            "write_value": "new"
+          }
+        }
+      }
+    ]
+  }
+]

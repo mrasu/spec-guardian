@@ -1,0 +1,78 @@
+services:
+  rustfs:
+    image: rustfs/rustfs:1.0.0-alpha.81
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      RUSTFS_ACCESS_KEY: test
+      RUSTFS_SECRET_KEY: test
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: ":9000"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:9000/health"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+
+  bucket-setup:
+    image: amazon/aws-cli:2.36.40
+    depends_on:
+      rustfs:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://rustfs:9000
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        aws s3api head-bucket --bucket iceberg-warehouse ||
+        aws s3 mb s3://iceberg-warehouse
+
+  polaris:
+    image: apache/polaris:1.7.0
+    ports:
+      - "8181:8181"
+      - "8182:8182"
+    depends_on:
+      rustfs:
+        condition: service_healthy
+      bucket-setup:
+        condition: service_completed_successfully
+    environment:
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      POLARIS_BOOTSTRAP_CREDENTIALS: POLARIS,test,test
+      polaris.realm-context.realms: POLARIS
+      quarkus.log.category."org.apache.polaris".level: WARN
+      quarkus.log.category."org.apache.iceberg".level: WARN
+      quarkus.log.file.enabled: "false"
+      quarkus.otel.sdk.disabled: "true"
+      quarkus.http.access-log.enabled: "false"
+      polaris.features."ALLOW_INSECURE_STORAGE_TYPES": "true"
+      polaris.features."SUPPORTED_CATALOG_STORAGE_TYPES": '["S3"]'
+      polaris.readiness.ignore-severe-issues: "true"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8182/q/health"]
+      interval: 2s
+      timeout: 10s
+      retries: 30
+      start_period: 10s
+
+  polaris-setup:
+    image: alpine/curl:8.22.0
+    depends_on:
+      polaris:
+        condition: service_healthy
+    volumes:
+      - ./docker/polaris-setup.sh:/polaris-setup.sh:ro
+    entrypoint: ["/bin/sh", "/polaris-setup.sh"]
+    healthcheck:
+      test: ["CMD", "test", "-f", "/tmp/setup-complete"]
+      interval: 1s
+      timeout: 2s
+      retries: 30

@@ -1,0 +1,4682 @@
+{
+  "sourceInfo": {
+    "fileName": "CacheAside.fizz",
+    "start": {
+      "line": 7,
+      "column": 1
+    },
+    "end": {
+      "line": 146
+    }
+  },
+  "invariants": [
+    {
+      "sourceInfo": {
+        "start": {
+          "line": 9,
+          "column": 1
+        },
+        "end": {
+          "line": 12
+        }
+      },
+      "name": "BecomeDone",
+      "temporalOperators": [
+        "eventually",
+        "always"
+      ],
+      "block": {
+        "sourceInfo": {
+          "start": {
+            "line": 10,
+            "column": 3
+          },
+          "end": {
+            "line": 12
+          }
+        },
+        "flow": "FLOW_ATOMIC",
+        "stmts": [
+          {
+            "sourceInfo": {
+              "start": {
+                "line": 10,
+                "column": 3
+              },
+              "end": {
+                "line": 12
+              }
+            },
+            "returnStmt": {
+              "sourceInfo": {
+                "start": {
+                  "line": 10,
+                  "column": 3
+                },
+                "end": {
+                  "line": 10,
+                  "column": 212
+                }
+              },
+              "pyExpr": "(application.read_status == RequestStatus.DONE or application.read_status == RequestStatus.FAILED) and (application.write_status == RequestStatus.DONE or application.write_status == RequestStatus.FAILED)",
+              "expr": {
+                "sourceInfo": {
+                  "start": {
+                    "line": 10,
+                    "column": 10
+                  },
+                  "end": {
+                    "line": 10,
+                    "column": 212
+                  }
+                },
+                "pyExpr": "(application.read_status == RequestStatus.DONE or application.read_status == RequestStatus.FAILED) and (application.write_status == RequestStatus.DONE or application.write_status == RequestStatus.FAILED)"
+              }
+            }
+          }
+        ]
+      },
+      "pyCode": "def BecomeDone():\n  return (application.read_status == RequestStatus.DONE or application.read_status == RequestStatus.FAILED) and (application.write_status == RequestStatus.DONE or application.write_status == RequestStatus.FAILED)\n\n"
+    },
+    {
+      "sourceInfo": {
+        "start": {
+          "line": 12,
+          "column": 1
+        },
+        "end": {
+          "line": 27
+        }
+      },
+      "name": "GetCorrectResponse",
+      "temporalOperators": [
+        "eventually",
+        "always"
+      ],
+      "block": {
+        "sourceInfo": {
+          "start": {
+            "line": 13,
+            "column": 3
+          },
+          "end": {
+            "line": 27
+          }
+        },
+        "flow": "FLOW_ATOMIC",
+        "stmts": [
+          {
+            "sourceInfo": {
+              "start": {
+                "line": 13,
+                "column": 3
+              },
+              "end": {
+                "line": 27
+              }
+            },
+            "ifStmt": {
+              "sourceInfo": {
+                "start": {
+                  "line": 13,
+                  "column": 3
+                },
+                "end": {
+                  "line": 27
+                }
+              },
+              "branches": [
+                {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 13,
+                      "column": 6
+                    },
+                    "end": {
+                      "line": 22,
+                      "column": 2
+                    }
+                  },
+                  "condition": "application.read_status == RequestStatus.DONE",
+                  "block": {
+                    "sourceInfo": {
+                      "start": {
+                        "line": 14,
+                        "column": 5
+                      },
+                      "end": {
+                        "line": 22,
+                        "column": 2
+                      }
+                    },
+                    "stmts": [
+                      {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 14,
+                            "column": 5
+                          },
+                          "end": {
+                            "line": 22,
+                            "column": 2
+                          }
+                        },
+                        "ifStmt": {
+                          "sourceInfo": {
+                            "start": {
+                              "line": 14,
+                              "column": 5
+                            },
+                            "end": {
+                              "line": 22,
+                              "column": 2
+                            }
+                          },
+                          "branches": [
+                            {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 14,
+                                  "column": 8
+                                },
+                                "end": {
+                                  "line": 16,
+                                  "column": 4
+                                }
+                              },
+                              "condition": "application.key == \"db_cache_written\"",
+                              "block": {
+                                "sourceInfo": {
+                                  "start": {
+                                    "line": 15,
+                                    "column": 7
+                                  },
+                                  "end": {
+                                    "line": 16,
+                                    "column": 4
+                                  }
+                                },
+                                "stmts": [
+                                  {
+                                    "sourceInfo": {
+                                      "start": {
+                                        "line": 15,
+                                        "column": 7
+                                      },
+                                      "end": {
+                                        "line": 16,
+                                        "column": 4
+                                      }
+                                    },
+                                    "returnStmt": {
+                                      "sourceInfo": {
+                                        "start": {
+                                          "line": 15,
+                                          "column": 7
+                                        },
+                                        "end": {
+                                          "line": 15,
+                                          "column": 91
+                                        }
+                                      },
+                                      "pyExpr": "application.read_res_value == \"foo\" or application.read_res_value == \"written\"",
+                                      "expr": {
+                                        "sourceInfo": {
+                                          "start": {
+                                            "line": 15,
+                                            "column": 14
+                                          },
+                                          "end": {
+                                            "line": 15,
+                                            "column": 91
+                                          }
+                                        },
+                                        "pyExpr": "application.read_res_value == \"foo\" or application.read_res_value == \"written\""
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              "conditionExpr": {
+                                "sourceInfo": {
+                                  "start": {
+                                    "line": 14,
+                                    "column": 8
+                                  },
+                                  "end": {
+                                    "line": 14,
+                                    "column": 44
+                                  }
+                                },
+                                "pyExpr": "application.key == \"db_cache_written\""
+                              }
+                            },
+                            {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 16,
+                                  "column": 5
+                                },
+                                "end": {
+                                  "line": 18,
+                                  "column": 4
+                                }
+                              },
+                              "condition": "application.key == \"db_written\"",
+                              "block": {
+                                "sourceInfo": {
+                                  "start": {
+                                    "line": 17,
+                                    "column": 7
+                                  },
+                                  "end": {
+                                    "line": 18,
+                                    "column": 4
+                                  }
+                                },
+                                "stmts": [
+                                  {
+                                    "sourceInfo": {
+                                      "start": {
+                                        "line": 17,
+                                        "column": 7
+                                      },
+                                      "end": {
+                                        "line": 18,
+                                        "column": 4
+                                      }
+                                    },
+                                    "returnStmt": {
+                                      "sourceInfo": {
+                                        "start": {
+                                          "line": 17,
+                                          "column": 7
+                                        },
+                                        "end": {
+                                          "line": 17,
+                                          "column": 91
+                                        }
+                                      },
+                                      "pyExpr": "application.read_res_value == \"bar\" or application.read_res_value == \"written\"",
+                                      "expr": {
+                                        "sourceInfo": {
+                                          "start": {
+                                            "line": 17,
+                                            "column": 14
+                                          },
+                                          "end": {
+                                            "line": 17,
+                                            "column": 91
+                                          }
+                                        },
+                                        "pyExpr": "application.read_res_value == \"bar\" or application.read_res_value == \"written\""
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              "conditionExpr": {
+                                "sourceInfo": {
+                                  "start": {
+                                    "line": 16,
+                                    "column": 10
+                                  },
+                                  "end": {
+                                    "line": 16,
+                                    "column": 40
+                                  }
+                                },
+                                "pyExpr": "application.key == \"db_written\""
+                              }
+                            },
+                            {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 18,
+                                  "column": 5
+                                },
+                                "end": {
+                                  "line": 20,
+                                  "column": 4
+                                }
+                              },
+                              "condition": "application.key == \"not_written\"",
+                              "block": {
+                                "sourceInfo": {
+                                  "start": {
+                                    "line": 19,
+                                    "column": 7
+                                  },
+                                  "end": {
+                                    "line": 20,
+                                    "column": 4
+                                  }
+                                },
+                                "stmts": [
+                                  {
+                                    "sourceInfo": {
+                                      "start": {
+                                        "line": 19,
+                                        "column": 7
+                                      },
+                                      "end": {
+                                        "line": 20,
+                                        "column": 4
+                                      }
+                                    },
+                                    "returnStmt": {
+                                      "sourceInfo": {
+                                        "start": {
+                                          "line": 19,
+                                          "column": 7
+                                        },
+                                        "end": {
+                                          "line": 19,
+                                          "column": 90
+                                        }
+                                      },
+                                      "pyExpr": "application.read_res_value == None or application.read_res_value == \"written\"",
+                                      "expr": {
+                                        "sourceInfo": {
+                                          "start": {
+                                            "line": 19,
+                                            "column": 14
+                                          },
+                                          "end": {
+                                            "line": 19,
+                                            "column": 90
+                                          }
+                                        },
+                                        "pyExpr": "application.read_res_value == None or application.read_res_value == \"written\""
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              "conditionExpr": {
+                                "sourceInfo": {
+                                  "start": {
+                                    "line": 18,
+                                    "column": 10
+                                  },
+                                  "end": {
+                                    "line": 18,
+                                    "column": 41
+                                  }
+                                },
+                                "pyExpr": "application.key == \"not_written\""
+                              }
+                            },
+                            {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 20,
+                                  "column": 5
+                                },
+                                "end": {
+                                  "line": 22,
+                                  "column": 2
+                                }
+                              },
+                              "condition": "True",
+                              "block": {
+                                "sourceInfo": {
+                                  "start": {
+                                    "line": 21,
+                                    "column": 7
+                                  },
+                                  "end": {
+                                    "line": 22,
+                                    "column": 2
+                                  }
+                                },
+                                "stmts": [
+                                  {
+                                    "sourceInfo": {
+                                      "start": {
+                                        "line": 21,
+                                        "column": 7
+                                      },
+                                      "end": {
+                                        "line": 22,
+                                        "column": 2
+                                      }
+                                    },
+                                    "returnStmt": {
+                                      "sourceInfo": {
+                                        "start": {
+                                          "line": 21,
+                                          "column": 7
+                                        },
+                                        "end": {
+                                          "line": 21,
+                                          "column": 18
+                                        }
+                                      },
+                                      "pyExpr": "False",
+                                      "expr": {
+                                        "sourceInfo": {
+                                          "start": {
+                                            "line": 21,
+                                            "column": 14
+                                          },
+                                          "end": {
+                                            "line": 21,
+                                            "column": 18
+                                          }
+                                        },
+                                        "pyExpr": "False"
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              "conditionExpr": {
+                                "pyExpr": "True"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  "conditionExpr": {
+                    "sourceInfo": {
+                      "start": {
+                        "line": 13,
+                        "column": 6
+                      },
+                      "end": {
+                        "line": 13,
+                        "column": 50
+                      }
+                    },
+                    "pyExpr": "application.read_status == RequestStatus.DONE"
+                  }
+                },
+                {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 22,
+                      "column": 3
+                    },
+                    "end": {
+                      "line": 24,
+                      "column": 2
+                    }
+                  },
+                  "condition": "application.read_status == RequestStatus.FAILED",
+                  "block": {
+                    "sourceInfo": {
+                      "start": {
+                        "line": 23,
+                        "column": 5
+                      },
+                      "end": {
+                        "line": 24,
+                        "column": 2
+                      }
+                    },
+                    "stmts": [
+                      {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 23,
+                            "column": 5
+                          },
+                          "end": {
+                            "line": 24,
+                            "column": 2
+                          }
+                        },
+                        "returnStmt": {
+                          "sourceInfo": {
+                            "start": {
+                              "line": 23,
+                              "column": 5
+                            },
+                            "end": {
+                              "line": 23,
+                              "column": 15
+                            }
+                          },
+                          "pyExpr": "True",
+                          "expr": {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 23,
+                                "column": 12
+                              },
+                              "end": {
+                                "line": 23,
+                                "column": 15
+                              }
+                            },
+                            "pyExpr": "True"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "conditionExpr": {
+                    "sourceInfo": {
+                      "start": {
+                        "line": 22,
+                        "column": 8
+                      },
+                      "end": {
+                        "line": 22,
+                        "column": 54
+                      }
+                    },
+                    "pyExpr": "application.read_status == RequestStatus.FAILED"
+                  }
+                },
+                {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 24,
+                      "column": 3
+                    },
+                    "end": {
+                      "line": 27
+                    }
+                  },
+                  "condition": "True",
+                  "block": {
+                    "sourceInfo": {
+                      "start": {
+                        "line": 25,
+                        "column": 5
+                      },
+                      "end": {
+                        "line": 27
+                      }
+                    },
+                    "stmts": [
+                      {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 25,
+                            "column": 5
+                          },
+                          "end": {
+                            "line": 27
+                          }
+                        },
+                        "returnStmt": {
+                          "sourceInfo": {
+                            "start": {
+                              "line": 25,
+                              "column": 5
+                            },
+                            "end": {
+                              "line": 25,
+                              "column": 16
+                            }
+                          },
+                          "pyExpr": "False",
+                          "expr": {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 25,
+                                "column": 12
+                              },
+                              "end": {
+                                "line": 25,
+                                "column": 16
+                              }
+                            },
+                            "pyExpr": "False"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "conditionExpr": {
+                    "pyExpr": "True"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "pyCode": "def GetCorrectResponse():\n  if application.read_status == RequestStatus.DONE:\n    if application.key == \"db_cache_written\":\n      return application.read_res_value == \"foo\" or application.read_res_value == \"written\"\n    elif application.key == \"db_written\":\n      return application.read_res_value == \"bar\" or application.read_res_value == \"written\"\n    elif application.key == \"not_written\":\n      return application.read_res_value == None or application.read_res_value == \"written\"\n    else:\n      return False\n  elif application.read_status == RequestStatus.FAILED:\n    return True\n  else:\n    return False\n\n"
+    },
+    {
+      "sourceInfo": {
+        "start": {
+          "line": 27,
+          "column": 1
+        },
+        "end": {
+          "line": 33
+        }
+      },
+      "name": "CachedValueIsSameWithDbOrOlder",
+      "temporalOperators": [
+        "always"
+      ],
+      "block": {
+        "sourceInfo": {
+          "start": {
+            "line": 28,
+            "column": 3
+          },
+          "end": {
+            "line": 33
+          }
+        },
+        "flow": "FLOW_ATOMIC",
+        "stmts": [
+          {
+            "sourceInfo": {
+              "start": {
+                "line": 28,
+                "column": 3
+              },
+              "end": {
+                "line": 33
+              }
+            },
+            "ifStmt": {
+              "sourceInfo": {
+                "start": {
+                  "line": 28,
+                  "column": 3
+                },
+                "end": {
+                  "line": 33
+                }
+              },
+              "branches": [
+                {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 28,
+                      "column": 6
+                    },
+                    "end": {
+                      "line": 30,
+                      "column": 2
+                    }
+                  },
+                  "condition": "application.key in cache.cached_records",
+                  "block": {
+                    "sourceInfo": {
+                      "start": {
+                        "line": 29,
+                        "column": 5
+                      },
+                      "end": {
+                        "line": 30,
+                        "column": 2
+                      }
+                    },
+                    "stmts": [
+                      {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 29,
+                            "column": 5
+                          },
+                          "end": {
+                            "line": 30,
+                            "column": 2
+                          }
+                        },
+                        "returnStmt": {
+                          "sourceInfo": {
+                            "start": {
+                              "line": 29,
+                              "column": 5
+                            },
+                            "end": {
+                              "line": 29,
+                              "column": 88
+                            }
+                          },
+                          "pyExpr": "cache.cached_records[application.key] in db.committed_values[application.key]",
+                          "expr": {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 29,
+                                "column": 12
+                              },
+                              "end": {
+                                "line": 29,
+                                "column": 88
+                              }
+                            },
+                            "pyExpr": "cache.cached_records[application.key] in db.committed_values[application.key]"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "conditionExpr": {
+                    "sourceInfo": {
+                      "start": {
+                        "line": 28,
+                        "column": 6
+                      },
+                      "end": {
+                        "line": 28,
+                        "column": 44
+                      }
+                    },
+                    "pyExpr": "application.key in cache.cached_records"
+                  }
+                },
+                {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 30,
+                      "column": 3
+                    },
+                    "end": {
+                      "line": 33
+                    }
+                  },
+                  "condition": "True",
+                  "block": {
+                    "sourceInfo": {
+                      "start": {
+                        "line": 31,
+                        "column": 5
+                      },
+                      "end": {
+                        "line": 33
+                      }
+                    },
+                    "stmts": [
+                      {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 31,
+                            "column": 5
+                          },
+                          "end": {
+                            "line": 33
+                          }
+                        },
+                        "returnStmt": {
+                          "sourceInfo": {
+                            "start": {
+                              "line": 31,
+                              "column": 5
+                            },
+                            "end": {
+                              "line": 31,
+                              "column": 15
+                            }
+                          },
+                          "pyExpr": "True",
+                          "expr": {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 31,
+                                "column": 12
+                              },
+                              "end": {
+                                "line": 31,
+                                "column": 15
+                              }
+                            },
+                            "pyExpr": "True"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "conditionExpr": {
+                    "pyExpr": "True"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "pyCode": "def CachedValueIsSameWithDbOrOlder():\n  if application.key in cache.cached_records:\n    return cache.cached_records[application.key] in db.committed_values[application.key]\n  else:\n    return True\n\n"
+    }
+  ],
+  "actions": [
+    {
+      "sourceInfo": {
+        "start": {
+          "line": 140,
+          "column": 1
+        },
+        "end": {
+          "line": 146
+        }
+      },
+      "name": "Init",
+      "flow": "FLOW_ATOMIC",
+      "fairness": {
+        "level": "FAIRNESS_LEVEL_STRONG"
+      },
+      "block": {
+        "sourceInfo": {
+          "start": {
+            "line": 141,
+            "column": 3
+          },
+          "end": {
+            "line": 146
+          }
+        },
+        "flow": "FLOW_ATOMIC",
+        "stmts": [
+          {
+            "sourceInfo": {
+              "start": {
+                "line": 141,
+                "column": 3
+              },
+              "end": {
+                "line": 142,
+                "column": 2
+              }
+            },
+            "callStmt": {
+              "sourceInfo": {
+                "start": {
+                  "line": 141,
+                  "column": 3
+                },
+                "end": {
+                  "line": 141,
+                  "column": 11
+                }
+              },
+              "vars": [
+                "db"
+              ],
+              "name": "DB"
+            }
+          },
+          {
+            "sourceInfo": {
+              "start": {
+                "line": 142,
+                "column": 3
+              },
+              "end": {
+                "line": 144,
+                "column": 2
+              }
+            },
+            "callStmt": {
+              "sourceInfo": {
+                "start": {
+                  "line": 142,
+                  "column": 3
+                },
+                "end": {
+                  "line": 142,
+                  "column": 17
+                }
+              },
+              "vars": [
+                "cache"
+              ],
+              "name": "Cache"
+            }
+          },
+          {
+            "sourceInfo": {
+              "start": {
+                "line": 144,
+                "column": 3
+              },
+              "end": {
+                "line": 145,
+                "column": 2
+              }
+            },
+            "anyStmt": {
+              "sourceInfo": {
+                "start": {
+                  "line": 144,
+                  "column": 3
+                },
+                "end": {
+                  "line": 144,
+                  "column": 63
+                }
+              },
+              "loopVars": [
+                "key"
+              ],
+              "pyExpr": "[\"db_cache_written\", \"db_written\", \"not_written\"]",
+              "iterExpr": {
+                "sourceInfo": {
+                  "start": {
+                    "line": 144,
+                    "column": 15
+                  },
+                  "end": {
+                    "line": 144,
+                    "column": 63
+                  }
+                },
+                "pyExpr": "[\"db_cache_written\", \"db_written\", \"not_written\"]"
+              }
+            }
+          },
+          {
+            "sourceInfo": {
+              "start": {
+                "line": 145,
+                "column": 3
+              },
+              "end": {
+                "line": 146
+              }
+            },
+            "callStmt": {
+              "sourceInfo": {
+                "start": {
+                  "line": 145,
+                  "column": 3
+                },
+                "end": {
+                  "line": 145,
+                  "column": 59
+                }
+              },
+              "vars": [
+                "application"
+              ],
+              "name": "Application",
+              "args": [
+                {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 145,
+                      "column": 29
+                    },
+                    "end": {
+                      "line": 145,
+                      "column": 35
+                    }
+                  },
+                  "pyExpr": "key=key",
+                  "expr": {
+                    "sourceInfo": {
+                      "start": {
+                        "line": 145,
+                        "column": 29
+                      },
+                      "end": {
+                        "line": 145,
+                        "column": 35
+                      }
+                    },
+                    "pyExpr": "key=key"
+                  }
+                },
+                {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 145,
+                      "column": 38
+                    },
+                    "end": {
+                      "line": 145,
+                      "column": 58
+                    }
+                  },
+                  "pyExpr": "write_value=\"written\"",
+                  "expr": {
+                    "sourceInfo": {
+                      "start": {
+                        "line": 145,
+                        "column": 38
+                      },
+                      "end": {
+                        "line": 145,
+                        "column": 58
+                      }
+                    },
+                    "pyExpr": "write_value=\"written\""
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "stmts": [
+    {
+      "sourceInfo": {
+        "start": {
+          "line": 7,
+          "column": 1
+        },
+        "end": {
+          "line": 9
+        }
+      },
+      "callStmt": {
+        "sourceInfo": {
+          "start": {
+            "line": 7,
+            "column": 1
+          },
+          "end": {
+            "line": 7,
+            "column": 60
+          }
+        },
+        "vars": [
+          "RequestStatus"
+        ],
+        "name": "enum",
+        "args": [
+          {
+            "sourceInfo": {
+              "start": {
+                "line": 7,
+                "column": 22
+              },
+              "end": {
+                "line": 7,
+                "column": 27
+              }
+            },
+            "pyExpr": "\"INIT\"",
+            "expr": {
+              "sourceInfo": {
+                "start": {
+                  "line": 7,
+                  "column": 22
+                },
+                "end": {
+                  "line": 7,
+                  "column": 27
+                }
+              },
+              "pyExpr": "\"INIT\""
+            }
+          },
+          {
+            "sourceInfo": {
+              "start": {
+                "line": 7,
+                "column": 30
+              },
+              "end": {
+                "line": 7,
+                "column": 35
+              }
+            },
+            "pyExpr": "\"DONE\"",
+            "expr": {
+              "sourceInfo": {
+                "start": {
+                  "line": 7,
+                  "column": 30
+                },
+                "end": {
+                  "line": 7,
+                  "column": 35
+                }
+              },
+              "pyExpr": "\"DONE\""
+            }
+          },
+          {
+            "sourceInfo": {
+              "start": {
+                "line": 7,
+                "column": 38
+              },
+              "end": {
+                "line": 7,
+                "column": 45
+              }
+            },
+            "pyExpr": "\"FAILED\"",
+            "expr": {
+              "sourceInfo": {
+                "start": {
+                  "line": 7,
+                  "column": 38
+                },
+                "end": {
+                  "line": 7,
+                  "column": 45
+                }
+              },
+              "pyExpr": "\"FAILED\""
+            }
+          },
+          {
+            "sourceInfo": {
+              "start": {
+                "line": 7,
+                "column": 48
+              },
+              "end": {
+                "line": 7,
+                "column": 59
+              }
+            },
+            "pyExpr": "\"PROCESSING\"",
+            "expr": {
+              "sourceInfo": {
+                "start": {
+                  "line": 7,
+                  "column": 48
+                },
+                "end": {
+                  "line": 7,
+                  "column": 59
+                }
+              },
+              "pyExpr": "\"PROCESSING\""
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "roles": [
+    {
+      "sourceInfo": {
+        "start": {
+          "line": 33,
+          "column": 1
+        },
+        "end": {
+          "line": 57
+        }
+      },
+      "name": "DB",
+      "actions": [
+        {
+          "sourceInfo": {
+            "start": {
+              "line": 34,
+              "column": 3
+            },
+            "end": {
+              "line": 38,
+              "column": 2
+            }
+          },
+          "name": "Init",
+          "flow": "FLOW_ATOMIC",
+          "fairness": {
+            "level": "FAIRNESS_LEVEL_STRONG"
+          },
+          "block": {
+            "sourceInfo": {
+              "start": {
+                "line": 35,
+                "column": 5
+              },
+              "end": {
+                "line": 38,
+                "column": 2
+              }
+            },
+            "flow": "FLOW_ATOMIC",
+            "stmts": [
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 35,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 36,
+                    "column": 4
+                  }
+                },
+                "pyStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 35,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 35,
+                      "column": 67
+                    }
+                  },
+                  "code": "self.records = {\"db_cache_written\": \"foo\", \"db_written\": \"bar\"}"
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 36,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 38,
+                    "column": 2
+                  }
+                },
+                "pyStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 36,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 36,
+                      "column": 99
+                    }
+                  },
+                  "code": "self.committed_values = {\"db_cache_written\": [\"foo\"], \"db_written\": [\"bar\"], \"not_written\": []}"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "functions": [
+        {
+          "sourceInfo": {
+            "start": {
+              "line": 38,
+              "column": 3
+            },
+            "end": {
+              "line": 48,
+              "column": 2
+            }
+          },
+          "name": "read",
+          "flow": "FLOW_ATOMIC",
+          "params": [
+            {
+              "sourceInfo": {
+                "start": {
+                  "line": 38,
+                  "column": 20
+                },
+                "end": {
+                  "line": 38,
+                  "column": 22
+                }
+              },
+              "name": "key"
+            }
+          ],
+          "block": {
+            "sourceInfo": {
+              "start": {
+                "line": 39,
+                "column": 5
+              },
+              "end": {
+                "line": 48,
+                "column": 2
+              }
+            },
+            "flow": "FLOW_ATOMIC",
+            "stmts": [
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 39,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 40,
+                    "column": 4
+                  }
+                },
+                "anyStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 39,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 39,
+                      "column": 34
+                    }
+                  },
+                  "loopVars": [
+                    "succeeds"
+                  ],
+                  "pyExpr": "[True, False]",
+                  "iterExpr": {
+                    "sourceInfo": {
+                      "start": {
+                        "line": 39,
+                        "column": 22
+                      },
+                      "end": {
+                        "line": 39,
+                        "column": 34
+                      }
+                    },
+                    "pyExpr": "[True, False]"
+                  }
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 40,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 48,
+                    "column": 2
+                  }
+                },
+                "ifStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 40,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 48,
+                      "column": 2
+                    }
+                  },
+                  "branches": [
+                    {
+                      "sourceInfo": {
+                        "start": {
+                          "line": 40,
+                          "column": 8
+                        },
+                        "end": {
+                          "line": 45,
+                          "column": 4
+                        }
+                      },
+                      "condition": "succeeds",
+                      "block": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 41,
+                            "column": 7
+                          },
+                          "end": {
+                            "line": 45,
+                            "column": 4
+                          }
+                        },
+                        "stmts": [
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 41,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 45,
+                                "column": 4
+                              }
+                            },
+                            "ifStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 41,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 45,
+                                  "column": 4
+                                }
+                              },
+                              "branches": [
+                                {
+                                  "sourceInfo": {
+                                    "start": {
+                                      "line": 41,
+                                      "column": 10
+                                    },
+                                    "end": {
+                                      "line": 43,
+                                      "column": 6
+                                    }
+                                  },
+                                  "condition": "key in self.records",
+                                  "block": {
+                                    "sourceInfo": {
+                                      "start": {
+                                        "line": 42,
+                                        "column": 9
+                                      },
+                                      "end": {
+                                        "line": 43,
+                                        "column": 6
+                                      }
+                                    },
+                                    "stmts": [
+                                      {
+                                        "sourceInfo": {
+                                          "start": {
+                                            "line": 42,
+                                            "column": 9
+                                          },
+                                          "end": {
+                                            "line": 43,
+                                            "column": 6
+                                          }
+                                        },
+                                        "returnStmt": {
+                                          "sourceInfo": {
+                                            "start": {
+                                              "line": 42,
+                                              "column": 9
+                                            },
+                                            "end": {
+                                              "line": 42,
+                                              "column": 40
+                                            }
+                                          },
+                                          "pyExpr": "[self.records[key], True]",
+                                          "expr": {
+                                            "sourceInfo": {
+                                              "start": {
+                                                "line": 42,
+                                                "column": 16
+                                              },
+                                              "end": {
+                                                "line": 42,
+                                                "column": 40
+                                              }
+                                            },
+                                            "pyExpr": "[self.records[key], True]"
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  "conditionExpr": {
+                                    "sourceInfo": {
+                                      "start": {
+                                        "line": 41,
+                                        "column": 10
+                                      },
+                                      "end": {
+                                        "line": 41,
+                                        "column": 28
+                                      }
+                                    },
+                                    "pyExpr": "key in self.records"
+                                  }
+                                },
+                                {
+                                  "sourceInfo": {
+                                    "start": {
+                                      "line": 43,
+                                      "column": 7
+                                    },
+                                    "end": {
+                                      "line": 45,
+                                      "column": 4
+                                    }
+                                  },
+                                  "condition": "True",
+                                  "block": {
+                                    "sourceInfo": {
+                                      "start": {
+                                        "line": 44,
+                                        "column": 9
+                                      },
+                                      "end": {
+                                        "line": 45,
+                                        "column": 4
+                                      }
+                                    },
+                                    "stmts": [
+                                      {
+                                        "sourceInfo": {
+                                          "start": {
+                                            "line": 44,
+                                            "column": 9
+                                          },
+                                          "end": {
+                                            "line": 45,
+                                            "column": 4
+                                          }
+                                        },
+                                        "returnStmt": {
+                                          "sourceInfo": {
+                                            "start": {
+                                              "line": 44,
+                                              "column": 9
+                                            },
+                                            "end": {
+                                              "line": 44,
+                                              "column": 27
+                                            }
+                                          },
+                                          "pyExpr": "[None, True]",
+                                          "expr": {
+                                            "sourceInfo": {
+                                              "start": {
+                                                "line": 44,
+                                                "column": 16
+                                              },
+                                              "end": {
+                                                "line": 44,
+                                                "column": 27
+                                              }
+                                            },
+                                            "pyExpr": "[None, True]"
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  "conditionExpr": {
+                                    "pyExpr": "True"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "conditionExpr": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 40,
+                            "column": 8
+                          },
+                          "end": {
+                            "line": 40,
+                            "column": 15
+                          }
+                        },
+                        "pyExpr": "succeeds"
+                      }
+                    },
+                    {
+                      "sourceInfo": {
+                        "start": {
+                          "line": 45,
+                          "column": 5
+                        },
+                        "end": {
+                          "line": 48,
+                          "column": 2
+                        }
+                      },
+                      "condition": "True",
+                      "block": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 46,
+                            "column": 7
+                          },
+                          "end": {
+                            "line": 48,
+                            "column": 2
+                          }
+                        },
+                        "stmts": [
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 46,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 48,
+                                "column": 2
+                              }
+                            },
+                            "returnStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 46,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 46,
+                                  "column": 26
+                                }
+                              },
+                              "pyExpr": "[None, False]",
+                              "expr": {
+                                "sourceInfo": {
+                                  "start": {
+                                    "line": 46,
+                                    "column": 14
+                                  },
+                                  "end": {
+                                    "line": 46,
+                                    "column": 26
+                                  }
+                                },
+                                "pyExpr": "[None, False]"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "conditionExpr": {
+                        "pyExpr": "True"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "sourceInfo": {
+            "start": {
+              "line": 48,
+              "column": 3
+            },
+            "end": {
+              "line": 57
+            }
+          },
+          "name": "write",
+          "flow": "FLOW_ATOMIC",
+          "params": [
+            {
+              "sourceInfo": {
+                "start": {
+                  "line": 48,
+                  "column": 21
+                },
+                "end": {
+                  "line": 48,
+                  "column": 23
+                }
+              },
+              "name": "key"
+            },
+            {
+              "sourceInfo": {
+                "start": {
+                  "line": 48,
+                  "column": 26
+                },
+                "end": {
+                  "line": 48,
+                  "column": 30
+                }
+              },
+              "name": "value"
+            }
+          ],
+          "block": {
+            "sourceInfo": {
+              "start": {
+                "line": 49,
+                "column": 5
+              },
+              "end": {
+                "line": 57
+              }
+            },
+            "flow": "FLOW_ATOMIC",
+            "stmts": [
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 49,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 50,
+                    "column": 4
+                  }
+                },
+                "anyStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 49,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 49,
+                      "column": 34
+                    }
+                  },
+                  "loopVars": [
+                    "succeeds"
+                  ],
+                  "pyExpr": "[True, False]",
+                  "iterExpr": {
+                    "sourceInfo": {
+                      "start": {
+                        "line": 49,
+                        "column": 22
+                      },
+                      "end": {
+                        "line": 49,
+                        "column": 34
+                      }
+                    },
+                    "pyExpr": "[True, False]"
+                  }
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 50,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 57
+                  }
+                },
+                "ifStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 50,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 57
+                    }
+                  },
+                  "branches": [
+                    {
+                      "sourceInfo": {
+                        "start": {
+                          "line": 50,
+                          "column": 8
+                        },
+                        "end": {
+                          "line": 54,
+                          "column": 4
+                        }
+                      },
+                      "condition": "succeeds",
+                      "block": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 51,
+                            "column": 7
+                          },
+                          "end": {
+                            "line": 54,
+                            "column": 4
+                          }
+                        },
+                        "stmts": [
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 51,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 52,
+                                "column": 6
+                              }
+                            },
+                            "pyStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 51,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 51,
+                                  "column": 31
+                                }
+                              },
+                              "code": "self.records[key] = value"
+                            }
+                          },
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 52,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 53,
+                                "column": 6
+                              }
+                            },
+                            "pyStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 52,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 52,
+                                  "column": 46
+                                }
+                              },
+                              "code": "self.committed_values[key].append(value)"
+                            }
+                          },
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 53,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 54,
+                                "column": 4
+                              }
+                            },
+                            "returnStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 53,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 53,
+                                  "column": 17
+                                }
+                              },
+                              "pyExpr": "True",
+                              "expr": {
+                                "sourceInfo": {
+                                  "start": {
+                                    "line": 53,
+                                    "column": 14
+                                  },
+                                  "end": {
+                                    "line": 53,
+                                    "column": 17
+                                  }
+                                },
+                                "pyExpr": "True"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "conditionExpr": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 50,
+                            "column": 8
+                          },
+                          "end": {
+                            "line": 50,
+                            "column": 15
+                          }
+                        },
+                        "pyExpr": "succeeds"
+                      }
+                    },
+                    {
+                      "sourceInfo": {
+                        "start": {
+                          "line": 54,
+                          "column": 5
+                        },
+                        "end": {
+                          "line": 57
+                        }
+                      },
+                      "condition": "True",
+                      "block": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 55,
+                            "column": 7
+                          },
+                          "end": {
+                            "line": 57
+                          }
+                        },
+                        "stmts": [
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 55,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 57
+                              }
+                            },
+                            "returnStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 55,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 55,
+                                  "column": 18
+                                }
+                              },
+                              "pyExpr": "False",
+                              "expr": {
+                                "sourceInfo": {
+                                  "start": {
+                                    "line": 55,
+                                    "column": 14
+                                  },
+                                  "end": {
+                                    "line": 55,
+                                    "column": 18
+                                  }
+                                },
+                                "pyExpr": "False"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "conditionExpr": {
+                        "pyExpr": "True"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "sourceInfo": {
+        "start": {
+          "line": 57,
+          "column": 1
+        },
+        "end": {
+          "line": 88
+        }
+      },
+      "name": "Cache",
+      "actions": [
+        {
+          "sourceInfo": {
+            "start": {
+              "line": 58,
+              "column": 3
+            },
+            "end": {
+              "line": 61,
+              "column": 2
+            }
+          },
+          "name": "Init",
+          "flow": "FLOW_ATOMIC",
+          "fairness": {
+            "level": "FAIRNESS_LEVEL_STRONG"
+          },
+          "block": {
+            "sourceInfo": {
+              "start": {
+                "line": 59,
+                "column": 5
+              },
+              "end": {
+                "line": 61,
+                "column": 2
+              }
+            },
+            "flow": "FLOW_ATOMIC",
+            "stmts": [
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 59,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 61,
+                    "column": 2
+                  }
+                },
+                "pyStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 59,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 59,
+                      "column": 53
+                    }
+                  },
+                  "code": "self.cached_records = {\"db_cache_written\": \"foo\"}"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "functions": [
+        {
+          "sourceInfo": {
+            "start": {
+              "line": 61,
+              "column": 3
+            },
+            "end": {
+              "line": 71,
+              "column": 2
+            }
+          },
+          "name": "get_cached_value",
+          "flow": "FLOW_ATOMIC",
+          "params": [
+            {
+              "sourceInfo": {
+                "start": {
+                  "line": 61,
+                  "column": 32
+                },
+                "end": {
+                  "line": 61,
+                  "column": 34
+                }
+              },
+              "name": "key"
+            }
+          ],
+          "block": {
+            "sourceInfo": {
+              "start": {
+                "line": 62,
+                "column": 5
+              },
+              "end": {
+                "line": 71,
+                "column": 2
+              }
+            },
+            "flow": "FLOW_ATOMIC",
+            "stmts": [
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 62,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 63,
+                    "column": 4
+                  }
+                },
+                "anyStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 62,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 62,
+                      "column": 34
+                    }
+                  },
+                  "loopVars": [
+                    "succeeds"
+                  ],
+                  "pyExpr": "[True, False]",
+                  "iterExpr": {
+                    "sourceInfo": {
+                      "start": {
+                        "line": 62,
+                        "column": 22
+                      },
+                      "end": {
+                        "line": 62,
+                        "column": 34
+                      }
+                    },
+                    "pyExpr": "[True, False]"
+                  }
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 63,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 71,
+                    "column": 2
+                  }
+                },
+                "ifStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 63,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 71,
+                      "column": 2
+                    }
+                  },
+                  "branches": [
+                    {
+                      "sourceInfo": {
+                        "start": {
+                          "line": 63,
+                          "column": 8
+                        },
+                        "end": {
+                          "line": 68,
+                          "column": 4
+                        }
+                      },
+                      "condition": "succeeds",
+                      "block": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 64,
+                            "column": 7
+                          },
+                          "end": {
+                            "line": 68,
+                            "column": 4
+                          }
+                        },
+                        "stmts": [
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 64,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 68,
+                                "column": 4
+                              }
+                            },
+                            "ifStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 64,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 68,
+                                  "column": 4
+                                }
+                              },
+                              "branches": [
+                                {
+                                  "sourceInfo": {
+                                    "start": {
+                                      "line": 64,
+                                      "column": 10
+                                    },
+                                    "end": {
+                                      "line": 66,
+                                      "column": 6
+                                    }
+                                  },
+                                  "condition": "key in self.cached_records",
+                                  "block": {
+                                    "sourceInfo": {
+                                      "start": {
+                                        "line": 65,
+                                        "column": 9
+                                      },
+                                      "end": {
+                                        "line": 66,
+                                        "column": 6
+                                      }
+                                    },
+                                    "stmts": [
+                                      {
+                                        "sourceInfo": {
+                                          "start": {
+                                            "line": 65,
+                                            "column": 9
+                                          },
+                                          "end": {
+                                            "line": 66,
+                                            "column": 6
+                                          }
+                                        },
+                                        "returnStmt": {
+                                          "sourceInfo": {
+                                            "start": {
+                                              "line": 65,
+                                              "column": 9
+                                            },
+                                            "end": {
+                                              "line": 65,
+                                              "column": 47
+                                            }
+                                          },
+                                          "pyExpr": "[self.cached_records[key], True]",
+                                          "expr": {
+                                            "sourceInfo": {
+                                              "start": {
+                                                "line": 65,
+                                                "column": 16
+                                              },
+                                              "end": {
+                                                "line": 65,
+                                                "column": 47
+                                              }
+                                            },
+                                            "pyExpr": "[self.cached_records[key], True]"
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  "conditionExpr": {
+                                    "sourceInfo": {
+                                      "start": {
+                                        "line": 64,
+                                        "column": 10
+                                      },
+                                      "end": {
+                                        "line": 64,
+                                        "column": 35
+                                      }
+                                    },
+                                    "pyExpr": "key in self.cached_records"
+                                  }
+                                },
+                                {
+                                  "sourceInfo": {
+                                    "start": {
+                                      "line": 66,
+                                      "column": 7
+                                    },
+                                    "end": {
+                                      "line": 68,
+                                      "column": 4
+                                    }
+                                  },
+                                  "condition": "True",
+                                  "block": {
+                                    "sourceInfo": {
+                                      "start": {
+                                        "line": 67,
+                                        "column": 9
+                                      },
+                                      "end": {
+                                        "line": 68,
+                                        "column": 4
+                                      }
+                                    },
+                                    "stmts": [
+                                      {
+                                        "sourceInfo": {
+                                          "start": {
+                                            "line": 67,
+                                            "column": 9
+                                          },
+                                          "end": {
+                                            "line": 68,
+                                            "column": 4
+                                          }
+                                        },
+                                        "returnStmt": {
+                                          "sourceInfo": {
+                                            "start": {
+                                              "line": 67,
+                                              "column": 9
+                                            },
+                                            "end": {
+                                              "line": 67,
+                                              "column": 27
+                                            }
+                                          },
+                                          "pyExpr": "[None, True]",
+                                          "expr": {
+                                            "sourceInfo": {
+                                              "start": {
+                                                "line": 67,
+                                                "column": 16
+                                              },
+                                              "end": {
+                                                "line": 67,
+                                                "column": 27
+                                              }
+                                            },
+                                            "pyExpr": "[None, True]"
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  "conditionExpr": {
+                                    "pyExpr": "True"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "conditionExpr": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 63,
+                            "column": 8
+                          },
+                          "end": {
+                            "line": 63,
+                            "column": 15
+                          }
+                        },
+                        "pyExpr": "succeeds"
+                      }
+                    },
+                    {
+                      "sourceInfo": {
+                        "start": {
+                          "line": 68,
+                          "column": 5
+                        },
+                        "end": {
+                          "line": 71,
+                          "column": 2
+                        }
+                      },
+                      "condition": "True",
+                      "block": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 69,
+                            "column": 7
+                          },
+                          "end": {
+                            "line": 71,
+                            "column": 2
+                          }
+                        },
+                        "stmts": [
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 69,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 71,
+                                "column": 2
+                              }
+                            },
+                            "returnStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 69,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 69,
+                                  "column": 26
+                                }
+                              },
+                              "pyExpr": "[None, False]",
+                              "expr": {
+                                "sourceInfo": {
+                                  "start": {
+                                    "line": 69,
+                                    "column": 14
+                                  },
+                                  "end": {
+                                    "line": 69,
+                                    "column": 26
+                                  }
+                                },
+                                "pyExpr": "[None, False]"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "conditionExpr": {
+                        "pyExpr": "True"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "sourceInfo": {
+            "start": {
+              "line": 71,
+              "column": 3
+            },
+            "end": {
+              "line": 79,
+              "column": 2
+            }
+          },
+          "name": "write_cache",
+          "flow": "FLOW_ATOMIC",
+          "params": [
+            {
+              "sourceInfo": {
+                "start": {
+                  "line": 71,
+                  "column": 27
+                },
+                "end": {
+                  "line": 71,
+                  "column": 29
+                }
+              },
+              "name": "key"
+            },
+            {
+              "sourceInfo": {
+                "start": {
+                  "line": 71,
+                  "column": 32
+                },
+                "end": {
+                  "line": 71,
+                  "column": 36
+                }
+              },
+              "name": "value"
+            }
+          ],
+          "block": {
+            "sourceInfo": {
+              "start": {
+                "line": 72,
+                "column": 5
+              },
+              "end": {
+                "line": 79,
+                "column": 2
+              }
+            },
+            "flow": "FLOW_ATOMIC",
+            "stmts": [
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 72,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 73,
+                    "column": 4
+                  }
+                },
+                "anyStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 72,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 72,
+                      "column": 34
+                    }
+                  },
+                  "loopVars": [
+                    "succeeds"
+                  ],
+                  "pyExpr": "[True, False]",
+                  "iterExpr": {
+                    "sourceInfo": {
+                      "start": {
+                        "line": 72,
+                        "column": 22
+                      },
+                      "end": {
+                        "line": 72,
+                        "column": 34
+                      }
+                    },
+                    "pyExpr": "[True, False]"
+                  }
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 73,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 79,
+                    "column": 2
+                  }
+                },
+                "ifStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 73,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 79,
+                      "column": 2
+                    }
+                  },
+                  "branches": [
+                    {
+                      "sourceInfo": {
+                        "start": {
+                          "line": 73,
+                          "column": 8
+                        },
+                        "end": {
+                          "line": 76,
+                          "column": 4
+                        }
+                      },
+                      "condition": "succeeds",
+                      "block": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 74,
+                            "column": 7
+                          },
+                          "end": {
+                            "line": 76,
+                            "column": 4
+                          }
+                        },
+                        "stmts": [
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 74,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 75,
+                                "column": 6
+                              }
+                            },
+                            "pyStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 74,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 74,
+                                  "column": 38
+                                }
+                              },
+                              "code": "self.cached_records[key] = value"
+                            }
+                          },
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 75,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 76,
+                                "column": 4
+                              }
+                            },
+                            "returnStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 75,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 75,
+                                  "column": 17
+                                }
+                              },
+                              "pyExpr": "True",
+                              "expr": {
+                                "sourceInfo": {
+                                  "start": {
+                                    "line": 75,
+                                    "column": 14
+                                  },
+                                  "end": {
+                                    "line": 75,
+                                    "column": 17
+                                  }
+                                },
+                                "pyExpr": "True"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "conditionExpr": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 73,
+                            "column": 8
+                          },
+                          "end": {
+                            "line": 73,
+                            "column": 15
+                          }
+                        },
+                        "pyExpr": "succeeds"
+                      }
+                    },
+                    {
+                      "sourceInfo": {
+                        "start": {
+                          "line": 76,
+                          "column": 5
+                        },
+                        "end": {
+                          "line": 79,
+                          "column": 2
+                        }
+                      },
+                      "condition": "True",
+                      "block": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 77,
+                            "column": 7
+                          },
+                          "end": {
+                            "line": 79,
+                            "column": 2
+                          }
+                        },
+                        "stmts": [
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 77,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 79,
+                                "column": 2
+                              }
+                            },
+                            "returnStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 77,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 77,
+                                  "column": 18
+                                }
+                              },
+                              "pyExpr": "False",
+                              "expr": {
+                                "sourceInfo": {
+                                  "start": {
+                                    "line": 77,
+                                    "column": 14
+                                  },
+                                  "end": {
+                                    "line": 77,
+                                    "column": 18
+                                  }
+                                },
+                                "pyExpr": "False"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "conditionExpr": {
+                        "pyExpr": "True"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "sourceInfo": {
+            "start": {
+              "line": 79,
+              "column": 3
+            },
+            "end": {
+              "line": 88
+            }
+          },
+          "name": "delete_cache",
+          "flow": "FLOW_ATOMIC",
+          "params": [
+            {
+              "sourceInfo": {
+                "start": {
+                  "line": 79,
+                  "column": 28
+                },
+                "end": {
+                  "line": 79,
+                  "column": 30
+                }
+              },
+              "name": "key"
+            }
+          ],
+          "block": {
+            "sourceInfo": {
+              "start": {
+                "line": 80,
+                "column": 5
+              },
+              "end": {
+                "line": 88
+              }
+            },
+            "flow": "FLOW_ATOMIC",
+            "stmts": [
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 80,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 81,
+                    "column": 4
+                  }
+                },
+                "anyStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 80,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 80,
+                      "column": 34
+                    }
+                  },
+                  "loopVars": [
+                    "succeeds"
+                  ],
+                  "pyExpr": "[True, False]",
+                  "iterExpr": {
+                    "sourceInfo": {
+                      "start": {
+                        "line": 80,
+                        "column": 22
+                      },
+                      "end": {
+                        "line": 80,
+                        "column": 34
+                      }
+                    },
+                    "pyExpr": "[True, False]"
+                  }
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 81,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 88
+                  }
+                },
+                "ifStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 81,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 88
+                    }
+                  },
+                  "branches": [
+                    {
+                      "sourceInfo": {
+                        "start": {
+                          "line": 81,
+                          "column": 8
+                        },
+                        "end": {
+                          "line": 85,
+                          "column": 4
+                        }
+                      },
+                      "condition": "succeeds",
+                      "block": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 82,
+                            "column": 7
+                          },
+                          "end": {
+                            "line": 85,
+                            "column": 4
+                          }
+                        },
+                        "stmts": [
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 82,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 84,
+                                "column": 6
+                              }
+                            },
+                            "ifStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 82,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 84,
+                                  "column": 6
+                                }
+                              },
+                              "branches": [
+                                {
+                                  "sourceInfo": {
+                                    "start": {
+                                      "line": 82,
+                                      "column": 10
+                                    },
+                                    "end": {
+                                      "line": 84,
+                                      "column": 6
+                                    }
+                                  },
+                                  "condition": "key in self.cached_records",
+                                  "block": {
+                                    "sourceInfo": {
+                                      "start": {
+                                        "line": 83,
+                                        "column": 9
+                                      },
+                                      "end": {
+                                        "line": 84,
+                                        "column": 6
+                                      }
+                                    },
+                                    "stmts": [
+                                      {
+                                        "sourceInfo": {
+                                          "start": {
+                                            "line": 83,
+                                            "column": 9
+                                          },
+                                          "end": {
+                                            "line": 84,
+                                            "column": 6
+                                          }
+                                        },
+                                        "pyStmt": {
+                                          "sourceInfo": {
+                                            "start": {
+                                              "line": 83,
+                                              "column": 9
+                                            },
+                                            "end": {
+                                              "line": 83,
+                                              "column": 36
+                                            }
+                                          },
+                                          "code": "self.cached_records.pop(key)"
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  "conditionExpr": {
+                                    "sourceInfo": {
+                                      "start": {
+                                        "line": 82,
+                                        "column": 10
+                                      },
+                                      "end": {
+                                        "line": 82,
+                                        "column": 35
+                                      }
+                                    },
+                                    "pyExpr": "key in self.cached_records"
+                                  }
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 84,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 85,
+                                "column": 4
+                              }
+                            },
+                            "returnStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 84,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 84,
+                                  "column": 17
+                                }
+                              },
+                              "pyExpr": "True",
+                              "expr": {
+                                "sourceInfo": {
+                                  "start": {
+                                    "line": 84,
+                                    "column": 14
+                                  },
+                                  "end": {
+                                    "line": 84,
+                                    "column": 17
+                                  }
+                                },
+                                "pyExpr": "True"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "conditionExpr": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 81,
+                            "column": 8
+                          },
+                          "end": {
+                            "line": 81,
+                            "column": 15
+                          }
+                        },
+                        "pyExpr": "succeeds"
+                      }
+                    },
+                    {
+                      "sourceInfo": {
+                        "start": {
+                          "line": 85,
+                          "column": 5
+                        },
+                        "end": {
+                          "line": 88
+                        }
+                      },
+                      "condition": "True",
+                      "block": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 86,
+                            "column": 7
+                          },
+                          "end": {
+                            "line": 88
+                          }
+                        },
+                        "stmts": [
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 86,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 88
+                              }
+                            },
+                            "returnStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 86,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 86,
+                                  "column": 18
+                                }
+                              },
+                              "pyExpr": "False",
+                              "expr": {
+                                "sourceInfo": {
+                                  "start": {
+                                    "line": 86,
+                                    "column": 14
+                                  },
+                                  "end": {
+                                    "line": 86,
+                                    "column": 18
+                                  }
+                                },
+                                "pyExpr": "False"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "conditionExpr": {
+                        "pyExpr": "True"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "sourceInfo": {
+        "start": {
+          "line": 89,
+          "column": 1
+        },
+        "end": {
+          "line": 140
+        }
+      },
+      "name": "Application",
+      "actions": [
+        {
+          "sourceInfo": {
+            "start": {
+              "line": 90,
+              "column": 3
+            },
+            "end": {
+              "line": 95,
+              "column": 2
+            }
+          },
+          "name": "Init",
+          "flow": "FLOW_ATOMIC",
+          "fairness": {
+            "level": "FAIRNESS_LEVEL_STRONG"
+          },
+          "block": {
+            "sourceInfo": {
+              "start": {
+                "line": 91,
+                "column": 5
+              },
+              "end": {
+                "line": 95,
+                "column": 2
+              }
+            },
+            "flow": "FLOW_ATOMIC",
+            "stmts": [
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 91,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 92,
+                    "column": 4
+                  }
+                },
+                "pyStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 91,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 91,
+                      "column": 41
+                    }
+                  },
+                  "code": "self.read_status = RequestStatus.INIT"
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 92,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 93,
+                    "column": 4
+                  }
+                },
+                "pyStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 92,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 92,
+                      "column": 42
+                    }
+                  },
+                  "code": "self.write_status = RequestStatus.INIT"
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 93,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 95,
+                    "column": 2
+                  }
+                },
+                "pyStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 93,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 93,
+                      "column": 30
+                    }
+                  },
+                  "code": "self.read_res_value = None"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "sourceInfo": {
+            "start": {
+              "line": 95,
+              "column": 3
+            },
+            "end": {
+              "line": 124,
+              "column": 2
+            }
+          },
+          "name": "Read",
+          "flow": "FLOW_SERIAL",
+          "fairness": {
+            "sourceInfo": {
+              "start": {
+                "line": 95,
+                "column": 3
+              },
+              "end": {
+                "line": 95,
+                "column": 6
+              }
+            },
+            "level": "FAIRNESS_LEVEL_WEAK"
+          },
+          "block": {
+            "sourceInfo": {
+              "start": {
+                "line": 96,
+                "column": 5
+              },
+              "end": {
+                "line": 124,
+                "column": 2
+              }
+            },
+            "flow": "FLOW_SERIAL",
+            "stmts": [
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 96,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 97,
+                    "column": 4
+                  }
+                },
+                "requireStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 96,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 96,
+                      "column": 50
+                    }
+                  },
+                  "condition": "self.read_status == RequestStatus.INIT",
+                  "conditionExpr": {
+                    "sourceInfo": {
+                      "start": {
+                        "line": 96,
+                        "column": 13
+                      },
+                      "end": {
+                        "line": 96,
+                        "column": 50
+                      }
+                    },
+                    "pyExpr": "self.read_status == RequestStatus.INIT"
+                  }
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 97,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 99,
+                    "column": 4
+                  }
+                },
+                "pyStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 97,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 97,
+                      "column": 47
+                    }
+                  },
+                  "code": "self.read_status = RequestStatus.PROCESSING"
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 99,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 100,
+                    "column": 4
+                  }
+                },
+                "callStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 99,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 99,
+                      "column": 48
+                    }
+                  },
+                  "vars": [
+                    "cache_res"
+                  ],
+                  "name": "get_cached_value",
+                  "args": [
+                    {
+                      "sourceInfo": {
+                        "start": {
+                          "line": 99,
+                          "column": 40
+                        },
+                        "end": {
+                          "line": 99,
+                          "column": 47
+                        }
+                      },
+                      "pyExpr": "self.key",
+                      "expr": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 99,
+                            "column": 40
+                          },
+                          "end": {
+                            "line": 99,
+                            "column": 47
+                          }
+                        },
+                        "pyExpr": "self.key"
+                      }
+                    }
+                  ],
+                  "receiver": "cache"
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 100,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 101,
+                    "column": 4
+                  }
+                },
+                "pyStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 100,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 100,
+                      "column": 43
+                    }
+                  },
+                  "code": "cache_value, cache_succeeds = cache_res"
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 101,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 104,
+                    "column": 4
+                  }
+                },
+                "ifStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 101,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 104,
+                      "column": 4
+                    }
+                  },
+                  "branches": [
+                    {
+                      "sourceInfo": {
+                        "start": {
+                          "line": 101,
+                          "column": 8
+                        },
+                        "end": {
+                          "line": 104,
+                          "column": 4
+                        }
+                      },
+                      "condition": "not cache_succeeds",
+                      "block": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 102,
+                            "column": 7
+                          },
+                          "end": {
+                            "line": 104,
+                            "column": 4
+                          }
+                        },
+                        "stmts": [
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 102,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 103,
+                                "column": 6
+                              }
+                            },
+                            "pyStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 102,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 102,
+                                  "column": 45
+                                }
+                              },
+                              "code": "self.read_status = RequestStatus.FAILED"
+                            }
+                          },
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 103,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 104,
+                                "column": 4
+                              }
+                            },
+                            "returnStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 103,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 103,
+                                  "column": 12
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "conditionExpr": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 101,
+                            "column": 8
+                          },
+                          "end": {
+                            "line": 101,
+                            "column": 25
+                          }
+                        },
+                        "pyExpr": "not cache_succeeds"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 104,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 109,
+                    "column": 4
+                  }
+                },
+                "ifStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 104,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 109,
+                      "column": 4
+                    }
+                  },
+                  "branches": [
+                    {
+                      "sourceInfo": {
+                        "start": {
+                          "line": 104,
+                          "column": 8
+                        },
+                        "end": {
+                          "line": 109,
+                          "column": 4
+                        }
+                      },
+                      "condition": "cache_value",
+                      "block": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 105,
+                            "column": 7
+                          },
+                          "end": {
+                            "line": 109,
+                            "column": 4
+                          }
+                        },
+                        "stmts": [
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 105,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 106,
+                                "column": 6
+                              }
+                            },
+                            "pyStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 105,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 105,
+                                  "column": 39
+                                }
+                              },
+                              "code": "self.read_res_value = cache_value"
+                            }
+                          },
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 106,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 107,
+                                "column": 6
+                              }
+                            },
+                            "pyStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 106,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 106,
+                                  "column": 43
+                                }
+                              },
+                              "code": "self.read_status = RequestStatus.DONE"
+                            }
+                          },
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 107,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 109,
+                                "column": 4
+                              }
+                            },
+                            "returnStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 107,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 107,
+                                  "column": 12
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "conditionExpr": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 104,
+                            "column": 8
+                          },
+                          "end": {
+                            "line": 104,
+                            "column": 18
+                          }
+                        },
+                        "pyExpr": "cache_value"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 109,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 110,
+                    "column": 4
+                  }
+                },
+                "callStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 109,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 109,
+                      "column": 27
+                    }
+                  },
+                  "vars": [
+                    "res"
+                  ],
+                  "name": "read",
+                  "args": [
+                    {
+                      "sourceInfo": {
+                        "start": {
+                          "line": 109,
+                          "column": 19
+                        },
+                        "end": {
+                          "line": 109,
+                          "column": 26
+                        }
+                      },
+                      "pyExpr": "self.key",
+                      "expr": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 109,
+                            "column": 19
+                          },
+                          "end": {
+                            "line": 109,
+                            "column": 26
+                          }
+                        },
+                        "pyExpr": "self.key"
+                      }
+                    }
+                  ],
+                  "receiver": "db"
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 110,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 111,
+                    "column": 4
+                  }
+                },
+                "pyStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 110,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 110,
+                      "column": 31
+                    }
+                  },
+                  "code": "db_value, db_succeeds = res"
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 111,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 115,
+                    "column": 4
+                  }
+                },
+                "ifStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 111,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 115,
+                      "column": 4
+                    }
+                  },
+                  "branches": [
+                    {
+                      "sourceInfo": {
+                        "start": {
+                          "line": 111,
+                          "column": 8
+                        },
+                        "end": {
+                          "line": 115,
+                          "column": 4
+                        }
+                      },
+                      "condition": "not db_succeeds",
+                      "block": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 112,
+                            "column": 7
+                          },
+                          "end": {
+                            "line": 115,
+                            "column": 4
+                          }
+                        },
+                        "stmts": [
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 112,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 113,
+                                "column": 6
+                              }
+                            },
+                            "pyStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 112,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 112,
+                                  "column": 45
+                                }
+                              },
+                              "code": "self.read_status = RequestStatus.FAILED"
+                            }
+                          },
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 113,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 115,
+                                "column": 4
+                              }
+                            },
+                            "returnStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 113,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 113,
+                                  "column": 12
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "conditionExpr": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 111,
+                            "column": 8
+                          },
+                          "end": {
+                            "line": 111,
+                            "column": 22
+                          }
+                        },
+                        "pyExpr": "not db_succeeds"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 115,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 121,
+                    "column": 4
+                  }
+                },
+                "ifStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 115,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 121,
+                      "column": 4
+                    }
+                  },
+                  "branches": [
+                    {
+                      "sourceInfo": {
+                        "start": {
+                          "line": 115,
+                          "column": 8
+                        },
+                        "end": {
+                          "line": 121,
+                          "column": 4
+                        }
+                      },
+                      "condition": "db_value",
+                      "block": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 116,
+                            "column": 7
+                          },
+                          "end": {
+                            "line": 121,
+                            "column": 4
+                          }
+                        },
+                        "stmts": [
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 116,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 117,
+                                "column": 6
+                              }
+                            },
+                            "callStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 116,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 116,
+                                  "column": 66
+                                }
+                              },
+                              "vars": [
+                                "write_cache_succeeds"
+                              ],
+                              "name": "write_cache",
+                              "args": [
+                                {
+                                  "sourceInfo": {
+                                    "start": {
+                                      "line": 116,
+                                      "column": 48
+                                    },
+                                    "end": {
+                                      "line": 116,
+                                      "column": 55
+                                    }
+                                  },
+                                  "pyExpr": "self.key",
+                                  "expr": {
+                                    "sourceInfo": {
+                                      "start": {
+                                        "line": 116,
+                                        "column": 48
+                                      },
+                                      "end": {
+                                        "line": 116,
+                                        "column": 55
+                                      }
+                                    },
+                                    "pyExpr": "self.key"
+                                  }
+                                },
+                                {
+                                  "sourceInfo": {
+                                    "start": {
+                                      "line": 116,
+                                      "column": 58
+                                    },
+                                    "end": {
+                                      "line": 116,
+                                      "column": 65
+                                    }
+                                  },
+                                  "pyExpr": "db_value",
+                                  "expr": {
+                                    "sourceInfo": {
+                                      "start": {
+                                        "line": 116,
+                                        "column": 58
+                                      },
+                                      "end": {
+                                        "line": 116,
+                                        "column": 65
+                                      }
+                                    },
+                                    "pyExpr": "db_value"
+                                  }
+                                }
+                              ],
+                              "receiver": "cache"
+                            }
+                          },
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 117,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 121,
+                                "column": 4
+                              }
+                            },
+                            "ifStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 117,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 121,
+                                  "column": 4
+                                }
+                              },
+                              "branches": [
+                                {
+                                  "sourceInfo": {
+                                    "start": {
+                                      "line": 117,
+                                      "column": 10
+                                    },
+                                    "end": {
+                                      "line": 121,
+                                      "column": 4
+                                    }
+                                  },
+                                  "condition": "not write_cache_succeeds",
+                                  "block": {
+                                    "sourceInfo": {
+                                      "start": {
+                                        "line": 118,
+                                        "column": 9
+                                      },
+                                      "end": {
+                                        "line": 121,
+                                        "column": 4
+                                      }
+                                    },
+                                    "stmts": [
+                                      {
+                                        "sourceInfo": {
+                                          "start": {
+                                            "line": 118,
+                                            "column": 9
+                                          },
+                                          "end": {
+                                            "line": 119,
+                                            "column": 8
+                                          }
+                                        },
+                                        "pyStmt": {
+                                          "sourceInfo": {
+                                            "start": {
+                                              "line": 118,
+                                              "column": 9
+                                            },
+                                            "end": {
+                                              "line": 118,
+                                              "column": 47
+                                            }
+                                          },
+                                          "code": "self.read_status = RequestStatus.FAILED"
+                                        }
+                                      },
+                                      {
+                                        "sourceInfo": {
+                                          "start": {
+                                            "line": 119,
+                                            "column": 9
+                                          },
+                                          "end": {
+                                            "line": 121,
+                                            "column": 4
+                                          }
+                                        },
+                                        "returnStmt": {
+                                          "sourceInfo": {
+                                            "start": {
+                                              "line": 119,
+                                              "column": 9
+                                            },
+                                            "end": {
+                                              "line": 119,
+                                              "column": 14
+                                            }
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  "conditionExpr": {
+                                    "sourceInfo": {
+                                      "start": {
+                                        "line": 117,
+                                        "column": 10
+                                      },
+                                      "end": {
+                                        "line": 117,
+                                        "column": 33
+                                      }
+                                    },
+                                    "pyExpr": "not write_cache_succeeds"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "conditionExpr": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 115,
+                            "column": 8
+                          },
+                          "end": {
+                            "line": 115,
+                            "column": 15
+                          }
+                        },
+                        "pyExpr": "db_value"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 121,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 122,
+                    "column": 4
+                  }
+                },
+                "pyStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 121,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 121,
+                      "column": 34
+                    }
+                  },
+                  "code": "self.read_res_value = db_value"
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 122,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 124,
+                    "column": 2
+                  }
+                },
+                "pyStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 122,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 122,
+                      "column": 41
+                    }
+                  },
+                  "code": "self.read_status = RequestStatus.DONE"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "sourceInfo": {
+            "start": {
+              "line": 124,
+              "column": 3
+            },
+            "end": {
+              "line": 140
+            }
+          },
+          "name": "Write",
+          "flow": "FLOW_SERIAL",
+          "fairness": {
+            "sourceInfo": {
+              "start": {
+                "line": 124,
+                "column": 3
+              },
+              "end": {
+                "line": 124,
+                "column": 6
+              }
+            },
+            "level": "FAIRNESS_LEVEL_WEAK"
+          },
+          "block": {
+            "sourceInfo": {
+              "start": {
+                "line": 125,
+                "column": 5
+              },
+              "end": {
+                "line": 140
+              }
+            },
+            "flow": "FLOW_SERIAL",
+            "stmts": [
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 125,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 126,
+                    "column": 4
+                  }
+                },
+                "requireStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 125,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 125,
+                      "column": 51
+                    }
+                  },
+                  "condition": "self.write_status == RequestStatus.INIT",
+                  "conditionExpr": {
+                    "sourceInfo": {
+                      "start": {
+                        "line": 125,
+                        "column": 13
+                      },
+                      "end": {
+                        "line": 125,
+                        "column": 51
+                      }
+                    },
+                    "pyExpr": "self.write_status == RequestStatus.INIT"
+                  }
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 126,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 128,
+                    "column": 4
+                  }
+                },
+                "pyStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 126,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 126,
+                      "column": 48
+                    }
+                  },
+                  "code": "self.write_status = RequestStatus.PROCESSING"
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 128,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 129,
+                    "column": 4
+                  }
+                },
+                "callStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 128,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 128,
+                      "column": 54
+                    }
+                  },
+                  "vars": [
+                    "db_succeeds"
+                  ],
+                  "name": "write",
+                  "args": [
+                    {
+                      "sourceInfo": {
+                        "start": {
+                          "line": 128,
+                          "column": 28
+                        },
+                        "end": {
+                          "line": 128,
+                          "column": 35
+                        }
+                      },
+                      "pyExpr": "self.key",
+                      "expr": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 128,
+                            "column": 28
+                          },
+                          "end": {
+                            "line": 128,
+                            "column": 35
+                          }
+                        },
+                        "pyExpr": "self.key"
+                      }
+                    },
+                    {
+                      "sourceInfo": {
+                        "start": {
+                          "line": 128,
+                          "column": 38
+                        },
+                        "end": {
+                          "line": 128,
+                          "column": 53
+                        }
+                      },
+                      "pyExpr": "self.write_value",
+                      "expr": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 128,
+                            "column": 38
+                          },
+                          "end": {
+                            "line": 128,
+                            "column": 53
+                          }
+                        },
+                        "pyExpr": "self.write_value"
+                      }
+                    }
+                  ],
+                  "receiver": "db"
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 129,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 133,
+                    "column": 4
+                  }
+                },
+                "ifStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 129,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 133,
+                      "column": 4
+                    }
+                  },
+                  "branches": [
+                    {
+                      "sourceInfo": {
+                        "start": {
+                          "line": 129,
+                          "column": 8
+                        },
+                        "end": {
+                          "line": 133,
+                          "column": 4
+                        }
+                      },
+                      "condition": "not db_succeeds",
+                      "block": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 130,
+                            "column": 7
+                          },
+                          "end": {
+                            "line": 133,
+                            "column": 4
+                          }
+                        },
+                        "stmts": [
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 130,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 131,
+                                "column": 6
+                              }
+                            },
+                            "pyStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 130,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 130,
+                                  "column": 46
+                                }
+                              },
+                              "code": "self.write_status = RequestStatus.FAILED"
+                            }
+                          },
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 131,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 133,
+                                "column": 4
+                              }
+                            },
+                            "returnStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 131,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 131,
+                                  "column": 12
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "conditionExpr": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 129,
+                            "column": 8
+                          },
+                          "end": {
+                            "line": 129,
+                            "column": 22
+                          }
+                        },
+                        "pyExpr": "not db_succeeds"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 133,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 134,
+                    "column": 4
+                  }
+                },
+                "callStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 133,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 133,
+                      "column": 56
+                    }
+                  },
+                  "vars": [
+                    "delete_cache_succeeds"
+                  ],
+                  "name": "delete_cache",
+                  "args": [
+                    {
+                      "sourceInfo": {
+                        "start": {
+                          "line": 133,
+                          "column": 48
+                        },
+                        "end": {
+                          "line": 133,
+                          "column": 55
+                        }
+                      },
+                      "pyExpr": "self.key",
+                      "expr": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 133,
+                            "column": 48
+                          },
+                          "end": {
+                            "line": 133,
+                            "column": 55
+                          }
+                        },
+                        "pyExpr": "self.key"
+                      }
+                    }
+                  ],
+                  "receiver": "cache"
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 134,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 138,
+                    "column": 4
+                  }
+                },
+                "ifStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 134,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 138,
+                      "column": 4
+                    }
+                  },
+                  "branches": [
+                    {
+                      "sourceInfo": {
+                        "start": {
+                          "line": 134,
+                          "column": 8
+                        },
+                        "end": {
+                          "line": 138,
+                          "column": 4
+                        }
+                      },
+                      "condition": "not delete_cache_succeeds",
+                      "block": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 135,
+                            "column": 7
+                          },
+                          "end": {
+                            "line": 138,
+                            "column": 4
+                          }
+                        },
+                        "stmts": [
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 135,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 136,
+                                "column": 6
+                              }
+                            },
+                            "pyStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 135,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 135,
+                                  "column": 46
+                                }
+                              },
+                              "code": "self.write_status = RequestStatus.FAILED"
+                            }
+                          },
+                          {
+                            "sourceInfo": {
+                              "start": {
+                                "line": 136,
+                                "column": 7
+                              },
+                              "end": {
+                                "line": 138,
+                                "column": 4
+                              }
+                            },
+                            "returnStmt": {
+                              "sourceInfo": {
+                                "start": {
+                                  "line": 136,
+                                  "column": 7
+                                },
+                                "end": {
+                                  "line": 136,
+                                  "column": 12
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "conditionExpr": {
+                        "sourceInfo": {
+                          "start": {
+                            "line": 134,
+                            "column": 8
+                          },
+                          "end": {
+                            "line": 134,
+                            "column": 32
+                          }
+                        },
+                        "pyExpr": "not delete_cache_succeeds"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "sourceInfo": {
+                  "start": {
+                    "line": 138,
+                    "column": 5
+                  },
+                  "end": {
+                    "line": 140
+                  }
+                },
+                "pyStmt": {
+                  "sourceInfo": {
+                    "start": {
+                      "line": 138,
+                      "column": 5
+                    },
+                    "end": {
+                      "line": 138,
+                      "column": 42
+                    }
+                  },
+                  "code": "self.write_status = RequestStatus.DONE"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "decorators": [
+        {
+          "sourceInfo": {
+            "start": {
+              "line": 88,
+              "column": 1
+            },
+            "end": {
+              "line": 89
+            }
+          },
+          "name": "conformance"
+        }
+      ]
+    }
+  ],
+  "frontMatter": {
+    "yaml": "deadlock_detection: false\noptions:\n  crash_on_yield: false\n"
+  }
+}

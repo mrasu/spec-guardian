@@ -1,0 +1,79 @@
+//go:build specguardian
+
+package specguardian_test
+
+import (
+	"errors"
+	"testing"
+
+	"github.com/mrasu/spec-guardian/guardian"
+	"github.com/stretchr/testify/require"
+)
+
+// ReaderEnvironment holds application-specific test resources. SpecGuardian generated this initial scaffold, but application owners may freely change its fields and helpers.
+type ReaderEnvironment struct{}
+
+// BuildReaderConformanceComponents constructs the action adapter and its test resources. Add SpecGuardian hooks to every dependency whose failures should be injected.
+func BuildReaderConformanceComponents(t *testing.T, controller *guardian.InjectionController) (ReaderActions, *ReaderEnvironment) {
+	t.Helper()
+	require.NoError(t, errors.New("TODO: implement me"))
+	return nil, nil
+}
+
+// ObserveCurrentState captures the application state.
+func (e *ReaderEnvironment) ObserveCurrentState(t *testing.T) ReaderObservedState {
+	t.Helper()
+	require.NoError(t, errors.New("TODO: implement me"))
+	return ReaderObservedState{}
+}
+
+// ReaderReadInput is the concrete application input for Reader.Read.
+// Replace this scaffold with a type alias or local type as needed.
+type ReaderReadInput struct{}
+
+// ReaderReadOutput is the concrete application output for Reader.Read.
+// Replace this scaffold with a type alias or local type as needed.
+type ReaderReadOutput struct{}
+
+// SetupReadCase prepares resources and test settings for one conformance case.
+func (e *ReaderEnvironment) SetupReadCase(t *testing.T) {
+	t.Helper()
+}
+
+// CleanupReadCase cleans up after one conformance case.
+func (e *ReaderEnvironment) CleanupReadCase(t *testing.T) {
+	t.Helper()
+}
+
+// SetupReadAttempt prepares application state before Reader.Read.
+func (e *ReaderEnvironment) SetupReadAttempt(t *testing.T, input FizzbeeReaderState) {
+	t.Helper()
+	require.NoError(t, errors.New("TODO: implement me"))
+}
+
+// CleanupReadAttempt removes state left by this attempt. It runs through t.Cleanup, so use a context independent of t.Context when needed.
+func (e *ReaderEnvironment) CleanupReadAttempt(t *testing.T) {
+	t.Helper()
+	require.NoError(t, errors.New("TODO: implement me"))
+}
+
+// BuildReadInput maps the abstract FizzBee input to the application's concrete argument.
+func (e *ReaderEnvironment) BuildReadInput(t *testing.T, input FizzbeeReaderState) ReaderReadInput {
+	t.Helper()
+	require.NoError(t, errors.New("TODO: implement me"))
+	return ReaderReadInput{}
+}
+
+// BuildObservedReadState combines observed resources with the action input, output, and error.
+func (e *ReaderEnvironment) BuildObservedReadState(t *testing.T, observedState ReaderObservedState, input FizzbeeReaderState, output ReaderReadOutput, actionErr error) ReaderObservedState {
+	t.Helper()
+	require.NoError(t, errors.New("TODO: implement me"))
+	return ReaderObservedState{}
+}
+
+// BuildAllowedReadState maps an allowed model state to field comparisons.
+func (e *ReaderEnvironment) BuildAllowedReadState(t *testing.T, allowed FizzbeeReaderState) ReaderComparisonState {
+	t.Helper()
+	require.NoError(t, errors.New("TODO: implement me"))
+	return ReaderComparisonState{}
+}

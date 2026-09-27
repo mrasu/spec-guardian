@@ -1,0 +1,29 @@
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "15432:5432"
+
+  mysql:
+    image: mysql:8.4.7
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    ports:
+      - "13306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  valkey:
+    image: valkey/valkey:latest
+    ports:
+      - "16379:6379"
+
+  floci:
+    image: floci/floci:2.0.1-compat
+    ports:
+      - "14566:4566"

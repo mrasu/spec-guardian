@@ -1,0 +1,277 @@
+// Copied from https://github.com/fizzbee-io/fizzbee/blob/v0.5.2/proto/fizz_ast.proto.
+syntax = "proto3";
+
+option go_package = "github.com/mrasu/spec-guardian/internal/fizzbee/pb";
+
+message File {
+  SourceInfo source_info = 1;
+  repeated Import imports = 2;
+  repeated Constant constants = 3; // Deprecated. To be removed.
+  StateVars states = 4;  // Deprecated. To be removed.
+//  StateVars variables = 5;
+//  Action init = 5;
+  repeated Invariant invariants = 6;
+  repeated Action actions = 7;
+  repeated Function functions = 8;
+  repeated Statement stmts = 9;
+  repeated Role roles = 10;
+
+  repeated string py_code = 11;
+
+  FrontMatter front_matter = 12;
+
+  Composition composition = 13;
+  repeated Refinement refinements = 14;
+}
+
+message FrontMatter {
+  SourceInfo source_info = 1;
+  string yaml = 2;
+}
+
+message Role {
+  SourceInfo source_info = 1;
+  string name = 2;
+  repeated string modifiers = 3;
+  StateVars states = 4;
+  repeated Invariant invariants = 6;
+  repeated Action actions = 7;
+  repeated Function functions = 8;
+  repeated Statement stmts = 9;
+  repeated Decorator decorators = 10;
+}
+
+message SpecEntry {
+  SourceInfo source_info = 1;
+  string name = 2;  // The spec name, e.g. "abstract_spec"
+  Expr expr = 3;    // The associated expression
+}
+
+message Composition {
+  SourceInfo source_info = 1;
+  repeated SpecEntry specs = 2;
+}
+
+message Refinement {
+  SourceInfo source_info = 1;
+  repeated SpecEntry specs = 2;
+}
+
+enum FairnessLevel {
+  FAIRNESS_LEVEL_UNKNOWN = 0;
+  FAIRNESS_LEVEL_UNFAIR = 1;
+  FAIRNESS_LEVEL_WEAK = 2;
+  FAIRNESS_LEVEL_STRONG = 3;
+}
+
+enum Flow {
+  FLOW_UNKNOWN = 0;
+  FLOW_SERIAL = 1;
+  FLOW_PARALLEL = 2;
+  FLOW_ATOMIC = 3;
+  FLOW_ONEOF = 4;
+}
+
+message Fairness {
+  SourceInfo source_info = 1;
+  FairnessLevel level = 2;
+}
+
+message Block {
+  SourceInfo source_info = 1;
+  Flow flow = 2;
+  repeated Statement stmts = 3;
+}
+
+message Statement {
+  SourceInfo source_info = 1;
+  string label = 2;
+
+  PyStmt py_stmt = 3;
+  Block block = 4;
+
+  IfStmt if_stmt = 5;
+
+  ForStmt for_stmt = 6;
+  AnyStmt any_stmt = 7;
+  WhileStmt while_stmt = 8;
+
+  BreakStmt break_stmt = 9;
+  ContinueStmt continue_stmt = 10;
+  ReturnStmt return_stmt = 11;
+
+  CallStmt call_stmt = 12;
+
+  RequireStmt require_stmt = 13;
+}
+
+message IfStmt {
+  SourceInfo source_info = 1;
+  Flow flow = 2;
+  
+  repeated Branch branches = 3;
+}
+
+message Branch {
+  SourceInfo source_info = 1;
+  string condition = 2;
+  Block block = 3;
+  Expr condition_expr = 4;
+}
+
+message ForStmt {
+  SourceInfo source_info = 1;
+  Flow flow = 2;
+  
+  repeated string loop_vars = 3;
+  string py_expr = 4;
+  Block block = 5;
+  Expr iter_expr = 6;
+}
+
+message AnyStmt {
+  SourceInfo source_info = 1;
+  Flow flow = 2;
+  
+  repeated string loop_vars = 3;
+  string py_expr = 4;
+  Block block = 5;
+  string condition = 6;
+  Expr iter_expr = 7;
+  Expr condition_expr = 8;
+  Fairness fairness = 9;
+}
+
+message WhileStmt {
+  SourceInfo source_info = 1;
+  Flow flow = 2;
+
+  string py_expr = 3;
+  Block block = 4;
+  Expr iter_expr = 5;
+}
+
+message BreakStmt {
+  SourceInfo source_info = 1;
+}
+
+message ContinueStmt {
+  SourceInfo source_info = 1;
+}
+
+message ReturnStmt {
+  SourceInfo source_info = 1;
+  string py_expr = 2;
+  Expr expr = 3;
+}
+
+message CallStmt {
+  SourceInfo source_info = 1;
+  repeated string vars = 2;
+  string name = 3;
+  repeated Argument args = 4;
+  string receiver = 5;
+}
+
+// The actual arguments to a function/method call.
+// For example, in `foo(4, 5)`, `4` and `5` are arguments.
+message Argument {
+  SourceInfo source_info = 1;
+  string name = 2;
+  string py_expr = 3;
+  Expr expr = 4;
+}
+
+message PyStmt {
+  SourceInfo source_info = 1;
+  string code = 2; 
+}
+
+message RequireStmt {
+  SourceInfo source_info = 1;
+  string condition = 2;
+  Expr condition_expr = 3;
+}
+
+message Action {
+  SourceInfo source_info = 1;
+  string name = 2;
+  Flow flow = 3;
+  Fairness fairness = 4;
+  Block block = 5;
+}
+
+message Function {
+  SourceInfo source_info = 1;
+  string name = 2;
+  Flow flow = 3;
+  repeated Parameter params = 4;
+  Block block = 5;
+}
+
+// Variables in the function/method declaration.
+// For example, in `def foo(x, y)`, `x` and `y` are parameters.
+message Parameter {
+  SourceInfo source_info = 1;
+  string name = 2;
+  string default_py_expr = 3;
+  Expr default_expr = 4;
+}
+
+// Invariants in the specification, specified using `assertion` keyword.
+// The older syntax using `invariant` is still supported but deprecated and might be removed.
+message Invariant {
+  SourceInfo source_info = 1;
+  bool always = 2;   // Deprecated. To be removed. Use temporal_operators instead with 'always' keyword
+  bool eventually = 3;  // Deprecated. To be removed. Use temporal_operators instead with 'eventually' keyword
+  string pyExpr = 4;  // Deprecated. To be removed. Use py_code and block instead
+  Invariant nested = 5;  // Deprecated. To be removed. Use block instead
+
+  string name = 6;
+  repeated string temporal_operators = 7;
+  Block block = 8;
+  string py_code = 9;
+
+  repeated Parameter params = 10;
+}
+
+// Deprecated, to be removed. Use action Init at the global level instead.
+message StateVars {
+  SourceInfo source_info = 1;
+  string code = 2;
+}
+
+// Deprecated, to be removed. Use statements at the global level instead.
+message Constant {
+  SourceInfo source_info = 1;
+  string name = 2;
+}
+
+message Import {
+  SourceInfo source_info = 1;
+  string path = 2;
+  string alias = 3;
+}
+
+message SourceInfo {
+  string file_name = 1;
+  Position start = 2;
+  Position end = 3;
+}
+
+message Position {
+  //int32 offset = 1;
+  int32 line = 2;
+  int32 column = 3;
+}
+
+message Expr {
+  SourceInfo source_info = 1;
+  string py_expr = 2;
+}
+
+message Decorator {
+  SourceInfo source_info = 1;
+  string name = 2;
+  repeated Argument args = 3;
+}

@@ -1,0 +1,56 @@
+// Copied from https://github.com/fizzbee-io/fizzbee/blob/v0.5.2/proto/graph.proto.
+syntax = "proto3";
+
+package fizzbee.graph;
+
+option go_package = "github.com/mrasu/spec-guardian/internal/fizzbee/pb";
+
+message Matrix {
+  repeated Row rows = 1;
+}
+
+message Row {
+  repeated Cell cells = 1;
+}
+
+message Cell {
+  bool has_link = 1;
+  string name = 2;
+  repeated string labels = 3;
+}
+
+message Nodes {
+  repeated string json = 1;
+}
+
+message Link {
+  int64 src = 1;
+  int64 dest = 2;
+  string name = 3;
+  repeated string labels = 4;
+  double weight = 5;
+  repeated Message messages = 6;
+  int64 req_id = 7;
+  map<int64, int64> new_to_old_threads = 8;
+  string type = 9;
+  repeated NameValue returns = 10;
+}
+
+message Links {
+  int64 total_nodes = 1;
+  repeated Link links = 2;
+}
+
+message Message {
+  string sender = 1;
+  repeated string receivers = 2;
+  string name = 3;
+  repeated NameValue values = 4;
+  bool is_return = 5;
+  bool lossy = 6;
+}
+
+message NameValue {
+  string name = 1;
+  string value = 2;
+}

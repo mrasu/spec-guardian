@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "15432:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  valkey:
+    image: valkey/valkey:latest
+    ports:
+      - "16379:6379"

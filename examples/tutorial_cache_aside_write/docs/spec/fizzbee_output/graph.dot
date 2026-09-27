@@ -1,0 +1,155 @@
+digraph G {
+  "0xc000292080" [label="Init
+Actions: 0, Forks: 0
+\nDB#0: fields(records = {\"cached\": \"old\", \"uncached\": \"old\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})
+Threads: 0/1
+", color="black" penwidth="1" ];
+  "0xc000292080" -> "0xc000292280" [label="Any:key=\"cached\"", color="forestgreen" penwidth="3" ];
+  "0xc000292280" [label="yield
+Actions: 0, Forks: 1
+State: {\"application\":\"role Application#0\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"cached\"}\nDB#0: fields(records = {\"cached\": \"old\", \"uncached\": \"old\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#0: fields(write_status = \"INIT\")
+", color="black" penwidth="2" ];
+  "0xc000292280" -> "0xc000292600" [label="Application#0.Write", color="forestgreen" penwidth="1" ];
+  "0xc000292600" [label="yield
+Actions: 1, Forks: 2
+State: {\"application\":\"role Application#0\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"cached\"}\nDB#0: fields(records = {\"cached\": \"old\", \"uncached\": \"old\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#0: fields(write_status = \"PROCESSING\")
+Threads: 0/1
+", color="black" penwidth="2" ];
+  "0xc000292600" -> "0xc000292a80" [label="thread-0[write.call]", color="forestgreen" penwidth="1" ];
+  "0xc000292a80" [label="Application#0.Write
+Actions: 1, Forks: 3
+State: {\"application\":\"role Application#0\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"cached\"}\nDB#0: fields(records = {\"cached\": \"old\", \"uncached\": \"old\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#0: fields(write_status = \"PROCESSING\")
+Threads: 0/1
+", color="black" penwidth="1" ];
+  "0xc000292a80" -> "0xc000293080" [label="Any:succeeds=True", color="forestgreen" penwidth="1" ];
+  "0xc000293080" [label="yield
+Actions: 1, Forks: 4
+State: {\"application\":\"role Application#0\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"cached\"}\nDB#0: fields(records = {\"cached\": \"new\", \"uncached\": \"old\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#0: fields(write_status = \"PROCESSING\")
+Threads: 0/1
+", color="black" penwidth="2" ];
+  "0xc000293080" -> "0xc000293580" [label="thread-0[delete_cache.call]", color="forestgreen" penwidth="1" ];
+  "0xc000293580" [label="Any:succeeds=True
+Actions: 1, Forks: 5
+State: {\"application\":\"role Application#0\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"cached\"}\nDB#0: fields(records = {\"cached\": \"new\", \"uncached\": \"old\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#0: fields(write_status = \"PROCESSING\")
+Threads: 0/1
+", color="black" penwidth="1" ];
+  "0xc000293580" -> "0xc00035a780" [label="Any:succeeds=True", color="forestgreen" penwidth="1" ];
+  "0xc00035a780" [label="yield
+Actions: 1, Forks: 6
+State: {\"application\":\"role Application#0\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"cached\"}\nDB#0: fields(records = {\"cached\": \"new\", \"uncached\": \"old\"})\nCache#0: fields(cached_records = {})\nApplication#0: fields(write_status = \"PROCESSING\")
+Threads: 0/1
+", color="black" penwidth="2" ];
+  "0xc00035a780" -> "0xc00035ac80" [label="thread-0", color="forestgreen" penwidth="1" ];
+  "0xc00035ac80" [label="yield
+Actions: 1, Forks: 7
+State: {\"application\":\"role Application#0\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"cached\"}\nDB#0: fields(records = {\"cached\": \"new\", \"uncached\": \"old\"})\nCache#0: fields(cached_records = {})\nApplication#0: fields(write_status = \"DONE\")
+", color="green" penwidth="2" ];
+  "0xc000293580" -> "0xc00035a880" [label="Any:succeeds=False", color="forestgreen" penwidth="1" ];
+  "0xc00035a880" [label="yield
+Actions: 1, Forks: 6
+State: {\"application\":\"role Application#0\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"cached\"}\nDB#0: fields(records = {\"cached\": \"new\", \"uncached\": \"old\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#0: fields(write_status = \"PROCESSING\")
+Threads: 0/1
+", color="black" penwidth="2" ];
+  "0xc00035a880" -> "0xc00035b000" [label="thread-0", color="forestgreen" penwidth="1" ];
+  "0xc00035b000" [label="yield
+Actions: 1, Forks: 7
+State: {\"application\":\"role Application#0\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"cached\"}\nDB#0: fields(records = {\"cached\": \"new\", \"uncached\": \"old\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#0: fields(write_status = \"FAILED\")
+Threads: 0/1
+", color="green" penwidth="2" ];
+  "0xc00035b000" -> "0xc0003e4980" [label="thread-0", color="forestgreen" penwidth="1" ];
+  "0xc0003e4980" [label="yield
+Actions: 1, Forks: 8
+State: {\"application\":\"role Application#0\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"cached\"}\nDB#0: fields(records = {\"cached\": \"new\", \"uncached\": \"old\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#0: fields(write_status = \"FAILED\")
+", color="green" penwidth="2" ];
+  "0xc000292a80" -> "0xc000293180" [label="Any:succeeds=False", color="forestgreen" penwidth="1" ];
+  "0xc000293180" [label="yield
+Actions: 1, Forks: 4
+State: {\"application\":\"role Application#0\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"cached\"}\nDB#0: fields(records = {\"cached\": \"old\", \"uncached\": \"old\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#0: fields(write_status = \"PROCESSING\")
+Threads: 0/1
+", color="black" penwidth="2" ];
+  "0xc000293180" -> "0xc000293900" [label="thread-0", color="forestgreen" penwidth="1" ];
+  "0xc000293900" [label="yield
+Actions: 1, Forks: 5
+State: {\"application\":\"role Application#0\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"cached\"}\nDB#0: fields(records = {\"cached\": \"old\", \"uncached\": \"old\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#0: fields(write_status = \"FAILED\")
+Threads: 0/1
+", color="green" penwidth="2" ];
+  "0xc000293900" -> "0xc00035b480" [label="thread-0", color="forestgreen" penwidth="1" ];
+  "0xc00035b480" [label="yield
+Actions: 1, Forks: 6
+State: {\"application\":\"role Application#0\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"cached\"}\nDB#0: fields(records = {\"cached\": \"old\", \"uncached\": \"old\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#0: fields(write_status = \"FAILED\")
+", color="green" penwidth="2" ];
+  "0xc000292080" -> "0xc000292380" [label="Any:key=\"uncached\"", color="forestgreen" penwidth="3" ];
+  "0xc000292380" [label="yield
+Actions: 0, Forks: 1
+State: {\"application\":\"role Application#1\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"uncached\"}\nDB#0: fields(records = {\"cached\": \"old\", \"uncached\": \"old\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#1: fields(write_status = \"INIT\")
+", color="black" penwidth="2" ];
+  "0xc000292380" -> "0xc000292880" [label="Application#1.Write", color="forestgreen" penwidth="1" ];
+  "0xc000292880" [label="yield
+Actions: 1, Forks: 2
+State: {\"application\":\"role Application#1\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"uncached\"}\nDB#0: fields(records = {\"cached\": \"old\", \"uncached\": \"old\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#1: fields(write_status = \"PROCESSING\")
+Threads: 0/1
+", color="black" penwidth="2" ];
+  "0xc000292880" -> "0xc000292d80" [label="thread-0[write.call]", color="forestgreen" penwidth="1" ];
+  "0xc000292d80" [label="Application#1.Write
+Actions: 1, Forks: 3
+State: {\"application\":\"role Application#1\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"uncached\"}\nDB#0: fields(records = {\"cached\": \"old\", \"uncached\": \"old\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#1: fields(write_status = \"PROCESSING\")
+Threads: 0/1
+", color="black" penwidth="1" ];
+  "0xc000292d80" -> "0xc000293c00" [label="Any:succeeds=True", color="forestgreen" penwidth="1" ];
+  "0xc000293c00" [label="yield
+Actions: 1, Forks: 4
+State: {\"application\":\"role Application#1\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"uncached\"}\nDB#0: fields(records = {\"cached\": \"old\", \"uncached\": \"new\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#1: fields(write_status = \"PROCESSING\")
+Threads: 0/1
+", color="black" penwidth="2" ];
+  "0xc000293c00" -> "0xc00035a100" [label="thread-0[delete_cache.call]", color="forestgreen" penwidth="1" ];
+  "0xc00035a100" [label="Any:succeeds=True
+Actions: 1, Forks: 5
+State: {\"application\":\"role Application#1\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"uncached\"}\nDB#0: fields(records = {\"cached\": \"old\", \"uncached\": \"new\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#1: fields(write_status = \"PROCESSING\")
+Threads: 0/1
+", color="black" penwidth="1" ];
+  "0xc00035a100" -> "0xc00035b780" [label="Any:succeeds=True", color="forestgreen" penwidth="1" ];
+  "0xc00035b780" [label="yield
+Actions: 1, Forks: 6
+State: {\"application\":\"role Application#1\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"uncached\"}\nDB#0: fields(records = {\"cached\": \"old\", \"uncached\": \"new\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#1: fields(write_status = \"PROCESSING\")
+Threads: 0/1
+", color="black" penwidth="2" ];
+  "0xc00035b780" -> "0xc00035bb00" [label="thread-0", color="forestgreen" penwidth="1" ];
+  "0xc00035bb00" [label="yield
+Actions: 1, Forks: 7
+State: {\"application\":\"role Application#1\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"uncached\"}\nDB#0: fields(records = {\"cached\": \"old\", \"uncached\": \"new\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#1: fields(write_status = \"DONE\")
+", color="green" penwidth="2" ];
+  "0xc00035a100" -> "0xc00035b880" [label="Any:succeeds=False", color="forestgreen" penwidth="1" ];
+  "0xc00035b880" [label="yield
+Actions: 1, Forks: 6
+State: {\"application\":\"role Application#1\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"uncached\"}\nDB#0: fields(records = {\"cached\": \"old\", \"uncached\": \"new\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#1: fields(write_status = \"PROCESSING\")
+Threads: 0/1
+", color="black" penwidth="2" ];
+  "0xc00035b880" -> "0xc00035be80" [label="thread-0", color="forestgreen" penwidth="1" ];
+  "0xc00035be80" [label="yield
+Actions: 1, Forks: 7
+State: {\"application\":\"role Application#1\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"uncached\"}\nDB#0: fields(records = {\"cached\": \"old\", \"uncached\": \"new\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#1: fields(write_status = \"FAILED\")
+Threads: 0/1
+", color="green" penwidth="2" ];
+  "0xc00035be80" -> "0xc0003e5280" [label="thread-0", color="forestgreen" penwidth="1" ];
+  "0xc0003e5280" [label="yield
+Actions: 1, Forks: 8
+State: {\"application\":\"role Application#1\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"uncached\"}\nDB#0: fields(records = {\"cached\": \"old\", \"uncached\": \"new\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#1: fields(write_status = \"FAILED\")
+", color="green" penwidth="2" ];
+  "0xc000292d80" -> "0xc000293d00" [label="Any:succeeds=False", color="forestgreen" penwidth="1" ];
+  "0xc000293d00" [label="yield
+Actions: 1, Forks: 4
+State: {\"application\":\"role Application#1\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"uncached\"}\nDB#0: fields(records = {\"cached\": \"old\", \"uncached\": \"old\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#1: fields(write_status = \"PROCESSING\")
+Threads: 0/1
+", color="black" penwidth="2" ];
+  "0xc000293d00" -> "0xc00035a480" [label="thread-0", color="forestgreen" penwidth="1" ];
+  "0xc00035a480" [label="yield
+Actions: 1, Forks: 5
+State: {\"application\":\"role Application#1\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"uncached\"}\nDB#0: fields(records = {\"cached\": \"old\", \"uncached\": \"old\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#1: fields(write_status = \"FAILED\")
+Threads: 0/1
+", color="green" penwidth="2" ];
+  "0xc00035a480" -> "0xc0003e4300" [label="thread-0", color="forestgreen" penwidth="1" ];
+  "0xc0003e4300" [label="yield
+Actions: 1, Forks: 6
+State: {\"application\":\"role Application#1\",\"cache\":\"role Cache#0\",\"db\":\"role DB#0\",\"key\":\"uncached\"}\nDB#0: fields(records = {\"cached\": \"old\", \"uncached\": \"old\"})\nCache#0: fields(cached_records = {\"cached\": \"old\"})\nApplication#1: fields(write_status = \"FAILED\")
+", color="green" penwidth="2" ];
+}

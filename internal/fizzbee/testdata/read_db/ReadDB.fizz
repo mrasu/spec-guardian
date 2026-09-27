@@ -1,0 +1,28 @@
+---
+deadlock_detection: false
+---
+
+Status = enum("INIT", "DONE")
+
+role DB:
+  action Init:
+    self.value = "before"
+
+  atomic func read():
+    return self.value
+
+@conformance
+role Reader:
+  action Init:
+    self.status = Status.INIT
+    self.value = None
+
+  atomic action Read:
+    require self.status == Status.INIT
+    value = db.read()
+    self.value = value
+    self.status = Status.DONE
+
+action Init:
+  db = DB()
+  reader = Reader()

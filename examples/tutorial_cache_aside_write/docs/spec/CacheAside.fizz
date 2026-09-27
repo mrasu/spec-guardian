@@ -1,0 +1,57 @@
+---
+deadlock_detection: false
+options:
+  crash_on_yield: false
+---
+
+RequestStatus = enum("INIT", "DONE", "FAILED", "PROCESSING")
+
+eventually always assertion BecomeDone:
+  return application.write_status == RequestStatus.DONE or application.write_status == RequestStatus.FAILED
+
+role DB:
+  action Init:
+    self.records = {"cached": "old", "uncached": "old"}
+
+  atomic func write(key, value):
+    succeeds = oneof [True, False]
+    if succeeds:
+      self.records[key] = value
+    return succeeds
+
+role Cache:
+  action Init:
+    self.cached_records = {"cached": "old"}
+
+  atomic func delete_cache(key):
+    succeeds = oneof [True, False]
+    if succeeds and key in self.cached_records:
+      self.cached_records.pop(key)
+    return succeeds
+
+@conformance
+role Application:
+  action Init:
+    self.write_status = RequestStatus.INIT
+
+  fair action Write:
+    require self.write_status == RequestStatus.INIT
+    self.write_status = RequestStatus.PROCESSING
+
+    db_succeeds = db.write(self.key, self.write_value)
+    if not db_succeeds:
+      self.write_status = RequestStatus.FAILED
+      return
+
+    delete_cache_succeeds = cache.delete_cache(self.key)
+    if not delete_cache_succeeds:
+      self.write_status = RequestStatus.FAILED
+      return
+
+    self.write_status = RequestStatus.DONE
+
+action Init:
+  db = DB()
+  cache = Cache()
+  key = oneof ["cached", "uncached"]
+  application = Application(key=key, write_value="new")

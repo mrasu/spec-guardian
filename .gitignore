@@ -1,0 +1,4 @@
+examples/**/spec/**/*
+!examples/**/spec/**/*.fizz
+!examples/**/spec/fizzbee_output/
+!examples/**/spec/fizzbee_output/**/*

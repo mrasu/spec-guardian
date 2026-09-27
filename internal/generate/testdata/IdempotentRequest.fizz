@@ -1,0 +1,45 @@
+---
+deadlock_detection: false
+---
+
+Status = enum("INIT", "DONE")
+
+role Store:
+  action Init:
+    self.order_status = None
+    self.delivery_status = None
+
+  atomic func create_order():
+    self.order_status = "CREATED"
+
+  atomic func deliver():
+    self.delivery_status = "DELIVERED"
+
+@conformance
+role OrderServer:
+  action Init:
+    self.status = Status.INIT
+    self.order_id = None
+
+  atomic action CreateOrder:
+    require self.status == Status.INIT
+    store.create_order()
+    self.order_id = 1
+    self.status = Status.DONE
+
+@conformance
+role DeliveryServer:
+  action Init:
+    self.status = Status.INIT
+    self.delivery_id = None
+
+  atomic action Deliver:
+    require self.status == Status.INIT
+    store.deliver()
+    self.delivery_id = "delivery-1"
+    self.status = Status.DONE
+
+action Init:
+  store = Store()
+  order_server = OrderServer()
+  delivery_server = DeliveryServer()
