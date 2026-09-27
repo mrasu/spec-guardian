@@ -2,13 +2,13 @@
 
 Let formal specs test your implementation.
 
-A [FizzBee](https://fizzbee.io/) spec describes the state transitions your system allows. However, the spec alone does not test whether your implementation follows those transitions. SpecGuardian turns FizzBee's exploration results into tests that check whether your implementation reaches an allowed state.
+A [FizzBee](https://fizzbee.io/) spec describes the state transitions your system allows. However, the spec alone does not test whether your implementation follows those transitions. SpecGuardian turns FizzBee's results into tests that check whether your implementation reaches an allowed state.
 
 SpecGuardian lets you verify that an AI-generated implementation actually conforms to your specification.
 
 ## From Spec to Test: Cache-Aside
 
-In this cache-aside example, a write stores a new value in PostgreSQL, then invalidates its Valkey cache entry. The FizzBee action describes failure at either step:
+In this cache-aside example, a `Write` action stores a new value in the database, then invalidates the corresponding cache entry. The FizzBee spec describes what happens if either step fails:
 
 ```python
 @conformance
@@ -27,7 +27,7 @@ role Application:
     self.write_status = RequestStatus.DONE
 ```
 
-SpecGuardian generates Go tests from FizzBee's exploration results. They compare the application's observed state with states allowed by the spec, including failure states:
+SpecGuardian generates Go tests from FizzBee's results. They compare the observed state after the action with states allowed by the spec, including states reached when an I/O operation fails:
 
 ```go
 func TestApplication_Write_Conformance(t *testing.T) {
@@ -64,15 +64,15 @@ func TestApplication_Write_Conformance(t *testing.T) {
 
 For each generated case, the test checks the resulting state against the spec, both with and without injected failures.
 
-If cache invalidation fails after the database commit, the spec allows the new database value, the old cached value, and a failed write status.
+For example, the test also checks what happens when an error is injected before cache invalidation. This case can pass because the spec allows a state where the database holds the new value and the cache retains the old one.
 
 ## How It Works
 
 Here's how SpecGuardian works:
 
-1. FizzBee explores the possible outcomes described by the spec.
+1. FizzBee explores the possible states described by the spec.
 2. SpecGuardian generates Go tests from the exploration results.
-3. You connect the tests to your application by providing setup, Action execution, and state observation.
+3. Either AI or you write the setup, Action execution, and state observation code that connects the tests to your application.
 4. The tests run a function normally and with an error injected immediately before a supported I/O call, then compare the observed state with states allowed by the spec.
 
 ## When to Use
@@ -84,7 +84,7 @@ SpecGuardian checks whether an Action ends in a state allowed by the FizzBee spe
 
 ## Getting Started
 
-Start with the included cache-aside example to run a conformance test against its implementation. You'll need Go 1.27 or later and Docker Compose; the FizzBee exploration results and generated tests are already included.
+Start with the included cache-aside example to run a conformance test against its implementation. You'll need Go and Docker Compose; the FizzBee exploration results and generated tests are included.
 
 From the repository root:
 
@@ -101,10 +101,10 @@ For a detailed guide to using SpecGuardian, see the [user guide](docs/user-guide
 
 - [Cache-aside](examples/cache_aside/README.md) demonstrates the cache-aside pattern.
 - [Idempotent request](examples/idempotent_request/README.md) demonstrates idempotent requests.
-- [Iceberg](examples/iceberg/README.md) is a real-world example that tests [Apache Iceberg Go](https://github.com/apache/iceberg-go).
+- [Iceberg](examples/iceberg/README.md) is a real-world example that tests [apache/iceberg-go](https://github.com/apache/iceberg-go).
 
 ## Current Scope
 
-SpecGuardian currently generates Go tests for one FizzBee Action invocation at a time. See the [guardian directory](guardian/) for the available I/O hooks. Each test attempt injects one error immediately before a hooked call; calls without a hook are not covered. The state comparison covers the fields you connect to the test's observation and comparison code.
+SpecGuardian currently generates Go tests for one FizzBee Action invocation at a time. See the [guardian directory](guardian/) for the available I/O hooks.
 
-SpecGuardian is experimental. Its public APIs or generated Go code may change.
+SpecGuardian is under development. Its public APIs or generated Go code may change.
