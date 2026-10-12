@@ -35,34 +35,34 @@ SpecGuardian generates Go tests from FizzBee's results. They compare the observe
 
 ```go
 func TestApplication_Write_Conformance(t *testing.T) {
-	cases := LoadApplicationCases(t, "testdata/application_write_cases_generated.json")
+  cases := LoadApplicationCases(t, "testdata/application_write_cases_generated.json")
 
-	for _, testCase := range cases {
-		t.Run(testCase.Name, func(t *testing.T) {
-			controller := guardian.NewInjectionController("Application.Write")
-			environment := NewApplicationConformanceEnvironment(t, controller)
-			environment.PrepareWriteCase(t)
+  for _, testCase := range cases {
+    t.Run(testCase.Name, func(t *testing.T) {
+      controller := guardian.NewInjectionController("Application.Write")
+      environment := NewApplicationConformanceEnvironment(t, controller)
+      environment.PrepareWriteCase(t)
 
-			input := environment.BuildWriteInput(t, testCase.Input)
-			for faultNumber := range controller.Attempts() {
-				t.Run(fmt.Sprintf("fault:%d", faultNumber), func(t *testing.T) {
-					environment.PrepareWriteAttempt(t, testCase.Input)
+      input := environment.BuildWriteInput(t, testCase.Input)
+      for faultNumber := range controller.Attempts() {
+        t.Run(fmt.Sprintf("fault:%d", faultNumber), func(t *testing.T) {
+          environment.PrepareWriteAttempt(t, testCase.Input)
 
-					var actionOutput ApplicationWriteOutput
-					var actionErr error
-					func() {
-						defer controller.InjectFaultAt(faultNumber)()
-						actionOutput, actionErr = environment.ExecuteWrite(t.Context(), input)
-					}()
+          var actionOutput ApplicationWriteOutput
+          var actionErr error
+          func() {
+            defer controller.InjectFaultAt(faultNumber)()
+            actionOutput, actionErr = environment.ExecuteWrite(t.Context(), input)
+          }()
 
-					observedState := environment.ObserveWriteState(t, testCase.Input, actionOutput, actionErr)
-					allowedStates := environment.BuildAllowedWriteStates(t, testCase.Allowed)
+          observedState := environment.ObserveWriteState(t, testCase.Input, actionOutput, actionErr)
+          allowedStates := environment.BuildAllowedWriteStates(t, testCase.Allowed)
 
-					guardian.AssertAllowed(t, allowedStates, observedState, controller.Events())
-				})
-			}
-		})
-	}
+          guardian.AssertAllowed(t, allowedStates, observedState, controller.Events())
+        })
+      }
+    })
+  }
 }
 ```
 
