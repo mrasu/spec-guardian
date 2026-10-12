@@ -3,6 +3,7 @@
 package specguardian_test
 
 import (
+	"context"
 	"database/sql"
 	"testing"
 
@@ -44,21 +45,6 @@ func BuildApplicationConformanceComponents(t *testing.T, controller *guardian.In
 	return cacheaside.NewApplication(db, cache), &ApplicationEnvironment{db: db, cache: cache}
 }
 
-// ObserveCurrentState captures the application state.
-func (e *ApplicationEnvironment) ObserveCurrentState(t *testing.T) ApplicationObservedState {
-	t.Helper()
-	return ApplicationObservedState{
-		Fields: ApplicationObservedFields{
-			DB: ApplicationDBObservedFields{
-				Records: gcmp.Observed(readDBRecords(t, e.db)),
-			},
-			Cache: ApplicationCacheObservedFields{
-				CachedRecords: gcmp.Observed(readCacheRecords(t, e.cache)),
-			},
-		},
-	}
-}
-
 // ApplicationReadInput is the concrete application input for Application.Read.
 // Replace this scaffold with a type alias or local type as needed.
 type ApplicationReadInput = *cacheaside.ReadInput
@@ -87,7 +73,7 @@ func (e *ApplicationEnvironment) SetupReadAttempt(t *testing.T, input FizzbeeApp
 // CleanupReadAttempt removes state left by this attempt. It runs through t.Cleanup, so use a context independent of t.Context when needed.
 func (e *ApplicationEnvironment) CleanupReadAttempt(t *testing.T) {
 	t.Helper()
-	clearRecords(t, e.db, e.cache)
+	e.clearRecords(t)
 }
 
 // BuildReadInput maps the abstract FizzBee input to the application's concrete argument.
@@ -98,8 +84,8 @@ func (e *ApplicationEnvironment) BuildReadInput(t *testing.T, input FizzbeeAppli
 	}
 }
 
-// BuildObservedReadState combines observed resources with the action input, output, and error.
-func (e *ApplicationEnvironment) BuildObservedReadState(t *testing.T, observedState ApplicationObservedState, input FizzbeeApplicationState, output ApplicationReadOutput, actionErr error) ApplicationObservedState {
+// BuildReadManualObservation combines storage state with the Read output and error.
+func (e *ApplicationEnvironment) BuildReadManualObservation(t *testing.T, fetched ApplicationFetchedObservation, input FizzbeeApplicationState, output ApplicationReadOutput, actionErr error) ApplicationManualObservation {
 	t.Helper()
 	var resValue *string
 	if output != nil {
@@ -111,52 +97,12 @@ func (e *ApplicationEnvironment) BuildObservedReadState(t *testing.T, observedSt
 		status = "FAILED"
 	}
 
-	return ApplicationObservedState{
-		Params: ApplicationObservedParams{
-			Application: ApplicationApplicationObservedParams{
-				Key:        gcmp.Observed(input.Params.Application.Key),
-				WriteValue: gcmp.Observed(input.Params.Application.WriteValue),
-			},
-		},
-		Fields: ApplicationObservedFields{
-			DB: ApplicationDBObservedFields{
-				CommittedValues: gcmp.Unobservable[map[string]any]("commit history is not stored"),
-				Records:         observedState.Fields.DB.Records,
-			},
-			Cache: ApplicationCacheObservedFields{
-				CachedRecords: observedState.Fields.Cache.CachedRecords,
-			},
-			Application: ApplicationApplicationObservedFields{
+	return ApplicationManualObservation{
+		Fields: ApplicationManualField{
+			Application: ApplicationApplicationManualField{
 				ReadResValue: gcmp.Observed(resValue),
 				ReadStatus:   gcmp.Observed(status),
 				WriteStatus:  gcmp.Unobservable[string]("irrelevant to Read action"),
-			},
-		},
-	}
-}
-
-// BuildAllowedReadState maps an allowed model state to field comparisons.
-func (e *ApplicationEnvironment) BuildAllowedReadState(t *testing.T, allowed FizzbeeApplicationState) ApplicationComparisonState {
-	t.Helper()
-	return ApplicationComparisonState{
-		Params: ApplicationComparisonParams{
-			Application: ApplicationApplicationComparisonParams{
-				Key:        gcmp.Equal(allowed.Params.Application.Key),
-				WriteValue: gcmp.Equal(allowed.Params.Application.WriteValue),
-			},
-		},
-		Fields: ApplicationComparisonFields{
-			DB: ApplicationDBComparisonFields{
-				CommittedValues: gcmp.Ignore[map[string]any]("commit history is not stored"),
-				Records:         gcmp.Equal(allowed.Fields.DB.Records),
-			},
-			Cache: ApplicationCacheComparisonFields{
-				CachedRecords: gcmp.Equal(allowed.Fields.Cache.CachedRecords),
-			},
-			Application: ApplicationApplicationComparisonFields{
-				ReadResValue: gcmp.Equal(allowed.Fields.Application.ReadResValue),
-				ReadStatus:   gcmp.Equal(allowed.Fields.Application.ReadStatus),
-				WriteStatus:  gcmp.Ignore[string]("irrelevant to Read action"),
 			},
 		},
 	}
@@ -190,7 +136,7 @@ func (e *ApplicationEnvironment) SetupWriteAttempt(t *testing.T, input FizzbeeAp
 // CleanupWriteAttempt removes state left by this attempt. It runs through t.Cleanup, so use a context independent of t.Context when needed.
 func (e *ApplicationEnvironment) CleanupWriteAttempt(t *testing.T) {
 	t.Helper()
-	clearRecords(t, e.db, e.cache)
+	e.clearRecords(t)
 }
 
 // BuildWriteInput maps the abstract FizzBee input to the application's concrete argument.
@@ -202,8 +148,8 @@ func (e *ApplicationEnvironment) BuildWriteInput(t *testing.T, input FizzbeeAppl
 	}
 }
 
-// BuildObservedWriteState combines observed resources with the action input, output, and error.
-func (e *ApplicationEnvironment) BuildObservedWriteState(t *testing.T, observedState ApplicationObservedState, input FizzbeeApplicationState, output ApplicationWriteOutput, actionErr error) ApplicationObservedState {
+// BuildWriteManualObservation combines storage state with the Write output and error.
+func (e *ApplicationEnvironment) BuildWriteManualObservation(t *testing.T, fetched ApplicationFetchedObservation, input FizzbeeApplicationState, output ApplicationWriteOutput, actionErr error) ApplicationManualObservation {
 	t.Helper()
 
 	status := "DONE"
@@ -211,22 +157,9 @@ func (e *ApplicationEnvironment) BuildObservedWriteState(t *testing.T, observedS
 		status = "FAILED"
 	}
 
-	return ApplicationObservedState{
-		Params: ApplicationObservedParams{
-			Application: ApplicationApplicationObservedParams{
-				Key:        gcmp.Observed(input.Params.Application.Key),
-				WriteValue: gcmp.Observed(input.Params.Application.WriteValue),
-			},
-		},
-		Fields: ApplicationObservedFields{
-			DB: ApplicationDBObservedFields{
-				CommittedValues: gcmp.Unobservable[map[string]any]("commit history is not stored"),
-				Records:         observedState.Fields.DB.Records,
-			},
-			Cache: ApplicationCacheObservedFields{
-				CachedRecords: observedState.Fields.Cache.CachedRecords,
-			},
-			Application: ApplicationApplicationObservedFields{
+	return ApplicationManualObservation{
+		Fields: ApplicationManualField{
+			Application: ApplicationApplicationManualField{
 				ReadResValue: gcmp.Unobservable[*string]("irrelevant to Write action"),
 				ReadStatus:   gcmp.Unobservable[string]("irrelevant to Write action"),
 				WriteStatus:  gcmp.Observed(status),
@@ -235,40 +168,30 @@ func (e *ApplicationEnvironment) BuildObservedWriteState(t *testing.T, observedS
 	}
 }
 
-// BuildAllowedWriteState maps an allowed model state to field comparisons.
-func (e *ApplicationEnvironment) BuildAllowedWriteState(t *testing.T, allowed FizzbeeApplicationState) ApplicationComparisonState {
-	t.Helper()
-	return ApplicationComparisonState{
-		Params: ApplicationComparisonParams{
-			Application: ApplicationApplicationComparisonParams{
-				Key:        gcmp.Equal(allowed.Params.Application.Key),
-				WriteValue: gcmp.Equal(allowed.Params.Application.WriteValue),
-			},
-		},
-		Fields: ApplicationComparisonFields{
-			DB: ApplicationDBComparisonFields{
-				CommittedValues: gcmp.Ignore[map[string]any]("commit history is not stored"),
-				Records:         gcmp.Equal(allowed.Fields.DB.Records),
-			},
-			Cache: ApplicationCacheComparisonFields{
-				CachedRecords: gcmp.Equal(allowed.Fields.Cache.CachedRecords),
-			},
-			Application: ApplicationApplicationComparisonFields{
-				ReadResValue: gcmp.Ignore[*string]("irrelevant to Write action"),
-				ReadStatus:   gcmp.Ignore[string]("irrelevant to Write action"),
-				WriteStatus:  gcmp.Equal(allowed.Fields.Application.WriteStatus),
-			},
-		},
-	}
-}
-
 func (e *ApplicationEnvironment) setupAttempt(t *testing.T, input FizzbeeApplicationState) {
 	t.Helper()
-	setupRecords(t, e.db, e.cache, input.Fields.DB.Records, input.Fields.Cache.CachedRecords)
+	e.clearRecords(t)
+
+	for key, value := range input.Fields.DB.Records {
+		_, err := e.db.ExecContext(t.Context(), "INSERT INTO records(KEY, value) VALUES ($1, $2)", key, value)
+		require.NoError(t, err)
+	}
+	for key, value := range input.Fields.Cache.CachedRecords {
+		err := e.cache.Do(t.Context(), e.cache.B().Set().Key(key).Value(value).Build()).Error()
+		require.NoError(t, err)
+	}
 }
 
 func (e *ApplicationEnvironment) cleanupCase(t *testing.T) {
 	t.Helper()
 	e.cache.Close()
 	require.NoError(t, e.db.Close())
+}
+
+func (e *ApplicationEnvironment) clearRecords(t *testing.T) {
+	t.Helper()
+	ctx := context.Background()
+	_, err := e.db.ExecContext(ctx, "TRUNCATE TABLE records")
+	require.NoError(t, err)
+	require.NoError(t, e.cache.Do(ctx, e.cache.B().Flushdb().Build()).Error())
 }

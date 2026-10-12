@@ -43,7 +43,7 @@ FIX_SPARK_BUG = True
 ALLOW_UPDATES = True               # Include update queries
 ALLOW_DELETES = True               # Include delete queries
 MAX_WRITE_OPS = 1                  # The max number of background write operations
-MAX_COMPACTION_OPS = 1             # The max number of compactions
+MAX_COMPACTION_OPS = 0             # The max number of compactions
 
 # Column values, each col1 value represents a possible row in the table.
 # Col 1 values are not duplicated, so if there are 2 values then there are 2 possible rows.
@@ -99,7 +99,7 @@ atomic func CurrentMetadata():
     if metadata_location == None:
         return None
 
-    metadata = object_store.Read(metadata_location)
+    metadata = object_store.ReadMetadataFile(metadata_location)
     return metadata
 
 atomic func RecordHistory(version, sql_op, row_history, set_values):
@@ -201,13 +201,13 @@ atomic func GetDeleteFiles(metadata):
     # Returns the delete files of this metadata version
 
     delete_files = []
-    manifest_list = object_store.Read(metadata.current_snapshot.manifest_list_path)
+    manifest_list = object_store.ReadManifestList(metadata.current_snapshot.manifest_list_path)
     for list_entry in manifest_list:
         if list_entry.content == ManifestFileContent.DELETES:
-            manifest_file = object_store.Read(list_entry.manifest_path)
+            manifest_file = object_store.ReadManifestFile(list_entry.manifest_path)
             for entry in manifest_file.entries:
                 if entry.status != ManifestEntryStatus.DELETED:
-                    delete_file = object_store.Read(entry.data_file.file_path)
+                    delete_file = object_store.ReadDeleteFile(entry.data_file.file_path)
                     rec = record(sequence_no = entry.data_sequence_no,
                                  delete_file = delete_file,
                                  file_path = entry.data_file.file_path)
@@ -221,8 +221,8 @@ atomic func MatchingDeleteFile(delete_files, entry, row_index):
     for delete in delete_files:
         if delete.sequence_no >= entry.data_sequence_no:
             for del_row in delete.delete_file:
-                if (del_row[0] == entry.data_file.file_path
-                        and del_row[1] == row_index):
+                if (del_row.file_index == entry.data_file.file_index
+                        and del_row.row_index == row_index):
                     return delete
 
     return None
@@ -251,22 +251,23 @@ atomic func Scan(metadata_location, predicate):
 
     scan = []
 
-    metadata = object_store.Read(metadata_location)
+    metadata = object_store.ReadMetadataFile(metadata_location)
     if metadata == None:
         return scan
 
     delete_files = GetDeleteFiles(metadata)
 
-    manifest_list = object_store.Read(metadata.current_snapshot.manifest_list_path)
+    manifest_list = object_store.ReadManifestList(metadata.current_snapshot.manifest_list_path)
     for entry in manifest_list:
-        manifest_file = object_store.Read(entry.manifest_path)
+        manifest_file = object_store.ReadManifestFile(entry.manifest_path)
 
         for entry in manifest_file.entries:
             if (entry.data_file.content == DataFileContent.DATA
                     and (entry.status == ManifestEntryStatus.ADDED
                          or entry.status == ManifestEntryStatus.EXISTING)):
-                data_file = object_store.Read(entry.data_file.file_path)
-                data_file_result = record(file_path = data_file.file_path,
+                data_file = object_store.ReadDataFile(entry.data_file.file_index)
+                data_file_result = record(file_index = entry.data_file.file_index,
+                                          file_path = data_file.file_path,
                                           rows = [],
                                           applied_del_files = set())
                 for row_index in range(len(data_file.rows)):
@@ -309,11 +310,11 @@ role Writer:
                          state = State.WRITE_DATA_FILES,
                          set_values = set_values,
                          row_history = [set_values],
+                         metadata_files = [],
                          added_data_files = [],
                          deleted_data_files = [],
                          added_delete_files = [],
-                         deleted_delete_files = [],
-                         metadata_files = [])
+                         deleted_delete_files = [])
         aux_key_insert_pending.add(set_values[0])
         return True
 
@@ -359,11 +360,11 @@ role Writer:
                          set_values = set_values,
                          predicate = predicate,
                          row_history = [],
+                         metadata_files = [],
                          added_data_files = [],
                          deleted_data_files = [],
                          added_delete_files = [],
-                         deleted_delete_files = [],
-                         metadata_files = [])
+                         deleted_delete_files = [])
         return True
 
     atomic func DeleteMatchesRows(predicate):
@@ -403,11 +404,11 @@ role Writer:
                          set_values = set_values,
                          predicate = predicate,
                          row_history = [],
+                         metadata_files = [],
                          added_data_files = [],
                          deleted_data_files = [],
                          added_delete_files = [],
-                         deleted_delete_files = [],
-                         metadata_files = [])
+                         deleted_delete_files = [])
         return True
 
     atomic func UpdateChangesRows(predicate, set_values):
@@ -450,11 +451,11 @@ role Writer:
                          scan_metadata_location = scan_metadata.location,
                          scan_snapshot_id = scan_metadata.current_snapshot.snapshot_id,
                          state = State.READ_DATA_FILES,
+                         metadata_files = [],
                          added_data_files = [],
                          deleted_data_files = [],
                          added_delete_files = [],
-                         deleted_delete_files = [],
-                         metadata_files = [])
+                         deleted_delete_files = [])
         aux_compaction_count += 1
 
     atomic func ReadDataFilesForCopyOnWrite():
@@ -466,16 +467,16 @@ role Writer:
 
         scan_result = Scan(self.op.scan_metadata_location, self.op.predicate)
 
-        original_file_paths = []
+        original_file_indices = []
         new_data_file_rows = []
 
         for data_file_result in scan_result:
-            data_file = object_store.Read(data_file_result.file_path)
+            data_file = object_store.ReadDataFile(data_file_result.file_index)
             if len(data_file.rows) == 0:
                 # can only happen with MOR and all rows deleted
                 continue
 
-            original_file_paths.append(data_file.file_path)
+            original_file_indices.append(data_file_result.file_index)
             new_rows = []
 
             for row_index in range(len(data_file.rows)):
@@ -501,7 +502,7 @@ role Writer:
 
               new_data_file_rows.append(new_rows)
 
-        self.op.original_file_paths = original_file_paths
+        self.op.original_file_indices = original_file_indices
         self.op.new_data_file_rows = new_data_file_rows
         self.op.state = State.WRITE_DATA_FILES
 
@@ -526,8 +527,9 @@ role Writer:
             for row_result in data_file_result.rows:
                 row = row_result.row
                 if self.op.sql_op == SqlOpType.DELETE or self.op.sql_op == SqlOpType.UPDATE:
-                    deletes.append([data_file_result.file_path, row_result.row_index])
-                    referenced_data_files.add(data_file_result.file_path)
+                    deletes.append(record(file_index = data_file_result.file_index,
+                                          row_index = row_result.row_index))
+                    referenced_data_files.add(data_file_result.file_index)
 
                     if self.op.sql_op == SqlOpType.DELETE:
                         # Log the delete in the row_history variable used by correctness checks
@@ -573,8 +575,8 @@ role Writer:
         if op.data_op == DataOp.APPEND:
             file_path = DataFileName()
             data_file = record(file_path = file_path, rows = [op.set_values])
-            object_store.Write(file_path, data_file)
-            op.added_data_files.append(file_path)
+            file_index = object_store.WriteDataFile(data_file)
+            op.added_data_files.append(file_index)
         elif op.data_op == DataOp.OVERWRITE:
             if self.op.snapshot_update == SnapshotUpdateType.OVERWRITE_FILES:
                 for new_rows in self.op.new_data_file_rows:
@@ -585,21 +587,21 @@ role Writer:
 
                     new_file_path = DataFileName()
                     new_data_file = record(file_path = new_file_path, rows = new_rows)
-                    object_store.Write(new_file_path, new_data_file)
-                    op.added_data_files.append(new_file_path)
+                    file_index = object_store.WriteDataFile(new_data_file)
+                    op.added_data_files.append(file_index)
 
-                op.deleted_data_files.extend(self.op.original_file_paths)
+                op.deleted_data_files.extend(self.op.original_file_indices)
 
             elif self.op.snapshot_update == SnapshotUpdateType.ROW_DELTA:
                 if self.op.sql_op == SqlOpType.UPDATE:
                     for new_rows in self.op.new_data_file_rows:
                         data_file_path = DataFileName()
                         data_file = record(file_path = data_file_path, rows = new_rows)
-                        object_store.Write(data_file_path, data_file)
-                        op.added_data_files.append(data_file_path)
+                        file_index = object_store.WriteDataFile(data_file)
+                        op.added_data_files.append(file_index)
 
                 delete_file_path = DeleteFileName()
-                object_store.Write(delete_file_path, self.op.deletes)
+                object_store.WriteDeleteFile(delete_file_path, self.op.deletes)
                 op.added_delete_files.append(delete_file_path)
         elif op.data_op == DataOp.REPLACE:
             file_path = DataFileName()
@@ -607,7 +609,7 @@ role Writer:
 
             for data_file_result in op.compaction_scan:
                 # add the data file of the scan to the deleted data files
-                op.deleted_data_files.append(data_file_result.file_path)
+                op.deleted_data_files.append(data_file_result.file_index)
                 for row_result in data_file_result.rows:
                     rows.append(row_result.row)
 
@@ -622,8 +624,8 @@ role Writer:
                         op.deleted_delete_files.append(applied_del_file)
 
             data_file = record(file_path = file_path, rows = rows)
-            object_store.Write(file_path, data_file)
-            op.added_data_files.append(file_path)
+            file_index = object_store.WriteDataFile(data_file)
+            op.added_data_files.append(file_index)
 
         op.state = State.WRITE_METADATA_FILES
 
@@ -644,11 +646,11 @@ role Writer:
             if gathering:
                 snapshots.append(snapshot.snapshot_id)
                 if snapshot.operation in matching_operations:
-                    manifest_list = object_store.Read(snapshot.manifest_list_path)
+                    manifest_list = object_store.ReadManifestList(snapshot.manifest_list_path)
                     for list_entry in manifest_list:
                         if (list_entry.content == matching_content
                                 and list_entry.snapshot_id == snapshot.snapshot_id):
-                            manifest = object_store.Read(list_entry.manifest_path)
+                            manifest = object_store.ReadManifestFile(list_entry.manifest_path)
                             manifests.append(manifest)
 
         result = record(manifests = manifests, snapshots = snapshots)
@@ -700,7 +702,7 @@ role Writer:
                     # only live entries after the seq no
                     if (entry.status != ManifestEntryStatus.DELETED
                             and entry.data_sequence_no > starting_seq_no):
-                        delete_file = object_store.Read(entry.data_file.file_path)
+                        delete_file = object_store.ReadDeleteFile(entry.data_file.file_path)
                         delete_files.append(delete_file)
 
         return delete_files
@@ -737,10 +739,10 @@ role Writer:
 
         # Check if any deleted data file has a delete file that was added since
         # the scan snapshot. If so, then a conflict has occurred
-        for data_file_path in deleted_data_files:
+        for data_file_index in deleted_data_files:
             for delete_file in delete_files:
                 for row in delete_file:
-                    if row[0] == data_file_path:
+                    if row.file_index == data_file_index:
                         return Result.VALIDATION_FAILED
 
         return Result.OK
@@ -771,7 +773,7 @@ role Writer:
                     if (entry.status != ManifestEntryStatus.EXISTING
                             and entry.status != ManifestEntryStatus.ADDED
                             and entry.snapshot_id in history.snapshots
-                            and entry.data_file.file_path in self.op.referenced_data_files):
+                            and entry.data_file.file_index in self.op.referenced_data_files):
                         entries.append(entry)
 
         if len(entries) > 0:
@@ -878,8 +880,14 @@ role Writer:
                     manifest_entries.append(entry)
                     existing_count += 1
 
-                if entry.data_sequence_no < min_seq_no:
-                    min_seq_no = entry.data_sequence_no
+                # ====== Added to match iceberg-go behavior
+                # Per spec, ignore DELETED entries, not live delete files.
+                # > The minimum data sequence number of all live data or delete files in the manifest
+                # https://iceberg.apache.org/spec/#manifest-lists
+                if entry.status != ManifestEntryStatus.DELETED:
+                    if entry.data_sequence_no < min_seq_no:
+                        min_seq_no = entry.data_sequence_no
+                # =====
 
         merged_manifest = record(content = content,
                                  entries = manifest_entries,
@@ -904,14 +912,14 @@ role Writer:
         existing_data_manifests = []
         min_data_seq_no = sequence_no
         for manifest_file_entry in data_manifest_list:
-            manifest_file = object_store.Read(manifest_file_entry.manifest_path)
+            manifest_file = object_store.ReadManifestFile(manifest_file_entry.manifest_path)
 
             for entry in manifest_file.entries:
                 if entry.status != ManifestEntryStatus.DELETED:
-                    if entry.data_file.file_path in self.op.deleted_data_files:
+                    if entry.data_file.file_index in self.op.deleted_data_files:
                         entry.status = ManifestEntryStatus.DELETED
                         entry.snapshot_id = new_snapshot_id
-                        actual_deleted_files.add(entry.data_file.file_path)
+                        actual_deleted_files.add(entry.data_file.file_index)
                     else:
                         entry.status = ManifestEntryStatus.EXISTING
 
@@ -926,9 +934,9 @@ role Writer:
         added_count = 0
 
         # Add a new manifest entry for each added data file
-        for data_file_path in self.op.added_data_files:
+        for data_file_index in self.op.added_data_files:
             data_file_rec = record(content = DataFileContent.DATA,
-                                   file_path = data_file_path)
+                                   file_index = data_file_index)
             entry = record(status = ManifestEntryStatus.ADDED,
                            data_sequence_no = sequence_no, # set here because ADDED
                            file_sequence_no = sequence_no, # set here because ADDED
@@ -954,7 +962,7 @@ role Writer:
                                                        sequence_no,
                                                        new_snapshot_id)
         file_path = ManifestFileName()
-        object_store.Write(file_path, merged_data_manifest)
+        object_store.WriteManifestFile(file_path, merged_data_manifest)
         self.op.metadata_files.append(file_path)
 
         res = record(file_path = file_path,
@@ -962,6 +970,116 @@ role Writer:
                      min_data_seq_no = min_data_seq_no,
                      actual_deleted_files = actual_deleted_files)
         return res
+
+    # ====== Added to match iceberg-go behavior
+    # iceberg-go writes added and deleted entries to separate manifests
+    # and reuses unaffected manifests.
+    atomic func WriteDataManifestEntries(entries, sequence_no, new_snapshot_id):
+        added_count = 0
+        deleted_count = 0
+        existing_count = 0
+        min_seq_no = sequence_no
+        for entry in entries:
+            if entry.status == ManifestEntryStatus.ADDED:
+                added_count += 1
+            elif entry.status == ManifestEntryStatus.DELETED:
+                deleted_count += 1
+            else:
+                existing_count += 1
+            if entry.status != ManifestEntryStatus.DELETED:
+                if entry.data_sequence_no < min_seq_no:
+                    min_seq_no = entry.data_sequence_no
+
+        manifest = record(content = ManifestFileContent.DATA,
+                          entries = entries,
+                          snapshot_id = new_snapshot_id,
+                          sequence_no = sequence_no,
+                          min_sequence_no = min_seq_no,
+                          added_file_count = added_count,
+                          deleted_file_count = deleted_count,
+                          existing_file_count = existing_count)
+        file_path = ManifestFileName()
+        object_store.WriteManifestFile(file_path, manifest)
+        self.op.metadata_files.append(file_path)
+        return record(file_path = file_path, file = manifest)
+
+    atomic func GenerateOverwriteManifestFiles(data_manifest_list,
+                                               sequence_no, new_snapshot_id):
+        added_entries = []
+        for file_index in self.op.added_data_files:
+            added_entries.append(record(status = ManifestEntryStatus.ADDED,
+                                        data_sequence_no = sequence_no,
+                                        file_sequence_no = sequence_no,
+                                        snapshot_id = new_snapshot_id,
+                                        data_file = record(content = DataFileContent.DATA,
+                                                           file_index = file_index)))
+
+        pending_entries = []
+        if len(added_entries) > 0:
+            pending_entries.append(added_entries)
+
+        deleted_entries = []
+        actual_deleted_files = set()
+        existing_manifests = []
+        for listed in data_manifest_list:
+            manifest = object_store.ReadManifestFile(listed.manifest_path)
+            remaining_entries = []
+            found_deleted = False
+            for entry in manifest.entries:
+                if entry.status == ManifestEntryStatus.DELETED:
+                    continue
+                if entry.data_file.file_index in self.op.deleted_data_files:
+                    found_deleted = True
+                    actual_deleted_files.add(entry.data_file.file_index)
+                    deleted_entries.append(record(status = ManifestEntryStatus.DELETED,
+                                                  data_sequence_no = entry.data_sequence_no,
+                                                  file_sequence_no = entry.file_sequence_no,
+                                                  snapshot_id = new_snapshot_id,
+                                                  data_file = entry.data_file))
+                else:
+                    remaining_entries.append(record(status = ManifestEntryStatus.EXISTING,
+                                                    data_sequence_no = entry.data_sequence_no,
+                                                    file_sequence_no = entry.file_sequence_no,
+                                                    snapshot_id = entry.snapshot_id,
+                                                    data_file = entry.data_file))
+
+            if not found_deleted:
+                existing_manifests.append(record(file_path = listed.manifest_path,
+                                                 file = manifest))
+            elif len(remaining_entries) > 0:
+                # Write rewritten existing manifests after added/deleted manifests
+                # in the manifest list, independently of their write order.
+                existing_manifests.append(record(pending_entries = remaining_entries))
+
+        if len(deleted_entries) > 0:
+            pending_entries.append(deleted_entries)
+        reused_manifests = []
+        for existing in existing_manifests:
+            if hasattr(existing, "pending_entries"):
+                pending_entries.append(existing.pending_entries)
+            else:
+                reused_manifests.append(existing)
+
+        # ====== Added to match iceberg-go behavior
+        # iceberg-go writes manifests concurrently; write order can vary,
+        # and a failed write can leave another manifest behind.
+        manifest_res = [None for entries in pending_entries]
+        remaining = [index for index in range(len(pending_entries))]
+        while len(remaining) > 0:
+            index = oneof remaining
+            remaining.remove(index)
+            fails = oneof [True, False] if not self.background else False
+            if fails:
+                return record(manifest_res = None,
+                              actual_deleted_files = actual_deleted_files)
+            written = self.WriteDataManifestEntries(pending_entries[index],
+                                                    sequence_no, new_snapshot_id)
+            manifest_res[index] = written
+        # =====
+        manifest_res.extend(reused_manifests)
+        return record(manifest_res = manifest_res,
+                      actual_deleted_files = actual_deleted_files)
+    # =====
 
     atomic func Abort():
         # Abort and clean-up
@@ -982,7 +1100,7 @@ role Writer:
         existing_delete_manifests = []
         min_del_seq_no = sequence_no
         for manifest_file_entry in delete_manifest_list:
-            manifest_file = object_store.Read(manifest_file_entry.manifest_path)
+            manifest_file = object_store.ReadManifestFile(manifest_file_entry.manifest_path)
             for entry in manifest_file.entries:
                 if entry.status != ManifestEntryStatus.DELETED:
                     if (manifest_file.content == ManifestFileContent.DELETES
@@ -1034,7 +1152,7 @@ role Writer:
                                                          sequence_no,
                                                          new_snapshot_id)
         file_path = ManifestFileName()
-        object_store.Write(file_path, merged_delete_manifest)
+        object_store.WriteManifestFile(file_path, merged_delete_manifest)
         self.op.metadata_files.append(file_path)
 
         res = record(file_path = file_path,
@@ -1045,17 +1163,16 @@ role Writer:
     atomic fair action WriteBackgroundMetadataFiles:
         require self.background
         require self.op.state == State.WRITE_METADATA_FILES
-        self.WriteMetadataFiles()
+        manifest_write = self.WriteManifestFiles()
+        if manifest_write != None:
+            self.WriteMetadataFiles(manifest_write)
 
-    atomic func WriteMetadataFiles():
-        # Writes all the metadata files (manifests, manifest list and metadata file)
-        # without performing the commit against the catalog.
-
-        op = self.op
+    atomic func WriteManifestFiles():
+        # Validate and write manifest files without committing to the catalog.
 
         # 1. Load current metadata
         location = catalog.CurrentMetadataLocation()
-        current_metadata = object_store.Read(location)
+        current_metadata = object_store.ReadMetadataFile(location)
 
         # 2. Get parent snapshot
         sequence_no = current_metadata.last_sequence_no + 1
@@ -1064,7 +1181,7 @@ role Writer:
 
         curr_manifest_list = []
         if parent_snapshot != None:
-            curr_manifest_list = object_store.Read(parent_snapshot.manifest_list_path)
+            curr_manifest_list = object_store.ReadManifestList(parent_snapshot.manifest_list_path)
         data_manifest_list = []
         delete_manifest_list = []
         for entry in curr_manifest_list:
@@ -1088,9 +1205,52 @@ role Writer:
 
         if validation_res == Result.VALIDATION_FAILED:
             self.Abort()
-            return False
+            return None
 
-        # 4. Generate manifest files. This spec merges all data manifests
+        # ====== Added to match iceberg-go behavior
+        # iceberg-go appends a new manifest and reuses existing manifests unchanged.
+        # > Appends can add a new manifest to minimize the amount of data written
+        # https://iceberg.apache.org/spec/#manifests
+        if self.op.snapshot_update == SnapshotUpdateType.MERGE_APPEND:
+            data_res = self.GenerateDataManifestFiles([], sequence_no, new_snapshot_id)
+            manifest_res = [data_res]
+            for listed in curr_manifest_list:
+                manifest_file = object_store.ReadManifestFile(listed.manifest_path)
+                manifest_res.append(record(file_path = listed.manifest_path,
+                                           file = manifest_file))
+            return record(current_metadata = current_metadata,
+                          sequence_no = sequence_no,
+                          new_snapshot_id = new_snapshot_id,
+                          manifest_res = manifest_res)
+        # =====
+
+        # ====== Added to match iceberg-go behavior
+        # iceberg-go writes added and deleted entries to separate manifests
+        # and reuses unaffected manifests.
+        if self.op.snapshot_update == SnapshotUpdateType.OVERWRITE_FILES:
+            overwrite_res = self.GenerateOverwriteManifestFiles(data_manifest_list,
+                                                                 sequence_no, new_snapshot_id)
+            if overwrite_res.manifest_res == None:
+                return record(manifest_res = None)
+
+            validation_res = self.ValidateDeletedFilesGotDeleted(overwrite_res.actual_deleted_files,
+                                                                 self.op.deleted_data_files)
+            if validation_res == Result.VALIDATION_FAILED:
+                self.Abort()
+                return None
+
+            manifest_res = overwrite_res.manifest_res
+            for listed in delete_manifest_list:
+                manifest_file = object_store.ReadManifestFile(listed.manifest_path)
+                manifest_res.append(record(file_path = listed.manifest_path,
+                                           file = manifest_file))
+            return record(current_metadata = current_metadata,
+                          sequence_no = sequence_no,
+                          new_snapshot_id = new_snapshot_id,
+                          manifest_res = manifest_res)
+        # =====
+
+        # 4. Generate manifest files. For other operations, this spec merges all data manifests
         #    into one manifest file, and the same for delete manifests,
         #    which are only created when merge-on-read is used.
         manifest_res = []
@@ -1104,7 +1264,7 @@ role Writer:
                                                                  self.op.deleted_data_files)
             if validation_res == Result.VALIDATION_FAILED:
                 self.Abort()
-                return False
+                return None
 
         manifest_res.append(data_res)
 
@@ -1122,9 +1282,23 @@ role Writer:
                                                                      self.op.deleted_delete_files)
                 if validation_res == Result.VALIDATION_FAILED:
                     self.Abort()
-                    return False
+                    return None
 
             manifest_res.append(delete_res)
+
+        return record(current_metadata = current_metadata,
+                      sequence_no = sequence_no,
+                      new_snapshot_id = new_snapshot_id,
+                      manifest_res = manifest_res)
+
+    atomic func WriteMetadataFiles(manifest_write):
+        # Write the manifest list and metadata file without committing to the catalog.
+        op = self.op
+        current_metadata = manifest_write.current_metadata
+        sequence_no = manifest_write.sequence_no
+        new_snapshot_id = manifest_write.new_snapshot_id
+        manifest_res = manifest_write.manifest_res
+        parent_snapshot = current_metadata.current_snapshot
 
         # 5. Create manifest list
         new_manifest_list = []
@@ -1133,22 +1307,31 @@ role Writer:
                        content = res.file.content,
                        sequence_no = res.file.sequence_no,
                        min_sequence_no = res.file.min_sequence_no,
-                       snapshot_id = new_snapshot_id,
+                       # ====== Added to match iceberg-go behavior
+                       # Keep the original snapshot ID when reusing an existing manifest.
+                       snapshot_id = res.file.snapshot_id,
+                       # =====
                        added_file_count = res.file.added_file_count,
                        deleted_file_count = res.file.deleted_file_count,
                        existing_file_count = res.file.existing_file_count)
             new_manifest_list.append(m)
 
         manifest_list_file_path = ManifestListFileName()
-        object_store.Write(manifest_list_file_path, new_manifest_list)
+        object_store.WriteManifestList(manifest_list_file_path, new_manifest_list)
         op.metadata_files.append(manifest_list_file_path)
 
         # 6. Create new snapshot
         parent_snapshot_id = parent_snapshot.snapshot_id if parent_snapshot != None else None
+        # ====== Added to match iceberg-go behavior
+        # iceberg-go uses DELETE for copy-on-write deletes.
+        snapshot_operation = self.op.data_op
+        if self.op.sql_op == SqlOpType.DELETE:
+            snapshot_operation = DataOp.DELETE
+        # =====
         new_snapshot = record(sequence_no = sequence_no,
                               snapshot_id = new_snapshot_id,
                               parent_snapshot_id = parent_snapshot_id,
-                              operation = self.op.data_op,
+                              operation = snapshot_operation,
                               manifest_list_path = manifest_list_file_path)
 
         # 7. Create new table metadata object
@@ -1161,7 +1344,7 @@ role Writer:
                               current_snapshot = new_snapshot,
                               snapshots = new_snapshots,
                               last_sequence_no = sequence_no)
-        object_store.Write(new_location, new_metadata)
+        object_store.WriteMetadataFile(new_metadata)
         op.metadata_files.append(new_location)
 
         op.old_metadata_location = current_metadata.location if current_metadata != None else None
@@ -1233,38 +1416,84 @@ role Catalog:
 
 role ObjectStore:
     atomic action Init:
-        # map of file id -> file
-        self.objects = {}
+        # Metadata files retain their locations and contents.
+        self.metadata_files = []
+        # Manifest lists retain their locations and entries.
+        self.manifest_lists = []
+        # Manifest files retain their locations and contents.
+        self.manifest_files = []
+        # Data files retain their file paths and rows; manifests refer to their indices.
+        self.data_files = []
+        # Delete files retain their locations and contents.
+        self.delete_files = []
         # start off with an essentially empty metadata after
         # the table has been created. This spec doesn't model
         # schema stuff
         empty_md = record(location='metadata-0', version=0, current_snapshot = None,
                           snapshots = [], last_sequence_no = 0)
-        self.objects['metadata-0'] = empty_md
+        self.metadata_files.append(empty_md)
 
-    atomic func List(prefix):
-        matches = []
+    atomic func ReadMetadataFile(location):
+        for metadata in self.metadata_files:
+            if metadata.location == location:
+                return deepcopy(metadata)
+        return None
 
-        for file_id in self.objects:
-            if file_id.startswith(prefix):
-                matches.append(file_id)
+    atomic func ReadManifestList(location):
+        for manifest_list in self.manifest_lists:
+            if manifest_list.location == location:
+                return deepcopy(manifest_list.entries)
+        return None
 
-        return matches
+    atomic func ReadManifestFile(location):
+        for manifest_file in self.manifest_files:
+            if manifest_file.location == location:
+                return deepcopy(manifest_file.file)
+        return None
 
-    atomic func Read(file_id):
-        if file_id in self.objects:
-            obj = self.objects[file_id]
-            obj_copy = deepcopy(obj)
-            return obj_copy
-        else:
-            return None
+    atomic func ReadDataFile(file_index):
+        return deepcopy(self.data_files[file_index])
+
+    atomic func ReadDeleteFile(location):
+        for delete_file in self.delete_files:
+            if delete_file.location == location:
+                return deepcopy(delete_file.file)
+        return None
 
     atomic func Delete(file_id):
-        if file_id in self.objects:
-            self.objects.pop(file_id)
+        # ------- check if needed
+        # remaining_metadata_files = []
+        # for metadata in self.metadata_files:
+        #     if metadata.location != file_id:
+        #         remaining_metadata_files.append(metadata)
+        # self.metadata_files = remaining_metadata_files
+        # remaining_manifest_lists = []
+        # for manifest_list in self.manifest_lists:
+        #     if manifest_list.location != file_id:
+        #         remaining_manifest_lists.append(manifest_list)
+        # self.manifest_lists = remaining_manifest_lists
+        remaining_delete_files = []
+        for delete_file in self.delete_files:
+            if delete_file.location != file_id:
+                remaining_delete_files.append(delete_file)
+        self.delete_files = remaining_delete_files
 
-    atomic func Write(file_id, file):
-        self.objects[file_id] = file
+    atomic func WriteMetadataFile(file):
+        self.metadata_files.append(deepcopy(file))
+
+    atomic func WriteManifestList(location, entries):
+        self.manifest_lists.append(record(location = location, entries = deepcopy(entries)))
+
+    atomic func WriteManifestFile(location, file):
+        self.manifest_files.append(record(location = location, file = deepcopy(file)))
+
+    atomic func WriteDataFile(file):
+        file_index = len(self.data_files)
+        self.data_files.append(deepcopy(file))
+        return file_index
+
+    atomic func WriteDeleteFile(location, file):
+        self.delete_files.append(record(location = location, file = deepcopy(file)))
 
 # ----------------------------------------------
 # ICEBERG-GO CONFORMANCE role
@@ -1308,10 +1537,23 @@ role IcebergTable:
           if fails:
               self.FailAppend()
               return
-          succeeded = self_writer.WriteMetadataFiles()
+          manifest_write = self_writer.WriteManifestFiles()
+          if manifest_write == None:
+              self.FailAppendAfterWriterAbort()
+              return
+
+        # ====== Added to match iceberg-go behavior
+        # A manifest file remains if the manifest list write fails.
+        atomic:
+          fails = oneof [True, False]
+          if fails:
+              self.FailAppend()
+              return
+          succeeded = self_writer.WriteMetadataFiles(manifest_write)
           if not succeeded:
               self.FailAppendAfterWriterAbort()
               return
+        # =====
 
         atomic:
           fails = oneof [True, False]
@@ -1401,10 +1643,29 @@ role IcebergTable:
           if fails:
               self.FailOperation()
               return
-          succeeded = self_writer.WriteMetadataFiles()
+          manifest_write = self_writer.WriteManifestFiles()
+          if manifest_write == None:
+              self.RecordAbortedOperation()
+              return
+          # ====== Added to match iceberg-go behavior
+          # A failed manifest write can leave other manifests behind.
+          if manifest_write.manifest_res == None:
+              self.FailOperation()
+              return
+          # =====
+
+        # ====== Added to match iceberg-go behavior
+        # A manifest file remains if the manifest list write fails.
+        atomic:
+          fails = oneof [True, False]
+          if fails:
+              self.FailOperation()
+              return
+          succeeded = self_writer.WriteMetadataFiles(manifest_write)
           if not succeeded:
               self.RecordAbortedOperation()
               return
+        # =====
 
         atomic:
           fails = oneof [True, False]
@@ -1449,10 +1710,7 @@ always assertion TestInv:
 
 always assertion SequentialSequenceNumbers:
     # There should be no gaps in the sequence numbering.
-    metadata_file_ids = object_store.List("metadata")
-
-    for file_id in metadata_file_ids:
-        metadata = object_store.Read(file_id)
+    for metadata in object_store.metadata_files:
         expected_seq_no = 1
         for snapshot in metadata.snapshots:
             if snapshot.sequence_no != expected_seq_no:
@@ -1462,16 +1720,16 @@ always assertion SequentialSequenceNumbers:
 
     return True
 
-atomic func DataFileExists(metadata, file_path):
-    manifest_list = object_store.Read(metadata.current_snapshot.manifest_list_path)
+atomic func DataFileExists(metadata, file_index):
+    manifest_list = object_store.ReadManifestList(metadata.current_snapshot.manifest_list_path)
     for entry in manifest_list:
-        manifest_file = object_store.Read(entry.manifest_path)
+        manifest_file = object_store.ReadManifestFile(entry.manifest_path)
 
         for entry in manifest_file.entries:
             if (entry.data_file.content == DataFileContent.DATA
                     and (entry.status == ManifestEntryStatus.ADDED
                          or entry.status == ManifestEntryStatus.EXISTING)):
-                if file_path == entry.data_file.file_path:
+                if file_index == entry.data_file.file_index:
                     return True
 
     return False
@@ -1484,8 +1742,8 @@ always assertion NoDanglingDeleteFiles:
         delete_files = GetDeleteFiles(metadata)
         for file in delete_files:
             for del_entry in file.delete_file:
-                data_file_path = del_entry[0]
-                data_exists = DataFileExists(metadata, data_file_path)
+                data_file_index = del_entry[0]
+                data_exists = DataFileExists(metadata, data_file_index)
                 if not data_exists:
                     print("INVARIANT VIOLATION! Dangling delete file entry: " + str(del_entry))
                     return False

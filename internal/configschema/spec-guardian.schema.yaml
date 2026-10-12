@@ -1,0 +1,314 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: SpecGuardian configuration
+description: Configuration for SpecGuardian.
+type: object
+additionalProperties: false
+required: [version, fizzbee_files]
+properties:
+  version:
+    description: Version of the configuration format.
+    type: string
+    const: "0.1"
+  fizzbee_files:
+    type: array
+    minItems: 1
+    maxItems: 1
+    description: Settings for FizzBee models.
+    items:
+      $ref: '#/$defs/fizzbeeFile'
+  observers:
+    type: array
+    description: Observer settings.
+    items:
+      $ref: '#/$defs/observer'
+  dev:
+    type: boolean
+    default: false
+    description: Enable development features. Leave disabled for normal use.
+
+$defs:
+  compare:
+    type: boolean
+    default: true
+    description: >-
+      Whether to compare this state with the application. False also applies
+      to all descendants. For collection values, false ignores their contents
+      while still comparing map keys or list element counts.
+
+  reason:
+    type: string
+    description: >-
+      Explanation of the comparison choice. Required when compare is false,
+      unless an ancestor already has compare=false. Optional in other cases.
+
+  compareOrder:
+    type: boolean
+    default: true
+    description: >-
+      Whether element order matters. False compares contents and duplicate
+      counts regardless of order. Applies only to this list.
+
+  comparisonEnabled:
+    not:
+      required: [compare]
+      properties:
+        compare: {const: false}
+
+  comparisonDisabled:
+    required: [compare]
+    properties:
+      compare: {const: false}
+
+  comparisonReason:
+    oneOf:
+      - $ref: '#/$defs/comparisonEnabled'
+      - allOf:
+          - $ref: '#/$defs/comparisonDisabled'
+          - required: [reason]
+            properties:
+              reason:
+                type: string
+                pattern: '\S'
+
+  fizzbeeFile:
+    description: Settings for a FizzBee model.
+    type: object
+    additionalProperties: false
+    required: [output_dir]
+    properties:
+      output_dir:
+        type: string
+        minLength: 1
+        description: Directory containing model exploration results, relative to this configuration file.
+      roles:
+        type: array
+        description: Settings for the model's roles.
+        items:
+          $ref: '#/$defs/role'
+
+  role:
+    description: Settings for a model role.
+    type: object
+    additionalProperties: false
+    required: [name]
+    properties:
+      name:
+        type: string
+        minLength: 1
+        description: >-
+          Role name in the model. The null value is reserved for top-level
+          variables; use a string name for a role.
+      compare:
+        $ref: '#/$defs/compare'
+      reason:
+        $ref: '#/$defs/reason'
+      fields:
+        type: array
+        description: Settings for the role's fields.
+        items:
+          $ref: '#/$defs/fieldUnderExcludedAncestor'
+    allOf:
+      - $ref: '#/$defs/comparisonReason'
+      - oneOf:
+          - $ref: '#/$defs/comparisonDisabled'
+          - allOf:
+              - $ref: '#/$defs/comparisonEnabled'
+              - properties:
+                  fields:
+                    items:
+                      $ref: '#/$defs/field'
+
+  fieldUnderExcludedAncestor:
+    description: Settings for a model field.
+    type: object
+    additionalProperties: false
+    required: [name]
+    properties:
+      name:
+        type: string
+        minLength: 1
+        description: Field name within the role.
+      compare:
+        $ref: '#/$defs/compare'
+      reason:
+        $ref: '#/$defs/reason'
+      observer:
+        $ref: '#/$defs/fieldObserver'
+        description: Observer settings for this field.
+      type:
+        $ref: '#/$defs/typeUnderExcludedAncestor'
+        description: Type of the field's value.
+
+  field:
+    description: Settings for a model field.
+    allOf:
+      - $ref: '#/$defs/fieldUnderExcludedAncestor'
+      - $ref: '#/$defs/comparisonReason'
+      - oneOf:
+          - $ref: '#/$defs/comparisonDisabled'
+          - allOf:
+              - $ref: '#/$defs/comparisonEnabled'
+              - required: [type]
+                properties:
+                  type:
+                    $ref: '#/$defs/valueType'
+
+  typeUnderExcludedAncestor:
+    description: Settings for a value type.
+    oneOf:
+      - $ref: '#/$defs/primitiveType'
+      - $ref: '#/$defs/mapType'
+      - $ref: '#/$defs/listType'
+      - $ref: '#/$defs/messageType'
+
+  primitiveType:
+    description: A string, signed 64-bit integer, boolean, double, or byte sequence.
+    type: object
+    additionalProperties: false
+    required: [kind]
+    properties:
+      kind: {type: string, enum: [string, int64, bool, double, bytes]}
+      compare:
+        $ref: '#/$defs/compare'
+      reason:
+        $ref: '#/$defs/reason'
+      nullable:
+        type: boolean
+        default: false
+        description: Whether null is an allowed value.
+
+  mapType:
+    description: A collection of values identified by string keys.
+    type: object
+    additionalProperties: false
+    required: [kind, values]
+    properties:
+      kind: {type: string, const: map}
+      nullable:
+        type: boolean
+        default: false
+        description: Whether null is an allowed value.
+      compare:
+        $ref: '#/$defs/compare'
+      reason:
+        $ref: '#/$defs/reason'
+      values:
+        $ref: '#/$defs/typeUnderExcludedAncestor'
+        description: Type of each map value.
+
+  listType:
+    description: A sequence of values.
+    type: object
+    additionalProperties: false
+    required: [kind, values]
+    properties:
+      kind: {type: string, const: list}
+      nullable:
+        type: boolean
+        default: false
+        description: Whether null is an allowed value.
+      compare:
+        $ref: '#/$defs/compare'
+      reason:
+        $ref: '#/$defs/reason'
+      values:
+        $ref: '#/$defs/typeUnderExcludedAncestor'
+        description: Type of each list element.
+      compare_order:
+        $ref: '#/$defs/compareOrder'
+
+  messageType:
+    description: A value composed of named fields.
+    type: object
+    additionalProperties: false
+    required: [kind, fields]
+    properties:
+      kind: {type: string, const: message}
+      compare:
+        $ref: '#/$defs/compare'
+      reason:
+        $ref: '#/$defs/reason'
+      nullable:
+        type: boolean
+        default: false
+        description: Whether null is an allowed value.
+      fields:
+        type: object
+        description: Type settings for each named field.
+        minProperties: 1
+        propertyNames:
+          minLength: 1
+        additionalProperties:
+          $ref: '#/$defs/typeUnderExcludedAncestor'
+
+  valueType:
+    description: Settings for a value type.
+    allOf:
+      - $ref: '#/$defs/typeUnderExcludedAncestor'
+      - $ref: '#/$defs/comparisonReason'
+      - oneOf:
+          - $ref: '#/$defs/comparisonDisabled'
+          - allOf:
+              - $ref: '#/$defs/comparisonEnabled'
+              - properties:
+                  values:
+                    $ref: '#/$defs/valueType'
+                  fields:
+                    additionalProperties:
+                      $ref: '#/$defs/valueType'
+
+  observer:
+    description: Settings for a named observer.
+    type: object
+    additionalProperties: false
+    required: [id, plugin]
+    properties:
+      id:
+        type: string
+        minLength: 1
+        description: Unique identifier used to reference this observer.
+      plugin:
+        $ref: '#/$defs/plugin'
+        description: Plugin used by this observer.
+      config:
+        $ref: '#/$defs/pluginConfig'
+        description: Settings shared by fields using this observer.
+
+  plugin:
+    description: Settings identifying an observer plugin.
+    type: object
+    additionalProperties: false
+    properties:
+      builtin:
+        enum: [sql, valkey, dynamodb]
+        description: Name of a built-in observer plugin.
+      go_package:
+        type: string
+        minLength: 1
+        description: Go import path of an external observer plugin.
+    oneOf:
+      - required: [builtin]
+        not:
+          required: [go_package]
+      - required: [go_package]
+        not:
+          required: [builtin]
+
+  fieldObserver:
+    description: Observer settings for a field.
+    type: object
+    additionalProperties: false
+    required: [id]
+    properties:
+      id:
+        type: string
+        minLength: 1
+        description: Identifier of an observer declared in observers.
+      config:
+        $ref: '#/$defs/pluginConfig'
+        description: Field-specific settings for the selected observer.
+
+  pluginConfig:
+    type: [object, 'null']
+    additionalProperties: true
+    description: Settings defined by the selected plugin.

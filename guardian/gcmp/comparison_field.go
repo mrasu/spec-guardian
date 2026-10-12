@@ -3,6 +3,7 @@ package gcmp
 import (
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
@@ -13,6 +14,7 @@ type comparisonFieldMode uint8
 const (
 	comparisonFieldUnset comparisonFieldMode = iota
 	comparisonFieldEqual
+	comparisonFieldEqualIgnoringJSONPaths
 	comparisonFieldIgnore
 	comparisonFieldCustom
 	comparisonFieldCandidate
@@ -20,12 +22,14 @@ const (
 
 // ComparisonField configures how one expected FizzBee field is checked.
 type ComparisonField[T any] struct {
-	mode             comparisonFieldMode
-	value            T
-	actual           any
-	reason           string
-	compare          func(T) (ok bool, reason string)
-	compareCandidate func(T, any) (ok bool, reason string)
+	mode               comparisonFieldMode
+	value              T
+	actual             any
+	reason             string
+	compare            func(T) (ok bool, reason string)
+	compareCandidate   func(T, any) (ok bool, reason string)
+	ignoredJSONPaths   []string
+	unorderedJSONPaths []string
 }
 
 // FieldComparison is the legacy name for ComparisonField.
@@ -41,6 +45,25 @@ func Equal[T any](value T) *ComparisonField[T] {
 	comparison := NewComparisonField[T]()
 	comparison.mode = comparisonFieldEqual
 	comparison.value = value
+	return comparison
+}
+
+// EqualIgnoringJSONPaths compares values after omitting the specified JSON paths.
+// Use [] for list elements and {} for map values in a path.
+func EqualIgnoringJSONPaths[T any](value T, paths ...string) *ComparisonField[T] {
+	comparison := NewComparisonField[T]()
+	comparison.mode = comparisonFieldEqualIgnoringJSONPaths
+	comparison.value = value
+	comparison.ignoredJSONPaths = slices.Clone(paths)
+	return comparison
+}
+
+// EqualIgnoringListOrder compares JSON values without element order at listPaths.
+// Use an empty path for the root list, [] for list elements, and {} for map values.
+// ignoredPaths omits fields before comparing list elements. Duplicate counts are preserved.
+func EqualIgnoringListOrder[T any](value T, listPaths []string, ignoredPaths ...string) *ComparisonField[T] {
+	comparison := EqualIgnoringJSONPaths(value, ignoredPaths...)
+	comparison.unorderedJSONPaths = slices.Clone(listPaths)
 	return comparison
 }
 
@@ -87,7 +110,7 @@ func (c *ComparisonField[T]) DiagnosticValue() any {
 		return []string{"comparison is not configured"}
 	}
 	switch c.mode {
-	case comparisonFieldEqual:
+	case comparisonFieldEqual, comparisonFieldEqualIgnoringJSONPaths:
 		return c.value
 	case comparisonFieldIgnore:
 		return []string{"[IGNORED; " + c.reason + "]"}
@@ -105,6 +128,11 @@ func (c *ComparisonField[T]) Validate(path string) error {
 	}
 	switch c.mode {
 	case comparisonFieldEqual:
+		return nil
+	case comparisonFieldEqualIgnoringJSONPaths:
+		if len(c.ignoredJSONPaths) == 0 && len(c.unorderedJSONPaths) == 0 {
+			return fmt.Errorf("%s: EqualIgnoringJSONPaths requires paths", path)
+		}
 		return nil
 	case comparisonFieldIgnore:
 		if c.reason == "" {
@@ -143,6 +171,8 @@ func (c *ComparisonField[T]) MatchWithCandidate(path string, want T, candidate a
 			return nil
 		}
 		return comparisonMismatchError(path, c.value, want)
+	case comparisonFieldEqualIgnoringJSONPaths:
+		return matchJSONPaths(path, c.value, want, c.ignoredJSONPaths, c.unorderedJSONPaths)
 	case comparisonFieldIgnore:
 		return nil
 	case comparisonFieldCustom:

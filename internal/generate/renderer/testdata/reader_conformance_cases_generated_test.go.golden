@@ -27,7 +27,6 @@ type ReaderConformanceEnvironment struct {
 func NewReaderConformanceEnvironment(t *testing.T, controller *guardian.InjectionController) *ReaderConformanceEnvironment {
 	t.Helper()
 	actions, environment := BuildReaderConformanceComponents(t, controller)
-
 	return &ReaderConformanceEnvironment{
 		Actions:           actions,
 		ReaderEnvironment: environment,
@@ -63,10 +62,25 @@ func (e *ReaderConformanceEnvironment) ExecuteRead(ctx context.Context, input Re
 
 // ObserveReadState collects the state and output visible after the action.
 func (e *ReaderConformanceEnvironment) ObserveReadState(t *testing.T, input FizzbeeReaderState, output ReaderReadOutput, actionErr error) guardian.ObservedState[*ReaderObservedState] {
-	observedState := e.ObserveCurrentState(t)
-	resultState := e.BuildObservedReadState(t, observedState, input, output, actionErr)
+	fetched := ReaderFetchedObservation{}
+
+	manual := e.BuildReadManualObservation(t, fetched, input, output, actionErr)
+
+	resultState := ReaderObservedState{Fields: manual.Fields}
 
 	return guardian.NewObservedState(&resultState)
+}
+
+// BuildAllowedReadState maps every comparable model field to its allowed value.
+func (e *ReaderConformanceEnvironment) BuildAllowedReadState(t *testing.T, allowed FizzbeeReaderState) ReaderComparisonState {
+	t.Helper()
+	return ReaderComparisonState{
+		Fields: ReaderComparisonField{
+			Reader: ReaderReaderComparisonField{
+				Status: gcmp.Equal(allowed.Fields.Reader.Status),
+			},
+		},
+	}
 }
 
 // BuildAllowedReadStates maps FizzBee outcomes to comparable states.
@@ -90,7 +104,7 @@ type ReaderCase struct {
 // FizzbeeReaderState contains the model parameters and fields for this role.
 type FizzbeeReaderState struct {
 	Params ReaderParams `json:"params"`
-	Fields ReaderFields `json:"fields"`
+	Fields ReaderField  `json:"fields"`
 }
 
 // ReaderParams contains each role's model parameters.
@@ -103,46 +117,42 @@ type ReaderReaderParams struct {
 	Key int `json:"key"`
 }
 
-// ReaderFields contains each role's model fields.
-type ReaderFields struct {
-	Reader ReaderReaderFields `json:"Reader"`
+// ReaderField contains each role's model fields.
+type ReaderField struct {
+	Reader ReaderReaderField `json:"Reader"`
 }
 
-// ReaderReaderFields contains model fields for Reader.
-type ReaderReaderFields struct {
+// ReaderReaderField contains model fields for Reader.
+type ReaderReaderField struct {
 	Status string `json:"status"`
 }
 
 // ReaderObservedState holds values observed from the application.
 type ReaderObservedState struct {
-	Params ReaderObservedParams
-	Fields ReaderObservedFields
+	Fields ReaderObservedField
 }
 
-// ReaderObservedParams contains observed parameters for each role.
-type ReaderObservedParams struct {
-	Reader ReaderReaderObservedParams
+// ReaderObservedField contains observed fields for each role.
+type ReaderObservedField struct {
+	Reader ReaderReaderObservedField
 }
 
-// ReaderReaderObservedParams contains observed parameters for Reader.
-type ReaderReaderObservedParams struct {
-	Key *gcmp.ObservedField[int]
-}
-
-// ReaderObservedFields contains observed fields for each role.
-type ReaderObservedFields struct {
-	Reader ReaderReaderObservedFields
-}
-
-// ReaderReaderObservedFields contains observed fields for Reader.
-type ReaderReaderObservedFields struct {
+// ReaderReaderObservedField contains observed fields for Reader.
+type ReaderReaderObservedField struct {
 	Status *gcmp.ObservedField[string]
+}
+
+// ReaderFetchedObservation contains fields collected by declared observers.
+type ReaderFetchedObservation struct{}
+
+// ReaderManualObservation contains fields supplied by the application.
+type ReaderManualObservation struct {
+	Fields ReaderObservedField
 }
 
 // ReaderComparisonState configures checks for an allowed model state.
 type ReaderComparisonState struct {
-	Params ReaderComparisonParams
-	Fields ReaderComparisonFields
+	Fields ReaderComparisonField
 }
 
 // ExpectedState identifies the FizzBee state type compared with this state.
@@ -150,22 +160,12 @@ func (actual *ReaderComparisonState) ExpectedState() FizzbeeReaderState {
 	return FizzbeeReaderState{}
 }
 
-// ReaderComparisonParams contains parameter comparisons for each role.
-type ReaderComparisonParams struct {
-	Reader ReaderReaderComparisonParams
+// ReaderComparisonField contains field comparisons for each role.
+type ReaderComparisonField struct {
+	Reader ReaderReaderComparisonField
 }
 
-// ReaderReaderComparisonParams contains parameter comparisons for Reader.
-type ReaderReaderComparisonParams struct {
-	Key *gcmp.ComparisonField[int]
-}
-
-// ReaderComparisonFields contains field comparisons for each role.
-type ReaderComparisonFields struct {
-	Reader ReaderReaderComparisonFields
-}
-
-// ReaderReaderComparisonFields contains field comparisons for Reader.
-type ReaderReaderComparisonFields struct {
+// ReaderReaderComparisonField contains field comparisons for Reader.
+type ReaderReaderComparisonField struct {
 	Status *gcmp.ComparisonField[string]
 }

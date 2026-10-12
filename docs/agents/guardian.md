@@ -1,0 +1,30 @@
+# Guardian
+
+This document records design constraints for the conformance test runtime.
+
+## Public boundary
+
+- Use [Architecture](architecture.md) for responsibility boundaries and lifecycle contracts.
+- Keep public APIs limited to caller needs and dependencies minimal; implementation details belong under `internal`.
+
+## Fault injection and hooks
+
+- Hooks must preserve wrapped-library behavior except for deliberate injection; they must not change retry policies to make tests pass.
+- Define injection units at the wrapped API boundary, not by incidental lower-level work. Retries can mask injected failures and must be controlled by the caller.
+- Recovery after injection must remain observable without injecting a second fault in the same attempt.
+- Report incomplete fault coverage rather than treating exhausted limits or absent hooked I/O as full coverage.
+- Operation labels are diagnostics, not stable identifiers; omit application payloads.
+
+## Observation
+
+- Use data-source terminology for plugin configuration rather than forcing source-specific concepts into a universal vocabulary.
+- Fetch failures are test failures, not empty state or unobservability.
+- Field order must not imply a consistent snapshot across sources.
+- Conversion must preserve model distinctions; reject implicit coercion and ambiguous null representations.
+
+## Comparison
+
+- Judge conformance by resulting state, not I/O traces or whether the Action returns the injected error; recovery and error wrapping must not change the verdict.
+- Preserve container shape and multiplicity. Ignoring order must not turn a collection into a set.
+- Unobservability explicitly limits verification; it is distinct from failure to fetch a value.
+- Mismatch diagnostics must identify the full field path and expose enough state to explain structural differences.

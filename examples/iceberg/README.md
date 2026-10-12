@@ -1,6 +1,6 @@
 # Iceberg Example
 
-This example tests `Append`, `Delete`, and `Overwrite` through the public `Table` API of [Apache Iceberg Go](https://github.com/apache/iceberg-go) against a FizzBee spec. The conformance tests compare the visible data files, catalog metadata change, and operation result with states allowed by the spec when an S3 API call fails.
+This example tests `Append`, `Delete`, and `Overwrite` through the public `Table` API of [Apache Iceberg Go](https://github.com/apache/iceberg-go) against a FizzBee spec. The conformance tests compare metadata files, manifest lists, manifest files, data files, delete files, and operation results with states allowed by the spec when an S3 API call fails.
 
 ## Run the tests
 

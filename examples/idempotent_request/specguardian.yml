@@ -1,0 +1,93 @@
+version: "0.1"
+observers:
+  - id: mysql
+    plugin:
+      builtin: sql
+    config:
+      driver: mysql
+      connection_string: root@tcp(localhost:13306)/idempotent_request?parseTime=true
+  - id: dynamodb
+    plugin:
+      builtin: dynamodb
+    config:
+      endpoint: http://localhost:14566
+      region: us-east-1
+      access_key_id: test
+      secret_access_key: test
+fizzbee_files:
+  - output_dir: docs/spec/fizzbee_output
+    roles:
+      - name: DynamoDB
+        fields:
+          - name: order_idempotency_records
+            observer:
+              id: dynamodb
+              config:
+                table: order_idempotency_records
+                result:
+                  type: item_map
+                  key_attribute: id
+            type:
+              kind: map
+              values:
+                kind: message
+                fields:
+                  order_id: {kind: int64, nullable: true}
+                  payload: {kind: string}
+                  status: {kind: string}
+          - name: delivery_records
+            observer:
+              id: dynamodb
+              config:
+                table: delivery_records
+                result:
+                  type: item_map
+                  key_attribute: id
+            type:
+              kind: map
+              values:
+                kind: message
+                fields:
+                  order_id: {kind: int64}
+                  data: {kind: string}
+      - name: MySQL
+        fields:
+          - name: order_records
+            observer:
+              id: mysql
+              config:
+                query: SELECT id, request_id, payload, delivery_id, delivery_data, status FROM orders
+                result:
+                  type: row_map
+                  key_column: id
+            type:
+              kind: map
+              values:
+                kind: message
+                fields:
+                  request_id: {kind: string}
+                  payload: {kind: string}
+                  delivery_id: {kind: string, nullable: true}
+                  delivery_data: {kind: string, nullable: true}
+                  status: {kind: string}
+          - name: delivery_prepared_count
+            compare: false
+            reason: internal property
+          - name: next_order_id
+            compare: false
+            reason: internal property
+      - name: RequestPreparator
+        fields:
+          - name: second_delivery_data
+            compare: false
+            reason: internal property
+          - name: second_delivery_request_prepared
+            compare: false
+            reason: internal property
+          - name: second_order_payload
+            compare: false
+            reason: internal property
+          - name: second_order_request_prepared
+            compare: false
+            reason: internal property
+dev: true

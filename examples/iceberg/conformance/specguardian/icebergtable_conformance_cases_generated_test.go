@@ -9,6 +9,12 @@ import (
 
 	"github.com/mrasu/spec-guardian/guardian"
 	"github.com/mrasu/spec-guardian/guardian/gcmp"
+	"github.com/mrasu/spec-guardian/guardian/observer"
+	_sgDatafiles "spec-guardian/examples/iceberg/conformance/specguardian/observer/datafiles"
+	_sgDeletefiles "spec-guardian/examples/iceberg/conformance/specguardian/observer/deletefiles"
+	_sgManifestfiles "spec-guardian/examples/iceberg/conformance/specguardian/observer/manifestfiles"
+	_sgManifestlists "spec-guardian/examples/iceberg/conformance/specguardian/observer/manifestlists"
+	_sgMetadatafiles "spec-guardian/examples/iceberg/conformance/specguardian/observer/metadatafiles"
 )
 
 // IcebergTableActions describes the application methods exercised by this role.
@@ -23,16 +29,70 @@ type IcebergTableActions interface {
 type IcebergTableConformanceEnvironment struct {
 	Actions IcebergTableActions
 	*IcebergTableEnvironment
+	observerDataFilesObserver     *_sgDatafiles.Observer
+	observerDeleteFilesObserver   *_sgDeletefiles.Observer
+	observerManifestFilesObserver *_sgManifestfiles.Observer
+	observerManifestListsObserver *_sgManifestlists.Observer
+	observerMetadataFilesObserver *_sgMetadatafiles.Observer
 }
 
 // NewIcebergTableConformanceEnvironment builds the adapter and resources for a conformance case.
 func NewIcebergTableConformanceEnvironment(t *testing.T, controller *guardian.InjectionController) *IcebergTableConformanceEnvironment {
 	t.Helper()
 	actions, environment := BuildIcebergTableConformanceComponents(t, controller)
-
+	configDataFilesObserver, fieldsDataFilesObserver := _sgObserverDataFilesObserverSettings()
+	observerDataFilesObserver, errDataFilesObserver := _sgDatafiles.New(
+		_sgDatafiles.Config{},
+		configDataFilesObserver,
+		fieldsDataFilesObserver,
+	)
+	if errDataFilesObserver != nil {
+		t.Fatalf("observer data_files_observer New: %v", errDataFilesObserver)
+	}
+	configDeleteFilesObserver, fieldsDeleteFilesObserver := _sgObserverDeleteFilesObserverSettings()
+	observerDeleteFilesObserver, errDeleteFilesObserver := _sgDeletefiles.New(
+		_sgDeletefiles.Config{},
+		configDeleteFilesObserver,
+		fieldsDeleteFilesObserver,
+	)
+	if errDeleteFilesObserver != nil {
+		t.Fatalf("observer delete_files_observer New: %v", errDeleteFilesObserver)
+	}
+	configManifestFilesObserver, fieldsManifestFilesObserver := _sgObserverManifestFilesObserverSettings()
+	observerManifestFilesObserver, errManifestFilesObserver := _sgManifestfiles.New(
+		_sgManifestfiles.Config{},
+		configManifestFilesObserver,
+		fieldsManifestFilesObserver,
+	)
+	if errManifestFilesObserver != nil {
+		t.Fatalf("observer manifest_files_observer New: %v", errManifestFilesObserver)
+	}
+	configManifestListsObserver, fieldsManifestListsObserver := _sgObserverManifestListsObserverSettings()
+	observerManifestListsObserver, errManifestListsObserver := _sgManifestlists.New(
+		_sgManifestlists.Config{},
+		configManifestListsObserver,
+		fieldsManifestListsObserver,
+	)
+	if errManifestListsObserver != nil {
+		t.Fatalf("observer manifest_lists_observer New: %v", errManifestListsObserver)
+	}
+	configMetadataFilesObserver, fieldsMetadataFilesObserver := _sgObserverMetadataFilesObserverSettings()
+	observerMetadataFilesObserver, errMetadataFilesObserver := _sgMetadatafiles.New(
+		_sgMetadatafiles.Config{},
+		configMetadataFilesObserver,
+		fieldsMetadataFilesObserver,
+	)
+	if errMetadataFilesObserver != nil {
+		t.Fatalf("observer metadata_files_observer New: %v", errMetadataFilesObserver)
+	}
 	return &IcebergTableConformanceEnvironment{
-		Actions:                 actions,
-		IcebergTableEnvironment: environment,
+		Actions:                       actions,
+		IcebergTableEnvironment:       environment,
+		observerDataFilesObserver:     observerDataFilesObserver,
+		observerDeleteFilesObserver:   observerDeleteFilesObserver,
+		observerManifestFilesObserver: observerManifestFilesObserver,
+		observerManifestListsObserver: observerManifestListsObserver,
+		observerMetadataFilesObserver: observerMetadataFilesObserver,
 	}
 }
 
@@ -48,6 +108,46 @@ func (e *IcebergTableConformanceEnvironment) PrepareAppendCase(t *testing.T) {
 	t.Cleanup(func() {
 		e.CleanupAppendCase(t)
 	})
+	if err := e.observerDataFilesObserver.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer data_files_observer PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerDataFilesObserver.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer data_files_observer CleanupCase: %v", err)
+		}
+	})
+	if err := e.observerDeleteFilesObserver.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer delete_files_observer PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerDeleteFilesObserver.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer delete_files_observer CleanupCase: %v", err)
+		}
+	})
+	if err := e.observerManifestFilesObserver.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer manifest_files_observer PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerManifestFilesObserver.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer manifest_files_observer CleanupCase: %v", err)
+		}
+	})
+	if err := e.observerManifestListsObserver.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer manifest_lists_observer PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerManifestListsObserver.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer manifest_lists_observer CleanupCase: %v", err)
+		}
+	})
+	if err := e.observerMetadataFilesObserver.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer metadata_files_observer PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerMetadataFilesObserver.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer metadata_files_observer CleanupCase: %v", err)
+		}
+	})
 }
 
 // PrepareAppendAttempt sets up one fault attempt and registers its cleanup.
@@ -55,6 +155,46 @@ func (e *IcebergTableConformanceEnvironment) PrepareAppendAttempt(t *testing.T, 
 	e.SetupAppendAttempt(t, input)
 	t.Cleanup(func() {
 		e.CleanupAppendAttempt(t)
+	})
+	if err := e.observerDataFilesObserver.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer data_files_observer PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerDataFilesObserver.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer data_files_observer CleanupAttempt: %v", err)
+		}
+	})
+	if err := e.observerDeleteFilesObserver.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer delete_files_observer PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerDeleteFilesObserver.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer delete_files_observer CleanupAttempt: %v", err)
+		}
+	})
+	if err := e.observerManifestFilesObserver.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer manifest_files_observer PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerManifestFilesObserver.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer manifest_files_observer CleanupAttempt: %v", err)
+		}
+	})
+	if err := e.observerManifestListsObserver.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer manifest_lists_observer PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerManifestListsObserver.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer manifest_lists_observer CleanupAttempt: %v", err)
+		}
+	})
+	if err := e.observerMetadataFilesObserver.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer metadata_files_observer PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerMetadataFilesObserver.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer metadata_files_observer CleanupAttempt: %v", err)
+		}
 	})
 }
 
@@ -65,10 +205,88 @@ func (e *IcebergTableConformanceEnvironment) ExecuteAppend(ctx context.Context, 
 
 // ObserveAppendState collects the state and output visible after the action.
 func (e *IcebergTableConformanceEnvironment) ObserveAppendState(t *testing.T, input FizzbeeIcebergTableState, output IcebergTableAppendOutput, actionErr error) guardian.ObservedState[*IcebergTableObservedState] {
-	observedState := e.ObserveCurrentState(t)
-	resultState := e.BuildObservedAppendState(t, observedState, input, output, actionErr)
+	valueObjectStoreDataFiles, err := e.observerDataFilesObserver.Observe(t.Context(), _sgFieldObjectStoreDataFiles)
+	if err != nil {
+		t.Fatalf("observer data_files_observer Observe %s: %v", _sgFieldObjectStoreDataFiles, err)
+	}
+	typedObjectStoreDataFiles, convertErr := observer.Convert[ObjectStoreDataFilesValue](valueObjectStoreDataFiles)
+	if convertErr != nil {
+		t.Fatalf("observer data_files_observer Observe %s: %v", _sgFieldObjectStoreDataFiles, convertErr)
+	}
+	valueObjectStoreDeleteFiles, err := e.observerDeleteFilesObserver.Observe(t.Context(), _sgFieldObjectStoreDeleteFiles)
+	if err != nil {
+		t.Fatalf("observer delete_files_observer Observe %s: %v", _sgFieldObjectStoreDeleteFiles, err)
+	}
+	typedObjectStoreDeleteFiles, convertErr := observer.Convert[ObjectStoreDeleteFilesValue](valueObjectStoreDeleteFiles)
+	if convertErr != nil {
+		t.Fatalf("observer delete_files_observer Observe %s: %v", _sgFieldObjectStoreDeleteFiles, convertErr)
+	}
+	valueObjectStoreManifestFiles, err := e.observerManifestFilesObserver.Observe(t.Context(), _sgFieldObjectStoreManifestFiles)
+	if err != nil {
+		t.Fatalf("observer manifest_files_observer Observe %s: %v", _sgFieldObjectStoreManifestFiles, err)
+	}
+	typedObjectStoreManifestFiles, convertErr := observer.Convert[ObjectStoreManifestFilesValue](valueObjectStoreManifestFiles)
+	if convertErr != nil {
+		t.Fatalf("observer manifest_files_observer Observe %s: %v", _sgFieldObjectStoreManifestFiles, convertErr)
+	}
+	valueObjectStoreManifestLists, err := e.observerManifestListsObserver.Observe(t.Context(), _sgFieldObjectStoreManifestLists)
+	if err != nil {
+		t.Fatalf("observer manifest_lists_observer Observe %s: %v", _sgFieldObjectStoreManifestLists, err)
+	}
+	typedObjectStoreManifestLists, convertErr := observer.Convert[ObjectStoreManifestListsValue](valueObjectStoreManifestLists)
+	if convertErr != nil {
+		t.Fatalf("observer manifest_lists_observer Observe %s: %v", _sgFieldObjectStoreManifestLists, convertErr)
+	}
+	valueObjectStoreMetadataFiles, err := e.observerMetadataFilesObserver.Observe(t.Context(), _sgFieldObjectStoreMetadataFiles)
+	if err != nil {
+		t.Fatalf("observer metadata_files_observer Observe %s: %v", _sgFieldObjectStoreMetadataFiles, err)
+	}
+	typedObjectStoreMetadataFiles, convertErr := observer.Convert[ObjectStoreMetadataFilesValue](valueObjectStoreMetadataFiles)
+	if convertErr != nil {
+		t.Fatalf("observer metadata_files_observer Observe %s: %v", _sgFieldObjectStoreMetadataFiles, convertErr)
+	}
+	fetched := IcebergTableFetchedObservation{
+		Fields: IcebergTableFetchedField{
+			ObjectStore: IcebergTableObjectStoreFetchedField{
+				DataFiles:     typedObjectStoreDataFiles,
+				DeleteFiles:   typedObjectStoreDeleteFiles,
+				ManifestFiles: typedObjectStoreManifestFiles,
+				ManifestLists: typedObjectStoreManifestLists,
+				MetadataFiles: typedObjectStoreMetadataFiles,
+			},
+		},
+	}
+
+	manual := e.BuildAppendManualObservation(t, fetched, input, output, actionErr)
+	_ = manual
+
+	resultState := IcebergTableObservedState{Fields: IcebergTableObservedField{
+		ObjectStore: IcebergTableObjectStoreObservedField{
+			DataFiles:     _sgToObjectStoreDataFilesObservedList(fetched.Fields.ObjectStore.DataFiles),
+			DeleteFiles:   _sgToObjectStoreDeleteFilesObservedList(fetched.Fields.ObjectStore.DeleteFiles),
+			ManifestFiles: _sgToObjectStoreManifestFilesObservedList(fetched.Fields.ObjectStore.ManifestFiles),
+			ManifestLists: _sgToObjectStoreManifestListsObservedList(fetched.Fields.ObjectStore.ManifestLists),
+			MetadataFiles: _sgToObjectStoreMetadataFilesObservedList(fetched.Fields.ObjectStore.MetadataFiles),
+		},
+	}}
 
 	return guardian.NewObservedState(&resultState)
+}
+
+// BuildAllowedAppendState maps every comparable model field to its allowed value.
+func (e *IcebergTableConformanceEnvironment) BuildAllowedAppendState(t *testing.T, allowed FizzbeeIcebergTableState) IcebergTableComparisonState {
+	t.Helper()
+	return IcebergTableComparisonState{
+		Fields: IcebergTableComparisonField{
+			ObjectStore: IcebergTableObjectStoreComparisonField{
+				DataFiles:     _sgToObjectStoreDataFilesComparisonList(allowed.Fields.ObjectStore.DataFiles),
+				DeleteFiles:   _sgToObjectStoreDeleteFilesComparisonList(allowed.Fields.ObjectStore.DeleteFiles),
+				ManifestFiles: _sgToObjectStoreManifestFilesComparisonList(allowed.Fields.ObjectStore.ManifestFiles),
+				ManifestLists: _sgToObjectStoreManifestListsComparisonList(allowed.Fields.ObjectStore.ManifestLists),
+				MetadataFiles: _sgToObjectStoreMetadataFilesComparisonList(allowed.Fields.ObjectStore.MetadataFiles),
+			},
+		},
+	}
 }
 
 // BuildAllowedAppendStates maps FizzBee outcomes to comparable states.
@@ -88,6 +306,46 @@ func (e *IcebergTableConformanceEnvironment) PrepareDeleteCase(t *testing.T) {
 	t.Cleanup(func() {
 		e.CleanupDeleteCase(t)
 	})
+	if err := e.observerDataFilesObserver.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer data_files_observer PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerDataFilesObserver.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer data_files_observer CleanupCase: %v", err)
+		}
+	})
+	if err := e.observerDeleteFilesObserver.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer delete_files_observer PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerDeleteFilesObserver.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer delete_files_observer CleanupCase: %v", err)
+		}
+	})
+	if err := e.observerManifestFilesObserver.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer manifest_files_observer PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerManifestFilesObserver.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer manifest_files_observer CleanupCase: %v", err)
+		}
+	})
+	if err := e.observerManifestListsObserver.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer manifest_lists_observer PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerManifestListsObserver.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer manifest_lists_observer CleanupCase: %v", err)
+		}
+	})
+	if err := e.observerMetadataFilesObserver.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer metadata_files_observer PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerMetadataFilesObserver.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer metadata_files_observer CleanupCase: %v", err)
+		}
+	})
 }
 
 // PrepareDeleteAttempt sets up one fault attempt and registers its cleanup.
@@ -95,6 +353,46 @@ func (e *IcebergTableConformanceEnvironment) PrepareDeleteAttempt(t *testing.T, 
 	e.SetupDeleteAttempt(t, input)
 	t.Cleanup(func() {
 		e.CleanupDeleteAttempt(t)
+	})
+	if err := e.observerDataFilesObserver.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer data_files_observer PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerDataFilesObserver.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer data_files_observer CleanupAttempt: %v", err)
+		}
+	})
+	if err := e.observerDeleteFilesObserver.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer delete_files_observer PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerDeleteFilesObserver.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer delete_files_observer CleanupAttempt: %v", err)
+		}
+	})
+	if err := e.observerManifestFilesObserver.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer manifest_files_observer PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerManifestFilesObserver.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer manifest_files_observer CleanupAttempt: %v", err)
+		}
+	})
+	if err := e.observerManifestListsObserver.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer manifest_lists_observer PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerManifestListsObserver.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer manifest_lists_observer CleanupAttempt: %v", err)
+		}
+	})
+	if err := e.observerMetadataFilesObserver.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer metadata_files_observer PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerMetadataFilesObserver.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer metadata_files_observer CleanupAttempt: %v", err)
+		}
 	})
 }
 
@@ -105,10 +403,88 @@ func (e *IcebergTableConformanceEnvironment) ExecuteDelete(ctx context.Context, 
 
 // ObserveDeleteState collects the state and output visible after the action.
 func (e *IcebergTableConformanceEnvironment) ObserveDeleteState(t *testing.T, input FizzbeeIcebergTableState, output IcebergTableDeleteOutput, actionErr error) guardian.ObservedState[*IcebergTableObservedState] {
-	observedState := e.ObserveCurrentState(t)
-	resultState := e.BuildObservedDeleteState(t, observedState, input, output, actionErr)
+	valueObjectStoreDataFiles, err := e.observerDataFilesObserver.Observe(t.Context(), _sgFieldObjectStoreDataFiles)
+	if err != nil {
+		t.Fatalf("observer data_files_observer Observe %s: %v", _sgFieldObjectStoreDataFiles, err)
+	}
+	typedObjectStoreDataFiles, convertErr := observer.Convert[ObjectStoreDataFilesValue](valueObjectStoreDataFiles)
+	if convertErr != nil {
+		t.Fatalf("observer data_files_observer Observe %s: %v", _sgFieldObjectStoreDataFiles, convertErr)
+	}
+	valueObjectStoreDeleteFiles, err := e.observerDeleteFilesObserver.Observe(t.Context(), _sgFieldObjectStoreDeleteFiles)
+	if err != nil {
+		t.Fatalf("observer delete_files_observer Observe %s: %v", _sgFieldObjectStoreDeleteFiles, err)
+	}
+	typedObjectStoreDeleteFiles, convertErr := observer.Convert[ObjectStoreDeleteFilesValue](valueObjectStoreDeleteFiles)
+	if convertErr != nil {
+		t.Fatalf("observer delete_files_observer Observe %s: %v", _sgFieldObjectStoreDeleteFiles, convertErr)
+	}
+	valueObjectStoreManifestFiles, err := e.observerManifestFilesObserver.Observe(t.Context(), _sgFieldObjectStoreManifestFiles)
+	if err != nil {
+		t.Fatalf("observer manifest_files_observer Observe %s: %v", _sgFieldObjectStoreManifestFiles, err)
+	}
+	typedObjectStoreManifestFiles, convertErr := observer.Convert[ObjectStoreManifestFilesValue](valueObjectStoreManifestFiles)
+	if convertErr != nil {
+		t.Fatalf("observer manifest_files_observer Observe %s: %v", _sgFieldObjectStoreManifestFiles, convertErr)
+	}
+	valueObjectStoreManifestLists, err := e.observerManifestListsObserver.Observe(t.Context(), _sgFieldObjectStoreManifestLists)
+	if err != nil {
+		t.Fatalf("observer manifest_lists_observer Observe %s: %v", _sgFieldObjectStoreManifestLists, err)
+	}
+	typedObjectStoreManifestLists, convertErr := observer.Convert[ObjectStoreManifestListsValue](valueObjectStoreManifestLists)
+	if convertErr != nil {
+		t.Fatalf("observer manifest_lists_observer Observe %s: %v", _sgFieldObjectStoreManifestLists, convertErr)
+	}
+	valueObjectStoreMetadataFiles, err := e.observerMetadataFilesObserver.Observe(t.Context(), _sgFieldObjectStoreMetadataFiles)
+	if err != nil {
+		t.Fatalf("observer metadata_files_observer Observe %s: %v", _sgFieldObjectStoreMetadataFiles, err)
+	}
+	typedObjectStoreMetadataFiles, convertErr := observer.Convert[ObjectStoreMetadataFilesValue](valueObjectStoreMetadataFiles)
+	if convertErr != nil {
+		t.Fatalf("observer metadata_files_observer Observe %s: %v", _sgFieldObjectStoreMetadataFiles, convertErr)
+	}
+	fetched := IcebergTableFetchedObservation{
+		Fields: IcebergTableFetchedField{
+			ObjectStore: IcebergTableObjectStoreFetchedField{
+				DataFiles:     typedObjectStoreDataFiles,
+				DeleteFiles:   typedObjectStoreDeleteFiles,
+				ManifestFiles: typedObjectStoreManifestFiles,
+				ManifestLists: typedObjectStoreManifestLists,
+				MetadataFiles: typedObjectStoreMetadataFiles,
+			},
+		},
+	}
+
+	manual := e.BuildDeleteManualObservation(t, fetched, input, output, actionErr)
+	_ = manual
+
+	resultState := IcebergTableObservedState{Fields: IcebergTableObservedField{
+		ObjectStore: IcebergTableObjectStoreObservedField{
+			DataFiles:     _sgToObjectStoreDataFilesObservedList(fetched.Fields.ObjectStore.DataFiles),
+			DeleteFiles:   _sgToObjectStoreDeleteFilesObservedList(fetched.Fields.ObjectStore.DeleteFiles),
+			ManifestFiles: _sgToObjectStoreManifestFilesObservedList(fetched.Fields.ObjectStore.ManifestFiles),
+			ManifestLists: _sgToObjectStoreManifestListsObservedList(fetched.Fields.ObjectStore.ManifestLists),
+			MetadataFiles: _sgToObjectStoreMetadataFilesObservedList(fetched.Fields.ObjectStore.MetadataFiles),
+		},
+	}}
 
 	return guardian.NewObservedState(&resultState)
+}
+
+// BuildAllowedDeleteState maps every comparable model field to its allowed value.
+func (e *IcebergTableConformanceEnvironment) BuildAllowedDeleteState(t *testing.T, allowed FizzbeeIcebergTableState) IcebergTableComparisonState {
+	t.Helper()
+	return IcebergTableComparisonState{
+		Fields: IcebergTableComparisonField{
+			ObjectStore: IcebergTableObjectStoreComparisonField{
+				DataFiles:     _sgToObjectStoreDataFilesComparisonList(allowed.Fields.ObjectStore.DataFiles),
+				DeleteFiles:   _sgToObjectStoreDeleteFilesComparisonList(allowed.Fields.ObjectStore.DeleteFiles),
+				ManifestFiles: _sgToObjectStoreManifestFilesComparisonList(allowed.Fields.ObjectStore.ManifestFiles),
+				ManifestLists: _sgToObjectStoreManifestListsComparisonList(allowed.Fields.ObjectStore.ManifestLists),
+				MetadataFiles: _sgToObjectStoreMetadataFilesComparisonList(allowed.Fields.ObjectStore.MetadataFiles),
+			},
+		},
+	}
 }
 
 // BuildAllowedDeleteStates maps FizzBee outcomes to comparable states.
@@ -128,6 +504,46 @@ func (e *IcebergTableConformanceEnvironment) PrepareOverwriteCase(t *testing.T) 
 	t.Cleanup(func() {
 		e.CleanupOverwriteCase(t)
 	})
+	if err := e.observerDataFilesObserver.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer data_files_observer PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerDataFilesObserver.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer data_files_observer CleanupCase: %v", err)
+		}
+	})
+	if err := e.observerDeleteFilesObserver.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer delete_files_observer PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerDeleteFilesObserver.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer delete_files_observer CleanupCase: %v", err)
+		}
+	})
+	if err := e.observerManifestFilesObserver.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer manifest_files_observer PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerManifestFilesObserver.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer manifest_files_observer CleanupCase: %v", err)
+		}
+	})
+	if err := e.observerManifestListsObserver.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer manifest_lists_observer PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerManifestListsObserver.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer manifest_lists_observer CleanupCase: %v", err)
+		}
+	})
+	if err := e.observerMetadataFilesObserver.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer metadata_files_observer PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerMetadataFilesObserver.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer metadata_files_observer CleanupCase: %v", err)
+		}
+	})
 }
 
 // PrepareOverwriteAttempt sets up one fault attempt and registers its cleanup.
@@ -135,6 +551,46 @@ func (e *IcebergTableConformanceEnvironment) PrepareOverwriteAttempt(t *testing.
 	e.SetupOverwriteAttempt(t, input)
 	t.Cleanup(func() {
 		e.CleanupOverwriteAttempt(t)
+	})
+	if err := e.observerDataFilesObserver.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer data_files_observer PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerDataFilesObserver.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer data_files_observer CleanupAttempt: %v", err)
+		}
+	})
+	if err := e.observerDeleteFilesObserver.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer delete_files_observer PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerDeleteFilesObserver.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer delete_files_observer CleanupAttempt: %v", err)
+		}
+	})
+	if err := e.observerManifestFilesObserver.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer manifest_files_observer PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerManifestFilesObserver.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer manifest_files_observer CleanupAttempt: %v", err)
+		}
+	})
+	if err := e.observerManifestListsObserver.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer manifest_lists_observer PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerManifestListsObserver.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer manifest_lists_observer CleanupAttempt: %v", err)
+		}
+	})
+	if err := e.observerMetadataFilesObserver.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer metadata_files_observer PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerMetadataFilesObserver.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer metadata_files_observer CleanupAttempt: %v", err)
+		}
 	})
 }
 
@@ -145,10 +601,88 @@ func (e *IcebergTableConformanceEnvironment) ExecuteOverwrite(ctx context.Contex
 
 // ObserveOverwriteState collects the state and output visible after the action.
 func (e *IcebergTableConformanceEnvironment) ObserveOverwriteState(t *testing.T, input FizzbeeIcebergTableState, output IcebergTableOverwriteOutput, actionErr error) guardian.ObservedState[*IcebergTableObservedState] {
-	observedState := e.ObserveCurrentState(t)
-	resultState := e.BuildObservedOverwriteState(t, observedState, input, output, actionErr)
+	valueObjectStoreDataFiles, err := e.observerDataFilesObserver.Observe(t.Context(), _sgFieldObjectStoreDataFiles)
+	if err != nil {
+		t.Fatalf("observer data_files_observer Observe %s: %v", _sgFieldObjectStoreDataFiles, err)
+	}
+	typedObjectStoreDataFiles, convertErr := observer.Convert[ObjectStoreDataFilesValue](valueObjectStoreDataFiles)
+	if convertErr != nil {
+		t.Fatalf("observer data_files_observer Observe %s: %v", _sgFieldObjectStoreDataFiles, convertErr)
+	}
+	valueObjectStoreDeleteFiles, err := e.observerDeleteFilesObserver.Observe(t.Context(), _sgFieldObjectStoreDeleteFiles)
+	if err != nil {
+		t.Fatalf("observer delete_files_observer Observe %s: %v", _sgFieldObjectStoreDeleteFiles, err)
+	}
+	typedObjectStoreDeleteFiles, convertErr := observer.Convert[ObjectStoreDeleteFilesValue](valueObjectStoreDeleteFiles)
+	if convertErr != nil {
+		t.Fatalf("observer delete_files_observer Observe %s: %v", _sgFieldObjectStoreDeleteFiles, convertErr)
+	}
+	valueObjectStoreManifestFiles, err := e.observerManifestFilesObserver.Observe(t.Context(), _sgFieldObjectStoreManifestFiles)
+	if err != nil {
+		t.Fatalf("observer manifest_files_observer Observe %s: %v", _sgFieldObjectStoreManifestFiles, err)
+	}
+	typedObjectStoreManifestFiles, convertErr := observer.Convert[ObjectStoreManifestFilesValue](valueObjectStoreManifestFiles)
+	if convertErr != nil {
+		t.Fatalf("observer manifest_files_observer Observe %s: %v", _sgFieldObjectStoreManifestFiles, convertErr)
+	}
+	valueObjectStoreManifestLists, err := e.observerManifestListsObserver.Observe(t.Context(), _sgFieldObjectStoreManifestLists)
+	if err != nil {
+		t.Fatalf("observer manifest_lists_observer Observe %s: %v", _sgFieldObjectStoreManifestLists, err)
+	}
+	typedObjectStoreManifestLists, convertErr := observer.Convert[ObjectStoreManifestListsValue](valueObjectStoreManifestLists)
+	if convertErr != nil {
+		t.Fatalf("observer manifest_lists_observer Observe %s: %v", _sgFieldObjectStoreManifestLists, convertErr)
+	}
+	valueObjectStoreMetadataFiles, err := e.observerMetadataFilesObserver.Observe(t.Context(), _sgFieldObjectStoreMetadataFiles)
+	if err != nil {
+		t.Fatalf("observer metadata_files_observer Observe %s: %v", _sgFieldObjectStoreMetadataFiles, err)
+	}
+	typedObjectStoreMetadataFiles, convertErr := observer.Convert[ObjectStoreMetadataFilesValue](valueObjectStoreMetadataFiles)
+	if convertErr != nil {
+		t.Fatalf("observer metadata_files_observer Observe %s: %v", _sgFieldObjectStoreMetadataFiles, convertErr)
+	}
+	fetched := IcebergTableFetchedObservation{
+		Fields: IcebergTableFetchedField{
+			ObjectStore: IcebergTableObjectStoreFetchedField{
+				DataFiles:     typedObjectStoreDataFiles,
+				DeleteFiles:   typedObjectStoreDeleteFiles,
+				ManifestFiles: typedObjectStoreManifestFiles,
+				ManifestLists: typedObjectStoreManifestLists,
+				MetadataFiles: typedObjectStoreMetadataFiles,
+			},
+		},
+	}
+
+	manual := e.BuildOverwriteManualObservation(t, fetched, input, output, actionErr)
+	_ = manual
+
+	resultState := IcebergTableObservedState{Fields: IcebergTableObservedField{
+		ObjectStore: IcebergTableObjectStoreObservedField{
+			DataFiles:     _sgToObjectStoreDataFilesObservedList(fetched.Fields.ObjectStore.DataFiles),
+			DeleteFiles:   _sgToObjectStoreDeleteFilesObservedList(fetched.Fields.ObjectStore.DeleteFiles),
+			ManifestFiles: _sgToObjectStoreManifestFilesObservedList(fetched.Fields.ObjectStore.ManifestFiles),
+			ManifestLists: _sgToObjectStoreManifestListsObservedList(fetched.Fields.ObjectStore.ManifestLists),
+			MetadataFiles: _sgToObjectStoreMetadataFilesObservedList(fetched.Fields.ObjectStore.MetadataFiles),
+		},
+	}}
 
 	return guardian.NewObservedState(&resultState)
+}
+
+// BuildAllowedOverwriteState maps every comparable model field to its allowed value.
+func (e *IcebergTableConformanceEnvironment) BuildAllowedOverwriteState(t *testing.T, allowed FizzbeeIcebergTableState) IcebergTableComparisonState {
+	t.Helper()
+	return IcebergTableComparisonState{
+		Fields: IcebergTableComparisonField{
+			ObjectStore: IcebergTableObjectStoreComparisonField{
+				DataFiles:     _sgToObjectStoreDataFilesComparisonList(allowed.Fields.ObjectStore.DataFiles),
+				DeleteFiles:   _sgToObjectStoreDeleteFilesComparisonList(allowed.Fields.ObjectStore.DeleteFiles),
+				ManifestFiles: _sgToObjectStoreManifestFilesComparisonList(allowed.Fields.ObjectStore.ManifestFiles),
+				ManifestLists: _sgToObjectStoreManifestListsComparisonList(allowed.Fields.ObjectStore.ManifestLists),
+				MetadataFiles: _sgToObjectStoreMetadataFilesComparisonList(allowed.Fields.ObjectStore.MetadataFiles),
+			},
+		},
+	}
 }
 
 // BuildAllowedOverwriteStates maps FizzBee outcomes to comparable states.
@@ -172,7 +706,7 @@ type IcebergTableCase struct {
 // FizzbeeIcebergTableState contains the model parameters and fields for this role.
 type FizzbeeIcebergTableState struct {
 	Params IcebergTableParams `json:"params"`
-	Fields IcebergTableFields `json:"fields"`
+	Fields IcebergTableField  `json:"fields"`
 }
 
 // IcebergTableParams contains each role's model parameters.
@@ -203,112 +737,87 @@ type IcebergTableIcebergTableParams struct {
 	Writer        string `json:"writer"`
 }
 
-// IcebergTableFields contains each role's model fields.
-type IcebergTableFields struct {
-	ObjectStore  IcebergTableObjectStoreFields  `json:"ObjectStore"`
-	Catalog      IcebergTableCatalogFields      `json:"Catalog"`
-	Writer1      IcebergTableWriter1Fields      `json:"Writer1"`
-	Writer2      IcebergTableWriter2Fields      `json:"Writer2"`
-	IcebergTable IcebergTableIcebergTableFields `json:"IcebergTable"`
+// IcebergTableField contains each role's model fields.
+type IcebergTableField struct {
+	ObjectStore  IcebergTableObjectStoreField  `json:"ObjectStore"`
+	Catalog      IcebergTableCatalogField      `json:"Catalog"`
+	Writer1      IcebergTableWriter1Field      `json:"Writer1"`
+	Writer2      IcebergTableWriter2Field      `json:"Writer2"`
+	IcebergTable IcebergTableIcebergTableField `json:"IcebergTable"`
 }
 
-// IcebergTableObjectStoreFields contains model fields for ObjectStore.
-type IcebergTableObjectStoreFields struct {
-	Objects map[string]any `json:"objects"`
+// IcebergTableObjectStoreField contains model fields for ObjectStore.
+type IcebergTableObjectStoreField struct {
+	DataFiles     ObjectStoreDataFilesValue     `json:"data_files"`
+	DeleteFiles   ObjectStoreDeleteFilesValue   `json:"delete_files"`
+	ManifestFiles ObjectStoreManifestFilesValue `json:"manifest_files"`
+	ManifestLists ObjectStoreManifestListsValue `json:"manifest_lists"`
+	MetadataFiles ObjectStoreMetadataFilesValue `json:"metadata_files"`
 }
 
-// IcebergTableCatalogFields contains model fields for Catalog.
-type IcebergTableCatalogFields struct {
+// IcebergTableCatalogField contains model fields for Catalog.
+type IcebergTableCatalogField struct {
 	MetadataLocation string `json:"metadata_location"`
 }
 
-// IcebergTableWriter1Fields contains model fields for Writer1.
-type IcebergTableWriter1Fields struct {
+// IcebergTableWriter1Field contains model fields for Writer1.
+type IcebergTableWriter1Field struct {
 	Op map[string]any `json:"op"`
 }
 
-// IcebergTableWriter2Fields contains model fields for Writer2.
-type IcebergTableWriter2Fields struct {
+// IcebergTableWriter2Field contains model fields for Writer2.
+type IcebergTableWriter2Field struct {
 	Op map[string]any `json:"op"`
 }
 
-// IcebergTableIcebergTableFields contains model fields for IcebergTable.
-type IcebergTableIcebergTableFields struct {
+// IcebergTableIcebergTableField contains model fields for IcebergTable.
+type IcebergTableIcebergTableField struct {
 	Result string `json:"result"`
 }
 
 // IcebergTableObservedState holds values observed from the application.
 type IcebergTableObservedState struct {
-	Params IcebergTableObservedParams
-	Fields IcebergTableObservedFields
+	Fields IcebergTableObservedField
 }
 
-// IcebergTableObservedParams contains observed parameters for each role.
-type IcebergTableObservedParams struct {
-	Writer1      IcebergTableWriter1ObservedParams
-	Writer2      IcebergTableWriter2ObservedParams
-	IcebergTable IcebergTableIcebergTableObservedParams
+// IcebergTableObservedField contains observed fields for each role.
+type IcebergTableObservedField struct {
+	ObjectStore IcebergTableObjectStoreObservedField
 }
 
-// IcebergTableWriter1ObservedParams contains observed parameters for Writer1.
-type IcebergTableWriter1ObservedParams struct {
-	ID         *gcmp.ObservedField[int]
-	Background *gcmp.ObservedField[bool]
+// IcebergTableObjectStoreObservedField contains observed fields for ObjectStore.
+type IcebergTableObjectStoreObservedField struct {
+	DataFiles     *gcmp.ObservedList[*gcmp.ObservedMessage[ObjectStoreDataFilesObservedField]]
+	DeleteFiles   *gcmp.ObservedList[*gcmp.ObservedMessage[ObjectStoreDeleteFilesObservedField]]
+	ManifestFiles *gcmp.ObservedList[*gcmp.ObservedMessage[ObjectStoreManifestFilesObservedField]]
+	ManifestLists *gcmp.ObservedList[*gcmp.ObservedMessage[ObjectStoreManifestListsObservedField]]
+	MetadataFiles *gcmp.ObservedList[*gcmp.ObservedMessage[ObjectStoreMetadataFilesObservedField]]
 }
 
-// IcebergTableWriter2ObservedParams contains observed parameters for Writer2.
-type IcebergTableWriter2ObservedParams struct {
-	ID         *gcmp.ObservedField[int]
-	Background *gcmp.ObservedField[bool]
+// IcebergTableFetchedObservation contains fields collected by declared observers.
+type IcebergTableFetchedObservation struct {
+	Fields IcebergTableFetchedField
 }
 
-// IcebergTableIcebergTableObservedParams contains observed parameters for IcebergTable.
-type IcebergTableIcebergTableObservedParams struct {
-	OperationType *gcmp.ObservedField[string]
-	Predicate     *gcmp.ObservedField[any]
-	Row           *gcmp.ObservedField[[]any]
-	SetValues     *gcmp.ObservedField[any]
-	Writer        *gcmp.ObservedField[string]
+type IcebergTableFetchedField struct {
+	ObjectStore IcebergTableObjectStoreFetchedField
 }
 
-// IcebergTableObservedFields contains observed fields for each role.
-type IcebergTableObservedFields struct {
-	ObjectStore  IcebergTableObjectStoreObservedFields
-	Catalog      IcebergTableCatalogObservedFields
-	Writer1      IcebergTableWriter1ObservedFields
-	Writer2      IcebergTableWriter2ObservedFields
-	IcebergTable IcebergTableIcebergTableObservedFields
+type IcebergTableObjectStoreFetchedField struct {
+	DataFiles     ObjectStoreDataFilesValue
+	DeleteFiles   ObjectStoreDeleteFilesValue
+	ManifestFiles ObjectStoreManifestFilesValue
+	ManifestLists ObjectStoreManifestListsValue
+	MetadataFiles ObjectStoreMetadataFilesValue
 }
 
-// IcebergTableObjectStoreObservedFields contains observed fields for ObjectStore.
-type IcebergTableObjectStoreObservedFields struct {
-	Objects *gcmp.ObservedField[map[string]any]
-}
-
-// IcebergTableCatalogObservedFields contains observed fields for Catalog.
-type IcebergTableCatalogObservedFields struct {
-	MetadataLocation *gcmp.ObservedField[string]
-}
-
-// IcebergTableWriter1ObservedFields contains observed fields for Writer1.
-type IcebergTableWriter1ObservedFields struct {
-	Op *gcmp.ObservedField[map[string]any]
-}
-
-// IcebergTableWriter2ObservedFields contains observed fields for Writer2.
-type IcebergTableWriter2ObservedFields struct {
-	Op *gcmp.ObservedField[map[string]any]
-}
-
-// IcebergTableIcebergTableObservedFields contains observed fields for IcebergTable.
-type IcebergTableIcebergTableObservedFields struct {
-	Result *gcmp.ObservedField[string]
+// IcebergTableManualObservation contains fields supplied by the application.
+type IcebergTableManualObservation struct {
 }
 
 // IcebergTableComparisonState configures checks for an allowed model state.
 type IcebergTableComparisonState struct {
-	Params IcebergTableComparisonParams
-	Fields IcebergTableComparisonFields
+	Fields IcebergTableComparisonField
 }
 
 // ExpectedState identifies the FizzBee state type compared with this state.
@@ -316,64 +825,16 @@ func (actual *IcebergTableComparisonState) ExpectedState() FizzbeeIcebergTableSt
 	return FizzbeeIcebergTableState{}
 }
 
-// IcebergTableComparisonParams contains parameter comparisons for each role.
-type IcebergTableComparisonParams struct {
-	Writer1      IcebergTableWriter1ComparisonParams
-	Writer2      IcebergTableWriter2ComparisonParams
-	IcebergTable IcebergTableIcebergTableComparisonParams
+// IcebergTableComparisonField contains field comparisons for each role.
+type IcebergTableComparisonField struct {
+	ObjectStore IcebergTableObjectStoreComparisonField
 }
 
-// IcebergTableWriter1ComparisonParams contains parameter comparisons for Writer1.
-type IcebergTableWriter1ComparisonParams struct {
-	ID         *gcmp.ComparisonField[int]
-	Background *gcmp.ComparisonField[bool]
-}
-
-// IcebergTableWriter2ComparisonParams contains parameter comparisons for Writer2.
-type IcebergTableWriter2ComparisonParams struct {
-	ID         *gcmp.ComparisonField[int]
-	Background *gcmp.ComparisonField[bool]
-}
-
-// IcebergTableIcebergTableComparisonParams contains parameter comparisons for IcebergTable.
-type IcebergTableIcebergTableComparisonParams struct {
-	OperationType *gcmp.ComparisonField[string]
-	Predicate     *gcmp.ComparisonField[any]
-	Row           *gcmp.ComparisonField[[]any]
-	SetValues     *gcmp.ComparisonField[any]
-	Writer        *gcmp.ComparisonField[string]
-}
-
-// IcebergTableComparisonFields contains field comparisons for each role.
-type IcebergTableComparisonFields struct {
-	ObjectStore  IcebergTableObjectStoreComparisonFields
-	Catalog      IcebergTableCatalogComparisonFields
-	Writer1      IcebergTableWriter1ComparisonFields
-	Writer2      IcebergTableWriter2ComparisonFields
-	IcebergTable IcebergTableIcebergTableComparisonFields
-}
-
-// IcebergTableObjectStoreComparisonFields contains field comparisons for ObjectStore.
-type IcebergTableObjectStoreComparisonFields struct {
-	Objects *gcmp.ComparisonField[map[string]any]
-}
-
-// IcebergTableCatalogComparisonFields contains field comparisons for Catalog.
-type IcebergTableCatalogComparisonFields struct {
-	MetadataLocation *gcmp.ComparisonField[string]
-}
-
-// IcebergTableWriter1ComparisonFields contains field comparisons for Writer1.
-type IcebergTableWriter1ComparisonFields struct {
-	Op *gcmp.ComparisonField[map[string]any]
-}
-
-// IcebergTableWriter2ComparisonFields contains field comparisons for Writer2.
-type IcebergTableWriter2ComparisonFields struct {
-	Op *gcmp.ComparisonField[map[string]any]
-}
-
-// IcebergTableIcebergTableComparisonFields contains field comparisons for IcebergTable.
-type IcebergTableIcebergTableComparisonFields struct {
-	Result *gcmp.ComparisonField[string]
+// IcebergTableObjectStoreComparisonField contains field comparisons for ObjectStore.
+type IcebergTableObjectStoreComparisonField struct {
+	DataFiles     *gcmp.ComparisonList[*gcmp.ComparisonMessage[ObjectStoreDataFilesComparisonField]]
+	DeleteFiles   *gcmp.ComparisonList[*gcmp.ComparisonMessage[ObjectStoreDeleteFilesComparisonField]]
+	ManifestFiles *gcmp.ComparisonList[*gcmp.ComparisonMessage[ObjectStoreManifestFilesComparisonField]]
+	ManifestLists *gcmp.ComparisonList[*gcmp.ComparisonMessage[ObjectStoreManifestListsComparisonField]]
+	MetadataFiles *gcmp.ComparisonList[*gcmp.ComparisonMessage[ObjectStoreMetadataFilesComparisonField]]
 }

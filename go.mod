@@ -5,8 +5,11 @@ go 1.27.0
 require (
 	github.com/cockroachdb/errors v1.12.0
 	github.com/google/go-cmp v0.7.0
+	github.com/lmittmann/tint v1.2.1
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
+	go.yaml.in/yaml/v3 v3.0.5
 	golang.org/x/mod v0.38.0
 	google.golang.org/protobuf v1.36.11
 )
@@ -22,7 +25,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
-	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
 )

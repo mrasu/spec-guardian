@@ -17,4 +17,4 @@ generate-fizz-output:
 	rm -f docs/spec/Iceberg.json $(OUTPUT)/communication.dot $(OUTPUT)/graph.dot
 
 generate-conformance-spec:
-	go run github.com/mrasu/spec-guardian generate --project-dir . --fizz-output-dir $(OUTPUT) --dev
+	go generate ./conformance

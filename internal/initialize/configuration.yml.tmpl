@@ -1,0 +1,16 @@
+version: "0.1"
+fizzbee_files:
+  - output_dir: {{printf "%q" .OutputDir}}
+    # Uncomment roles and fields after adding each field's type or compare: false with a reason.
+    # roles:
+{{- range $role, $fields := .Roles}}
+    #   - name: {{printf "%q" $role}}
+    {{- if $fields}}
+    #     fields:
+        {{- range $field, $_ := $fields}}
+    #       - name: {{printf "%q" $field}}
+        {{- end}}
+    {{- else}}
+    #     fields: []
+    {{- end}}
+{{- end}}

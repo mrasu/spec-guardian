@@ -20,13 +20,6 @@ func BuildReaderConformanceComponents(t *testing.T, controller *guardian.Injecti
 	return nil, nil
 }
 
-// ObserveCurrentState captures the application state.
-func (e *ReaderEnvironment) ObserveCurrentState(t *testing.T) ReaderObservedState {
-	t.Helper()
-	require.NoError(t, errors.New("TODO: implement me"))
-	return ReaderObservedState{}
-}
-
 // ReaderReadInput is the concrete application input for Reader.Read.
 // Replace this scaffold with a type alias or local type as needed.
 type ReaderReadInput struct{}
@@ -64,16 +57,9 @@ func (e *ReaderEnvironment) BuildReadInput(t *testing.T, input FizzbeeReaderStat
 	return ReaderReadInput{}
 }
 
-// BuildObservedReadState combines observed resources with the action input, output, and error.
-func (e *ReaderEnvironment) BuildObservedReadState(t *testing.T, observedState ReaderObservedState, input FizzbeeReaderState, output ReaderReadOutput, actionErr error) ReaderObservedState {
+// BuildReadManualObservation returns fields not supplied by declared observers.
+func (e *ReaderEnvironment) BuildReadManualObservation(t *testing.T, fetched ReaderFetchedObservation, input FizzbeeReaderState, output ReaderReadOutput, actionErr error) ReaderManualObservation {
 	t.Helper()
 	require.NoError(t, errors.New("TODO: implement me"))
-	return ReaderObservedState{}
-}
-
-// BuildAllowedReadState maps an allowed model state to field comparisons.
-func (e *ReaderEnvironment) BuildAllowedReadState(t *testing.T, allowed FizzbeeReaderState) ReaderComparisonState {
-	t.Helper()
-	require.NoError(t, errors.New("TODO: implement me"))
-	return ReaderComparisonState{}
+	return ReaderManualObservation{}
 }

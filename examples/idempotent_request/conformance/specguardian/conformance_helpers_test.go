@@ -7,7 +7,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strconv"
 	"testing"
 	"time"
 
@@ -74,17 +73,36 @@ func newDynamoClient(fault guardian.Fault) *dynamodb.Client {
 	return dynamodb.New(options)
 }
 
-func (r *testResources) setup(t *testing.T, dynamoOrderRecords, dynamoDeliveryRecords, orderRecords map[string]any, nextOrderID int) {
+func (r *testResources) setup(t *testing.T, dynamoOrderRecords map[string]DynamoDBOrderIdempotencyRecordsField, dynamoDeliveryRecords map[string]DynamoDBDeliveryRecordsField, orderRecords map[string]MySQLOrderRecordsField, nextOrderID int) {
 	t.Helper()
-	for id, raw := range orderRecords {
-		record := raw.(map[string]any)
-		_, err := r.actionDB.ExecContext(t.Context(), `INSERT INTO orders (id, request_id, payload, delivery_id, delivery_data, status) VALUES (?, ?, ?, ?, ?, ?)`, id, record["request_id"], record["payload"], record["delivery_id"], record["delivery_data"], record["status"])
+	for id, record := range orderRecords {
+		_, err := r.actionDB.ExecContext(t.Context(), `INSERT INTO orders (id, request_id, payload, delivery_id, delivery_data, status) VALUES (?, ?, ?, ?, ?, ?)`, id, record.RequestId, record.Payload, record.DeliveryId, record.DeliveryData, record.Status)
 		require.NoError(t, err)
 	}
 	_, err := r.actionDB.ExecContext(t.Context(), fmt.Sprintf("ALTER TABLE orders AUTO_INCREMENT = %d", nextOrderID+1))
 	require.NoError(t, err)
-	r.putItems(t, orderTable, dynamoOrderRecords)
-	r.putItems(t, deliveryTable, dynamoDeliveryRecords)
+	r.putItems(t, orderTable, toDynamoRecords(dynamoOrderRecords))
+	r.putItems(t, deliveryTable, toDynamoDeliveryRecords(dynamoDeliveryRecords))
+}
+
+func toDynamoRecords(records map[string]DynamoDBOrderIdempotencyRecordsField) map[string]any {
+	converted := make(map[string]any, len(records))
+	for id, record := range records {
+		var orderID any
+		if record.OrderId != nil {
+			orderID = *record.OrderId
+		}
+		converted[id] = map[string]any{"order_id": orderID, "payload": record.Payload, "status": record.Status}
+	}
+	return converted
+}
+
+func toDynamoDeliveryRecords(records map[string]DynamoDBDeliveryRecordsField) map[string]any {
+	converted := make(map[string]any, len(records))
+	for id, record := range records {
+		converted[id] = map[string]any{"order_id": record.OrderId, "data": record.Data}
+	}
+	return converted
 }
 
 func (r *testResources) putItems(t *testing.T, table string, records map[string]any) {
@@ -115,57 +133,4 @@ func (r *testResources) cleanup(t *testing.T) {
 			require.NoError(t, err)
 		}
 	}
-}
-
-func (r *testResources) observeOrders(t *testing.T) map[string]any {
-	t.Helper()
-	rows, err := r.actionDB.QueryContext(t.Context(), "SELECT id, request_id, payload, delivery_id, delivery_data, status FROM orders ORDER BY id")
-	require.NoError(t, err)
-	defer rows.Close()
-	records := make(map[string]any)
-	for rows.Next() {
-		var id int
-		var requestID, payload, status string
-		var deliveryID, deliveryData sql.NullString
-		require.NoError(t, rows.Scan(&id, &requestID, &payload, &deliveryID, &deliveryData, &status))
-		records[strconv.Itoa(id)] = map[string]any{"request_id": requestID, "payload": payload, "delivery_id": nullableString(deliveryID), "delivery_data": nullableString(deliveryData), "status": status}
-	}
-	require.NoError(t, rows.Err())
-	return records
-}
-
-func nullableString(value sql.NullString) any {
-	if !value.Valid {
-		return nil
-	}
-	return value.String
-}
-
-func (r *testResources) observeDynamo(t *testing.T, table string) map[string]any {
-	t.Helper()
-	output, err := r.actionDynamo.Scan(t.Context(), &dynamodb.ScanInput{TableName: aws.String(table)})
-	require.NoError(t, err)
-	records := make(map[string]any)
-	for _, item := range output.Items {
-		id := item["id"].(*types.AttributeValueMemberS).Value
-		record := make(map[string]any)
-		if table == orderTable {
-			record["order_id"] = nil
-		}
-		for name, attribute := range item {
-			if name == "id" {
-				continue
-			}
-			value := attribute.(*types.AttributeValueMemberS).Value
-			if name == "order_id" {
-				number, parseErr := strconv.Atoi(value)
-				require.NoError(t, parseErr)
-				record[name] = float64(number)
-			} else {
-				record[name] = value
-			}
-		}
-		records[id] = record
-	}
-	return records
 }

@@ -39,23 +39,6 @@ func BuildOrderServerConformanceComponents(t *testing.T, controller *guardian.In
 	return newOrderServerActions(idempotentrequest.NewOrderServer(resources.actionDB, resources.actionDynamo)), NewOrderServerEnvironment(resources)
 }
 
-func (e *OrderServerEnvironment) ObserveCurrentState(t *testing.T) OrderServerObservedState {
-	t.Helper()
-	return OrderServerObservedState{
-		Fields: OrderServerObservedFields{
-			DynamoDB: OrderServerDynamoDBObservedFields{
-				DeliveryRecords:         gcmp.Observed(e.resources.observeDynamo(t, deliveryTable)),
-				OrderIdempotencyRecords: gcmp.Observed(e.resources.observeDynamo(t, orderTable)),
-			},
-			MySQL: OrderServerMySQLObservedFields{
-				DeliveryPreparedCount: gcmp.Unobservable[int]("internal property"),
-				NextOrderId:           gcmp.Unobservable[int]("internal property"),
-				OrderRecords:          gcmp.Observed(e.resources.observeOrders(t)),
-			},
-		},
-	}
-}
-
 type OrderServerCreateOrderInput struct{ RequestID, Payload string }
 
 type OrderServerCreateOrderOutput = *idempotentrequest.Order
@@ -79,7 +62,7 @@ func (e *OrderServerEnvironment) BuildCreateOrderInput(t *testing.T, input Fizzb
 	return OrderServerCreateOrderInput{RequestID: input.Params.OrderServer.RequestId, Payload: input.Fields.OrderServer.RequestPayload}
 }
 
-func (e *OrderServerEnvironment) BuildObservedCreateOrderState(t *testing.T, observedState OrderServerObservedState, input FizzbeeOrderServerState, output OrderServerCreateOrderOutput, actionErr error) OrderServerObservedState {
+func (e *OrderServerEnvironment) BuildCreateOrderManualObservation(t *testing.T, fetched OrderServerFetchedObservation, input FizzbeeOrderServerState, output OrderServerCreateOrderOutput, actionErr error) OrderServerManualObservation {
 	t.Helper()
 	orderedID := input.Fields.OrderServer.OrderedId
 	if output != nil {
@@ -93,65 +76,12 @@ func (e *OrderServerEnvironment) BuildObservedCreateOrderState(t *testing.T, obs
 		}
 	}
 
-	return OrderServerObservedState{
-		Params: OrderServerObservedParams{
-			OrderServer: OrderServerOrderServerObservedParams{
-				RequestId: gcmp.Observed(input.Params.OrderServer.RequestId),
-			},
-		},
-		Fields: OrderServerObservedFields{
-			DynamoDB: OrderServerDynamoDBObservedFields{
-				DeliveryRecords:         observedState.Fields.DynamoDB.DeliveryRecords,
-				OrderIdempotencyRecords: observedState.Fields.DynamoDB.OrderIdempotencyRecords,
-			},
-			MySQL: OrderServerMySQLObservedFields{
-				DeliveryPreparedCount: observedState.Fields.MySQL.DeliveryPreparedCount,
-				NextOrderId:           observedState.Fields.MySQL.NextOrderId,
-				OrderRecords:          observedState.Fields.MySQL.OrderRecords,
-			},
-			RequestPreparator: OrderServerRequestPreparatorObservedFields{
-				SecondDeliveryData:            gcmp.Unobservable[string]("internal property"),
-				SecondDeliveryRequestPrepared: gcmp.Unobservable[bool]("internal property"),
-				SecondOrderPayload:            gcmp.Unobservable[string]("internal property"),
-				SecondOrderRequestPrepared:    gcmp.Unobservable[bool]("internal property"),
-			},
-			OrderServer: OrderServerOrderServerObservedFields{
+	return OrderServerManualObservation{
+		Fields: OrderServerManualField{
+			OrderServer: OrderServerOrderServerManualField{
 				OrderedId:      gcmp.Observed(orderedID),
 				RequestPayload: gcmp.Observed(input.Fields.OrderServer.RequestPayload),
 				Result:         gcmp.Observed(result),
-			},
-		},
-	}
-}
-
-func (e *OrderServerEnvironment) BuildAllowedCreateOrderState(t *testing.T, allowed FizzbeeOrderServerState) OrderServerComparisonState {
-	t.Helper()
-	return OrderServerComparisonState{
-		Params: OrderServerComparisonParams{
-			OrderServer: OrderServerOrderServerComparisonParams{
-				RequestId: gcmp.Equal(allowed.Params.OrderServer.RequestId),
-			},
-		},
-		Fields: OrderServerComparisonFields{
-			DynamoDB: OrderServerDynamoDBComparisonFields{
-				DeliveryRecords:         gcmp.Equal(allowed.Fields.DynamoDB.DeliveryRecords),
-				OrderIdempotencyRecords: gcmp.Equal(allowed.Fields.DynamoDB.OrderIdempotencyRecords),
-			},
-			MySQL: OrderServerMySQLComparisonFields{
-				DeliveryPreparedCount: gcmp.Ignore[int]("internal property"),
-				NextOrderId:           gcmp.Ignore[int]("internal property"),
-				OrderRecords:          gcmp.Equal(allowed.Fields.MySQL.OrderRecords),
-			},
-			RequestPreparator: OrderServerRequestPreparatorComparisonFields{
-				SecondDeliveryData:            gcmp.Ignore[string]("internal property"),
-				SecondDeliveryRequestPrepared: gcmp.Ignore[bool]("internal property"),
-				SecondOrderPayload:            gcmp.Ignore[string]("internal property"),
-				SecondOrderRequestPrepared:    gcmp.Ignore[bool]("internal property"),
-			},
-			OrderServer: OrderServerOrderServerComparisonFields{
-				OrderedId:      gcmp.Equal(allowed.Fields.OrderServer.OrderedId),
-				RequestPayload: gcmp.Equal(allowed.Fields.OrderServer.RequestPayload),
-				Result:         gcmp.Equal(allowed.Fields.OrderServer.Result),
 			},
 		},
 	}

@@ -8,6 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.67.0
 	github.com/aws/smithy-go v1.28.1
 	github.com/go-sql-driver/mysql v1.10.1
+	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/google/go-cmp v0.7.0
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/stretchr/testify v1.12.1

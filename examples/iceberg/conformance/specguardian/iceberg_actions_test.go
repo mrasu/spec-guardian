@@ -58,17 +58,6 @@ func (a *IcebergActions) Append(ctx context.Context, input IcebergTableAppendInp
 	return IcebergTableAppendOutput{Table: result}, nil
 }
 
-// Delete executes an Iceberg delete with fault injection enabled.
-func (a *IcebergActions) Delete(ctx context.Context, input IcebergTableDeleteInput) (IcebergTableDeleteOutput, error) {
-	wrapped := icebergexample.NewIcebergGoTable(a.environment.table)
-	result, err := wrapped.Delete(iceutils.WithAwsConfig(ctx, &a.actionConfig), input.Predicate, nil)
-	if err != nil {
-		return IcebergTableDeleteOutput{}, err
-	}
-	return IcebergTableDeleteOutput{Table: result}, nil
-}
-
-// Overwrite executes an Iceberg overwrite with fault injection enabled.
 func (a *IcebergActions) Overwrite(ctx context.Context, input IcebergTableOverwriteInput) (IcebergTableOverwriteOutput, error) {
 	reader, err := newActionRecords(a.environment.table, input.Rows)
 	if err != nil {
@@ -77,11 +66,20 @@ func (a *IcebergActions) Overwrite(ctx context.Context, input IcebergTableOverwr
 	defer reader.Release()
 
 	wrapped := icebergexample.NewIcebergGoTable(a.environment.table)
-	result, err := wrapped.Overwrite(iceutils.WithAwsConfig(ctx, &a.actionConfig), reader, nil, table.WithOverwriteFilter(input.Predicate))
+	result, err := wrapped.Overwrite(iceutils.WithAwsConfig(ctx, &a.actionConfig), reader, nil, table.WithOverwriteFilter(input.Filter))
 	if err != nil {
 		return IcebergTableOverwriteOutput{}, err
 	}
 	return IcebergTableOverwriteOutput{Table: result}, nil
+}
+
+func (a *IcebergActions) Delete(ctx context.Context, input IcebergTableDeleteInput) (IcebergTableDeleteOutput, error) {
+	wrapped := icebergexample.NewIcebergGoTable(a.environment.table)
+	result, err := wrapped.Delete(iceutils.WithAwsConfig(ctx, &a.actionConfig), input.Filter, nil)
+	if err != nil {
+		return IcebergTableDeleteOutput{}, err
+	}
+	return IcebergTableDeleteOutput{Table: result}, nil
 }
 
 func newActionRecords(icebergTable *table.Table, rows []icebergRow) (array.RecordReader, error) {

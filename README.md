@@ -1,10 +1,14 @@
 # Spec Guardian
 
-Let formal specs test your implementation.
+<img src="docs/img/specguardian-logo.png" alt="SpecGuardian" width="640">
+
+Let formal specs test AI implementations.
 
 A [FizzBee](https://fizzbee.io/) spec describes the state transitions your system allows. However, the spec alone does not test whether your implementation follows those transitions. SpecGuardian turns FizzBee's results into tests that check whether your implementation reaches an allowed state.
 
 SpecGuardian lets you verify that an AI-generated implementation actually conforms to your specification.
+
+![FizzBee explores allowed states; SpecGuardian generates tests that run normally and with injected I/O failures, then check the resulting states against the specification.](docs/img/specguardian-workflow.png)
 
 ## From Spec to Test: Cache-Aside
 
@@ -72,8 +76,10 @@ Here's how SpecGuardian works:
 
 1. FizzBee explores the possible states described by the spec.
 2. SpecGuardian generates Go tests from the exploration results.
-3. Either AI or you write the setup, Action execution, and state observation code that connects the tests to your application.
+3. Either AI or you write the setup and Action execution code, configure observers in `specguardian.yml`, and write any remaining state observation code.
 4. The tests run a function normally and with an error injected immediately before a supported I/O call, then compare the observed state with states allowed by the spec.
+
+`specguardian.yml` configures state observation and comparison. See the [configuration schema](docs/spec-guardian.schema.yaml) for available settings and the [example configuration](examples/tutorial_cache_aside_write/specguardian.yml) for an example.
 
 ## When to Use
 
@@ -95,10 +101,30 @@ go test -tags=specguardian ./conformance/...
 docker compose down
 ```
 
-For a detailed guide to using SpecGuardian, see the [user guide](docs/user-guide.md).
+To generate tests for your project, install [FizzBee](https://fizzbee.io/) and run these commands from your Go module directory:
+
+```sh
+fizz --output-dir path/to/output_dir path/to/YourSpec.fizz
+go get -tool github.com/mrasu/spec-guardian
+go tool spec-guardian init --fizzbee-output-dir path/to/output_dir
+
+# Configure observation and comparison.
+$EDITOR specguardian.yml
+
+go generate ./conformance
+
+# Replace <role> with the generated role name and connect the tests to your application.
+$EDITOR "conformance/specguardian/<role>_conformance_impl_test.go"
+
+go mod tidy
+go test -tags=specguardian ./conformance/...
+```
+
+See the [user guide](docs/user-guide.md) for the complete setup.
 
 ## Examples
 
+- [Cache-aside write tutorial](examples/tutorial_cache_aside_write/README.md) is the completed project from the [user guide](docs/user-guide.md).
 - [Cache-aside](examples/cache_aside/README.md) demonstrates the cache-aside pattern.
 - [Idempotent request](examples/idempotent_request/README.md) demonstrates idempotent requests.
 - [Iceberg](examples/iceberg/README.md) is a real-world example that tests [apache/iceberg-go](https://github.com/apache/iceberg-go).

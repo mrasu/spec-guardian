@@ -14,10 +14,96 @@ import (
 
 // TemplateData contains the values and presentation helpers consumed by source templates.
 type TemplateData struct {
-	Module  string
-	Role    string
-	Actions []*action
-	Roles   []roleSchema
+	Module         string
+	Role           string
+	Actions        []*action
+	Roles          []roleSchema
+	DeclaredTypes  []DeclaredType
+	Observers      []Observer
+	ObserverGroups []ObserverGroup
+	PluginImports  []PluginImport
+	ShapeFunctions []string
+}
+
+func (d *TemplateData) ObservedRoles() []roleSchema {
+	return rolesWithFields(d.Roles, func(f field) bool { return !f.Unobservable })
+}
+
+func (d *TemplateData) FetchedRoles() []roleSchema {
+	return rolesWithFields(d.Roles, func(f field) bool { return f.Observed })
+}
+
+func (d *TemplateData) ManualRoles() []roleSchema {
+	return rolesWithFields(d.Roles, func(f field) bool { return !f.Observed && !f.Unobservable })
+}
+
+func rolesWithFields(roles []roleSchema, include func(field) bool) []roleSchema {
+	var selected []roleSchema
+	for _, role := range roles {
+		if slices.ContainsFunc(role.Fields, include) {
+			selected = append(selected, role)
+		}
+	}
+	return selected
+}
+
+// DeclaredType is a generated Go type shared by model, observed, and comparison states.
+type DeclaredType struct {
+	Name       string
+	Definition string
+}
+
+// Declarations contains validated field settings used during generation.
+type Declarations struct {
+	Observers     []Observer
+	TypedFields   []TypedField
+	Unobservable  []UnobservableField
+	ExcludedRoles []ExcludedRole
+}
+
+// ExcludedRole excludes every field of a source role from observation and comparison.
+type ExcludedRole struct {
+	Name   string
+	Reason string
+}
+
+// TypedField declares a field shape supplied by manual observation.
+type TypedField struct {
+	Field *Field
+	Type  Type
+}
+
+// UnobservableField identifies a model field excluded from observation and comparison.
+type UnobservableField struct {
+	Field  *Field
+	Reason string
+}
+
+// Observer is a validated field request for a declared observer.
+type Observer struct {
+	Field                                                   *Field
+	ObserverID, RoleName, FieldName, GoName, ObserverGoName string
+	PluginImportPath, PluginAlias                           string
+	Kind, ValueKind                                         string
+	ConvertType                                             string
+	Type                                                    Type
+	TypeLiteral                                             string
+	ObserverConfig, FieldConfig                             map[string]any
+}
+
+// ObserverGroup contains all fields served by one named observer.
+type ObserverGroup struct {
+	ID          string
+	GoName      string
+	PluginAlias string
+	Config      map[string]any
+	Fields      []Observer
+}
+
+// PluginImport is one observer plugin package used by a generated role.
+type PluginImport struct {
+	Alias string
+	Path  string
 }
 
 type action struct {
@@ -41,10 +127,26 @@ type stateRole struct {
 
 type roleSchema struct {
 	Name           string
+	SourceName     string
 	Params, Fields []field
 }
 
-type field struct{ JSONName, GoName, GoType, ComparisonType string }
+func (r roleSchema) matchesSource(name string) bool {
+	if r.SourceName != "" {
+		return r.SourceName == name
+	}
+	return r.Name == name
+}
+
+type field struct {
+	JSONName       string
+	GoName         string
+	GoType         string
+	ComparisonType string
+	Observed       bool
+	Unobservable   bool
+	Shape          *declaredShape
+}
 
 type fieldValue struct {
 	JSONName string
@@ -53,7 +155,7 @@ type fieldValue struct {
 }
 
 // BuildTemplateData builds source-template data from validated Action cases.
-func BuildTemplateData(modulePath, role string, cases []fizzbee.ActionCase) (*TemplateData, error) {
+func BuildTemplateData(modulePath, role string, cases []fizzbee.ActionCase, declarations Declarations) (*TemplateData, error) {
 	if modulePath == "" {
 		return nil, fmt.Errorf("module path is empty")
 	}
@@ -61,7 +163,201 @@ func BuildTemplateData(modulePath, role string, cases []fizzbee.ActionCase) (*Te
 	if err != nil {
 		return nil, err
 	}
-	return newTemplateData(modulePath, role, actions), nil
+	data := newTemplateData(modulePath, role, actions)
+	if len(declarations.Observers) > 0 {
+		applyObservers(data, declarations.Observers)
+	}
+	if len(declarations.TypedFields) > 0 {
+		applyTypedFields(data, declarations.TypedFields)
+	}
+	if len(declarations.Unobservable) > 0 {
+		applyUnobservable(data, declarations.Unobservable)
+	}
+	if role != "" && len(actions) > 0 {
+		data.Roles = mergeRoleSchemas(actions)
+	}
+	data.DeclaredTypes = collectDeclaredTypes(actions)
+	data.ShapeFunctions = collectShapeFunctions(actions)
+	return data, nil
+}
+
+func collectDeclaredTypes(actions []*action) []DeclaredType {
+	byName := make(map[string]string)
+	for _, action := range actions {
+		for _, role := range action.Roles {
+			for _, field := range role.Fields {
+				if field.Shape != nil {
+					for _, definition := range field.Shape.Definitions {
+						byName[definition.Name] = definition.Definition
+					}
+				}
+			}
+		}
+	}
+	names := make([]string, 0, len(byName))
+	for name := range byName {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	types := make([]DeclaredType, 0, len(names))
+	for _, name := range names {
+		types = append(types, DeclaredType{Name: name, Definition: byName[name]})
+	}
+	return types
+}
+
+func applyTypedFields(data *TemplateData, declarations []TypedField) {
+	for _, declaration := range declarations {
+		for _, action := range data.Actions {
+			for roleIndex := range action.Roles {
+				role := &action.Roles[roleIndex]
+				if !role.matchesSource(declaration.Field.RoleName()) {
+					continue
+				}
+				for fieldIndex := range role.Fields {
+					field := &role.Fields[fieldIndex]
+					if field.JSONName != declaration.Field.FieldName() {
+						continue
+					}
+					shape := toDeclaredShape(declaration.Type, action.Role+role.Name+field.GoName, true)
+					applyDeclaredShape(field, shape)
+				}
+			}
+		}
+	}
+}
+
+func applyUnobservable(data *TemplateData, declarations []UnobservableField) {
+	for _, declaration := range declarations {
+		for _, action := range data.Actions {
+			markUnobservableField(action.Roles, declaration.Field.RoleName(), declaration.Field.FieldName())
+		}
+	}
+}
+
+func markUnobservableField(roles []roleSchema, roleName, fieldName string) {
+	for roleIndex := range roles {
+		if !roles[roleIndex].matchesSource(roleName) {
+			continue
+		}
+		for fieldIndex := range roles[roleIndex].Fields {
+			if roles[roleIndex].Fields[fieldIndex].JSONName == fieldName {
+				roles[roleIndex].Fields[fieldIndex].Unobservable = true
+			}
+		}
+	}
+}
+
+func applyObservers(data *TemplateData, observers []Observer) {
+	for _, observer := range observers {
+		observer.RoleName = observer.Field.RoleName()
+		observer.FieldName = observer.Field.FieldName()
+		observer.GoName = goName(observer.FieldName)
+		observer.ObserverGoName = goName(observer.ObserverID)
+		observer.ConvertType = "map[string]" + observer.ValueKind
+		if observer.Type.Kind != "" {
+			observer.ConvertType = observer.Type.GoType()
+			observer.TypeLiteral = typeLiteral(observer.Type)
+			if needsDeclaredShape(observer.Type) {
+				observer.ConvertType = toDeclaredShape(observer.Type, observer.RoleName+observer.GoName, true).RawType
+			}
+		}
+		data.Observers = append(data.Observers, observer)
+		for _, action := range data.Actions {
+			applyObserverType(action, observer)
+		}
+	}
+	sort.Slice(data.Observers, func(i, j int) bool {
+		return data.Observers[i].Field.String() < data.Observers[j].Field.String()
+	})
+	data.ObserverGroups = groupObservers(data.Observers)
+	data.PluginImports = pluginImports(data.ObserverGroups)
+}
+
+func applyObserverType(action *action, observer Observer) {
+	for roleIndex := range action.Roles {
+		role := &action.Roles[roleIndex]
+		if !role.matchesSource(observer.Field.RoleName()) {
+			continue
+		}
+		for fieldIndex := range role.Fields {
+			field := &role.Fields[fieldIndex]
+			if field.JSONName != observer.FieldName {
+				continue
+			}
+			field.GoType = observer.ConvertType
+			if needsDeclaredShape(observer.Type) {
+				applyDeclaredShape(field, toDeclaredShape(observer.Type, observer.RoleName+observer.GoName, true))
+			} else {
+				field.ComparisonType = field.GoType
+			}
+			field.Observed = true
+		}
+	}
+}
+
+func typeLiteral(spec Type) string {
+	parts := []string{"Kind: observer.Kind" + goName(string(spec.Kind))}
+	if spec.Nullable {
+		parts = append(parts, "Nullable: true")
+	}
+	if spec.Values != nil {
+		parts = append(parts, "Values: &"+typeLiteral(*spec.Values))
+	}
+	if len(spec.Fields) != 0 {
+		keys := make([]string, 0, len(spec.Fields))
+		for key := range spec.Fields {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		fields := make([]string, 0, len(keys))
+		for _, key := range keys {
+			fields = append(fields, strconv.Quote(key)+": "+strings.TrimPrefix(typeLiteral(spec.Fields[key]), "observer.Type"))
+		}
+		parts = append(parts, "Fields: "+compositeLiteral("map[string]observer.Type", fields))
+	}
+	return compositeLiteral("observer.Type", parts)
+}
+
+func groupObservers(observers []Observer) []ObserverGroup {
+	byID := make(map[string]*ObserverGroup)
+	for _, observer := range observers {
+		group := byID[observer.ObserverID]
+		if group == nil {
+			group = &ObserverGroup{
+				ID:          observer.ObserverID,
+				GoName:      observer.ObserverGoName,
+				PluginAlias: observer.PluginAlias,
+				Config:      observer.ObserverConfig,
+			}
+			byID[observer.ObserverID] = group
+		}
+		group.Fields = append(group.Fields, observer)
+	}
+	groups := make([]ObserverGroup, 0, len(byID))
+	for _, group := range byID {
+		groups = append(groups, *group)
+	}
+	sort.Slice(groups, func(i, j int) bool {
+		return groups[i].ID < groups[j].ID
+	})
+	return groups
+}
+
+func pluginImports(groups []ObserverGroup) []PluginImport {
+	byPath := make(map[string]PluginImport)
+	for _, group := range groups {
+		field := group.Fields[0]
+		byPath[field.PluginImportPath] = PluginImport{Alias: field.PluginAlias, Path: field.PluginImportPath}
+	}
+	imports := make([]PluginImport, 0, len(byPath))
+	for _, plugin := range byPath {
+		imports = append(imports, plugin)
+	}
+	sort.Slice(imports, func(i, j int) bool {
+		return imports[i].Path < imports[j].Path
+	})
+	return imports
 }
 
 func newActions(cases []fizzbee.ActionCase) ([]*action, error) {
@@ -134,7 +430,7 @@ func newTemplateData(module, role string, actions []*action) *TemplateData {
 func mergeRoleSchemas(actions []*action) []roleSchema {
 	roles := make([]roleSchema, len(actions[0].Roles))
 	for index, role := range actions[0].Roles {
-		roles[index] = roleSchema{Name: role.Name, Params: slices.Clone(role.Params), Fields: slices.Clone(role.Fields)}
+		roles[index] = roleSchema{Name: role.Name, SourceName: role.SourceName, Params: slices.Clone(role.Params), Fields: slices.Clone(role.Fields)}
 		for i := range roles[index].Params {
 			roles[index].Params[i].ComparisonType = roles[index].Params[i].GoType
 		}
@@ -230,7 +526,7 @@ func schemas(cases []fizzbee.ActionCase) ([]roleSchema, error) {
 		if err != nil {
 			return nil, err
 		}
-		schemas = append(schemas, roleSchema{Name: name, Params: params, Fields: fields})
+		schemas = append(schemas, roleSchema{Name: name, SourceName: role.Name, Params: params, Fields: fields})
 	}
 	return schemas, nil
 }
@@ -396,4 +692,37 @@ func goName(name string) string {
 		parts[index] = string(runes)
 	}
 	return strings.Join(parts, "")
+}
+
+func applyDeclaredShape(field *field, shape *declaredShape) {
+	field.Shape = shape
+	field.GoType = shape.RawType
+	field.ComparisonType = shape.RawType
+}
+
+func collectShapeFunctions(actions []*action) []string {
+	byName := make(map[string]*declaredShape)
+	for _, action := range actions {
+		for _, role := range action.Roles {
+			for _, field := range role.Fields {
+				if field.Shape != nil {
+					byName[field.Shape.ObservedConvert] = field.Shape
+				}
+			}
+		}
+	}
+	names := make([]string, 0, len(byName))
+	for name := range byName {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	var functions []string
+	for _, name := range names {
+		functions = append(functions, byName[name].Functions...)
+	}
+	return functions
+}
+
+func needsDeclaredShape(spec Type) bool {
+	return spec.Kind == KindList || spec.Kind == KindMessage || (spec.Kind == KindMap && spec.Values != nil && (spec.Values.Kind == KindMessage || spec.Values.Kind == KindMap || spec.Values.Kind == KindList || spec.Values.Nullable || spec.Values.SkipComparison || spec.SkipComparison))
 }

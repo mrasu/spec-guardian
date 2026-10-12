@@ -70,6 +70,9 @@ func (f *ObservedField[T]) MatchComparison(path string, allowed *ComparisonField
 	if f.mode == observedFieldUnobservable || allowed.mode == comparisonFieldIgnore {
 		return nil
 	}
+	if allowed.mode == comparisonFieldEqualIgnoringJSONPaths {
+		return matchJSONPaths(path, f.value, allowed.value, allowed.ignoredJSONPaths, allowed.unorderedJSONPaths)
+	}
 	if allowed.mode != comparisonFieldEqual {
 		return fmt.Errorf("%s: observed-field matching requires Equal or Ignore", path)
 	}
@@ -91,4 +94,13 @@ func (f *ObservedField[T]) DiagnosticValue() any {
 		return f.value
 	}
 	return []string{"observed field is not configured"}
+}
+
+// Value returns the observed value when the field was observed.
+func (f *ObservedField[T]) Value() (T, bool) {
+	var zero T
+	if f == nil || f.mode != observedFieldValue {
+		return zero, false
+	}
+	return f.value, true
 }

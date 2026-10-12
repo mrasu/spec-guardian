@@ -41,19 +41,6 @@ func BuildDeliveryServerConformanceComponents(t *testing.T, controller *guardian
 	return newDeliveryServerActions(server), NewDeliveryServerEnvironment(resources)
 }
 
-func (e *DeliveryServerEnvironment) ObserveCurrentState(t *testing.T) DeliveryServerObservedState {
-	t.Helper()
-	return DeliveryServerObservedState{Fields: DeliveryServerObservedFields{
-		DynamoDB: DeliveryServerDynamoDBObservedFields{
-			DeliveryRecords:         gcmp.Observed(e.resources.observeDynamo(t, deliveryTable)),
-			OrderIdempotencyRecords: gcmp.Observed(e.resources.observeDynamo(t, orderTable)),
-		},
-		MySQL: DeliveryServerMySQLObservedFields{
-			OrderRecords: gcmp.Observed(e.resources.observeOrders(t)),
-		},
-	}}
-}
-
 type DeliveryServerDeliverInput struct {
 	OrderID uint64
 	Data    string
@@ -84,30 +71,13 @@ func (e *DeliveryServerEnvironment) BuildDeliverInput(t *testing.T, input Fizzbe
 	return DeliveryServerDeliverInput{OrderID: orderID, Data: input.Fields.DeliveryServer.RequestDeliveryData}
 }
 
-func (e *DeliveryServerEnvironment) BuildObservedDeliverState(t *testing.T, observedState DeliveryServerObservedState, input FizzbeeDeliveryServerState, output DeliveryServerDeliverOutput, actionErr error) DeliveryServerObservedState {
+func (e *DeliveryServerEnvironment) BuildDeliverManualObservation(t *testing.T, fetched DeliveryServerFetchedObservation, input FizzbeeDeliveryServerState, output DeliveryServerDeliverOutput, actionErr error) DeliveryServerManualObservation {
 	t.Helper()
-	orders := e.resources.observeOrders(t)
-	deliveryRecords := e.resources.observeDynamo(t, deliveryTable)
-	normalizeGeneratedDeliveryID(input, orders, deliveryRecords)
+	normalizeGeneratedDeliveryID(input, fetched.Fields.MySQL.OrderRecords, fetched.Fields.DynamoDB.DeliveryRecords)
 
-	return DeliveryServerObservedState{
-		Fields: DeliveryServerObservedFields{
-			DynamoDB: DeliveryServerDynamoDBObservedFields{
-				DeliveryRecords:         gcmp.Observed(deliveryRecords),
-				OrderIdempotencyRecords: observedState.Fields.DynamoDB.OrderIdempotencyRecords,
-			},
-			MySQL: DeliveryServerMySQLObservedFields{
-				DeliveryPreparedCount: gcmp.Unobservable[int]("internal property"),
-				NextOrderId:           gcmp.Unobservable[int]("internal property"),
-				OrderRecords:          gcmp.Observed(orders),
-			},
-			RequestPreparator: DeliveryServerRequestPreparatorObservedFields{
-				SecondDeliveryData:            gcmp.Unobservable[string]("internal property"),
-				SecondDeliveryRequestPrepared: gcmp.Unobservable[bool]("internal property"),
-				SecondOrderPayload:            gcmp.Unobservable[string]("internal property"),
-				SecondOrderRequestPrepared:    gcmp.Unobservable[bool]("internal property"),
-			},
-			DeliveryServer: DeliveryServerDeliveryServerObservedFields{
+	return DeliveryServerManualObservation{
+		Fields: DeliveryServerManualField{
+			DeliveryServer: DeliveryServerDeliveryServerManualField{
 				OrderId:             gcmp.Observed(input.Fields.DeliveryServer.OrderId),
 				RequestDeliveryData: gcmp.Observed(input.Fields.DeliveryServer.RequestDeliveryData),
 				Result:              gcmp.Observed(deliveryResult(actionErr)),
@@ -116,53 +86,26 @@ func (e *DeliveryServerEnvironment) BuildObservedDeliverState(t *testing.T, obse
 	}
 }
 
-func (e *DeliveryServerEnvironment) BuildAllowedDeliverState(t *testing.T, allowed FizzbeeDeliveryServerState) DeliveryServerComparisonState {
-	t.Helper()
-	return DeliveryServerComparisonState{
-		Fields: DeliveryServerComparisonFields{
-			DynamoDB: DeliveryServerDynamoDBComparisonFields{
-				DeliveryRecords:         gcmp.Equal(allowed.Fields.DynamoDB.DeliveryRecords),
-				OrderIdempotencyRecords: gcmp.Equal(allowed.Fields.DynamoDB.OrderIdempotencyRecords),
-			},
-			MySQL: DeliveryServerMySQLComparisonFields{
-				DeliveryPreparedCount: gcmp.Ignore[int]("internal property"),
-				NextOrderId:           gcmp.Ignore[int]("internal property"),
-				OrderRecords:          gcmp.Equal(allowed.Fields.MySQL.OrderRecords),
-			},
-			RequestPreparator: DeliveryServerRequestPreparatorComparisonFields{
-				SecondDeliveryData:            gcmp.Ignore[string]("internal property"),
-				SecondDeliveryRequestPrepared: gcmp.Ignore[bool]("internal property"),
-				SecondOrderPayload:            gcmp.Ignore[string]("internal property"),
-				SecondOrderRequestPrepared:    gcmp.Ignore[bool]("internal property"),
-			},
-			DeliveryServer: DeliveryServerDeliveryServerComparisonFields{
-				OrderId:             gcmp.Equal(allowed.Fields.DeliveryServer.OrderId),
-				RequestDeliveryData: gcmp.Equal(allowed.Fields.DeliveryServer.RequestDeliveryData),
-				Result:              gcmp.Equal(allowed.Fields.DeliveryServer.Result),
-			},
-		},
-	}
-}
-
-func normalizeGeneratedDeliveryID(input FizzbeeDeliveryServerState, orders, deliveryRecords map[string]any) {
+func normalizeGeneratedDeliveryID(input FizzbeeDeliveryServerState, orders map[string]MySQLOrderRecordsField, deliveryRecords map[string]DynamoDBDeliveryRecordsField) {
 	count := input.Fields.MySQL.DeliveryPreparedCount
 	knownIDs := make(map[string]struct{})
-	for _, raw := range input.Fields.MySQL.OrderRecords {
-		if id, ok := raw.(map[string]any)["delivery_id"].(string); ok {
-			knownIDs[id] = struct{}{}
+	for _, record := range input.Fields.MySQL.OrderRecords {
+		if record.DeliveryId != nil {
+			knownIDs[*record.DeliveryId] = struct{}{}
 		}
 	}
-	for _, raw := range orders {
-		record := raw.(map[string]any)
-		id, ok := record["delivery_id"].(string)
-		if !ok || id == "" {
+	for key, record := range orders {
+		deliveryID := record.DeliveryId
+		if deliveryID == nil || *deliveryID == "" {
 			continue
 		}
+		id := *deliveryID
 		if _, known := knownIDs[id]; known {
 			continue
 		}
 		abstractID := fmt.Sprintf("delivery-id-%d", count+1)
-		record["delivery_id"] = abstractID
+		record.DeliveryId = &abstractID
+		orders[key] = record
 		if delivery, exists := deliveryRecords[id]; exists {
 			delete(deliveryRecords, id)
 			deliveryRecords[abstractID] = delivery

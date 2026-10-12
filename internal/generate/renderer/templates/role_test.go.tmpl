@@ -20,13 +20,6 @@ func Build{{.Role}}ConformanceComponents(t *testing.T, controller *guardian.Inje
 	return nil, nil
 }
 
-// ObserveCurrentState captures the application state.
-func (e *{{.Role}}Environment) ObserveCurrentState(t *testing.T) {{.Role}}ObservedState {
-	t.Helper()
-	require.NoError(t, errors.New("TODO: implement me"))
-	return {{.Role}}ObservedState{}
-}
-
 {{range .Actions}}
 // {{.Role}}{{.Name}}Input is the concrete application input for {{.Role}}.{{.Name}}.
 // Replace this scaffold with a type alias or local type as needed.
@@ -65,17 +58,11 @@ func (e *{{.Role}}Environment) Build{{.Name}}Input(t *testing.T, input Fizzbee{{
 	return {{.Role}}{{.Name}}Input{}
 }
 
-// BuildObserved{{.Name}}State combines observed resources with the action input, output, and error.
-func (e *{{.Role}}Environment) BuildObserved{{.Name}}State(t *testing.T, observedState {{.Role}}ObservedState, input Fizzbee{{.Role}}State, output {{.Role}}{{.Name}}Output, actionErr error) {{.Role}}ObservedState {
+// Build{{.Name}}ManualObservation returns fields not supplied by declared observers.
+func (e *{{.Role}}Environment) Build{{.Name}}ManualObservation(t *testing.T, fetched {{.Role}}FetchedObservation, input Fizzbee{{.Role}}State, output {{.Role}}{{.Name}}Output, actionErr error) {{.Role}}ManualObservation {
 	t.Helper()
 	require.NoError(t, errors.New("TODO: implement me"))
-	return {{.Role}}ObservedState{}
+	return {{.Role}}ManualObservation{}
 }
 
-// BuildAllowed{{.Name}}State maps an allowed model state to field comparisons.
-func (e *{{.Role}}Environment) BuildAllowed{{.Name}}State(t *testing.T, allowed Fizzbee{{.Role}}State) {{.Role}}ComparisonState {
-	t.Helper()
-	require.NoError(t, errors.New("TODO: implement me"))
-	return {{.Role}}ComparisonState{}
-}
 {{end}}

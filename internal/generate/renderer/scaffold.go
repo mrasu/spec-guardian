@@ -24,6 +24,7 @@ const (
 	templateTypes templateName = iota
 	templateConformance
 	templateRole
+	templateCommon
 )
 
 func (name templateName) path() string {
@@ -34,6 +35,8 @@ func (name templateName) path() string {
 		return "templates/conformance_test.go.tmpl"
 	case templateRole:
 		return "templates/role_test.go.tmpl"
+	case templateCommon:
+		return "templates/common_test.go.tmpl"
 	default:
 		panic(fmt.Sprintf("unsupported template name %d", name))
 	}
@@ -41,6 +44,7 @@ func (name templateName) path() string {
 
 // Scaffold contains the source for every file managed by the generator.
 type Scaffold struct {
+	Common           []byte
 	RoleCases        map[string][]byte
 	RoleConformances map[string][]byte
 	RoleScaffolds    map[string][]byte
@@ -49,8 +53,8 @@ type Scaffold struct {
 
 // GenerateScaffold creates deterministic source files from extracted Action cases.
 // modulePath is the module declared by the project being generated into.
-func GenerateScaffold(modulePath string, cases []fizzbee.ActionCase) (*Scaffold, error) {
-	data, err := BuildTemplateData(modulePath, "", cases)
+func GenerateScaffold(modulePath string, cases []fizzbee.ActionCase, declarations Declarations) (*Scaffold, error) {
+	data, err := BuildTemplateData(modulePath, "", cases, declarations)
 	if err != nil {
 		return nil, err
 	}
@@ -58,6 +62,14 @@ func GenerateScaffold(modulePath string, cases []fizzbee.ActionCase) (*Scaffold,
 }
 
 func generateScaffold(data *TemplateData) (*Scaffold, error) {
+	var common []byte
+	if len(data.Observers) > 0 || len(data.DeclaredTypes) > 0 {
+		var err error
+		common, err = generateTemplateScaffold(templateCommon, data)
+		if err != nil {
+			return nil, err
+		}
+	}
 	roleCases, err := generateRoleSources(data, templateTypes)
 	if err != nil {
 		return nil, err
@@ -74,7 +86,7 @@ func generateScaffold(data *TemplateData) (*Scaffold, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Scaffold{RoleCases: roleCases, RoleConformances: roleConformances, RoleScaffolds: roleScaffolds, CaseData: caseData}, nil
+	return &Scaffold{Common: common, RoleCases: roleCases, RoleConformances: roleConformances, RoleScaffolds: roleScaffolds, CaseData: caseData}, nil
 }
 
 func generateCaseData(data *TemplateData) (map[string][]byte, error) {
@@ -133,7 +145,9 @@ func fieldValuesJSON(fields []fieldValue) map[string]any {
 
 func generateTemplateScaffold(name templateName, data *TemplateData) ([]byte, error) {
 	templatePath := name.path()
-	templates, err := template.New(templatePath).ParseFS(templateFiles, templatePath)
+	templates, err := template.New(templatePath).Funcs(template.FuncMap{
+		"goLiteral": goLiteral,
+	}).ParseFS(templateFiles, templatePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "parse %s template", filepath.Base(templatePath))
 	}
@@ -169,6 +183,9 @@ func generateRoleSources(data *TemplateData, name templateName) (map[string][]by
 	scaffolds := make(map[string][]byte, len(roleNames))
 	for _, role := range roleNames {
 		roleData := newTemplateData(data.Module, role, byRole[role])
+		roleData.Observers = data.Observers
+		roleData.ObserverGroups = data.ObserverGroups
+		roleData.PluginImports = data.PluginImports
 		source, err := generateTemplateScaffold(name, roleData)
 		if err != nil {
 			return nil, err

@@ -50,6 +50,7 @@ func TestFormatEventsAroundInjectedEvent(t *testing.T) {
 	assert.Contains(t, got, "... 2 earlier I/O events omitted")
 	assert.Contains(t, got, "13. operation [fault injected; call not executed]")
 	assert.Contains(t, got, "... 2 later I/O events omitted")
+	assert.NotContains(t, got, "[no fault injected]")
 }
 
 func TestFormatEventsSuccessPathKeepsLastElevenEvents(t *testing.T) {
@@ -60,7 +61,27 @@ func TestFormatEventsSuccessPathKeepsLastElevenEvents(t *testing.T) {
 
 	got := formatEvents(events)
 	assert.True(t, strings.HasPrefix(got, "... 4 earlier I/O events omitted\n5. operation"))
-	assert.True(t, strings.HasSuffix(got, "15. operation"))
+	assert.True(t, strings.HasSuffix(got, "15. operation\n[no fault injected]"))
+}
+
+func TestFormatEventsWithoutInjection(t *testing.T) {
+	tests := []struct {
+		name   string
+		events []IOEvent
+		want   string
+	}{
+		{name: "no I/O", want: "no supported I/O observed\n[no fault injected]"},
+		{
+			name:   "I/O without injection",
+			events: []IOEvent{{Number: 1, Operation: "operation"}},
+			want:   "1. operation\n[no fault injected]",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, formatEvents(tt.events))
+		})
+	}
 }
 
 func TestFormatComparisonMismatchOrdersDiagnostics(t *testing.T) {
@@ -110,7 +131,7 @@ func TestFormatValueSortsObjectFields(t *testing.T) {
 func TestFormatComparisonMismatchPlacesEventsFirst(t *testing.T) {
 	got := formatComparisonMismatch([]string{"first mismatch"}, "actual", nil)
 
-	assert.True(t, strings.HasPrefix(got, "actual state does not match any allowed state:\nI/O events:\n  no supported I/O observed\nunique mismatches across all allowed states:\n  ---diff1\n  first mismatch\n"))
+	assert.True(t, strings.HasPrefix(got, "actual state does not match any allowed state:\nI/O events:\n  no supported I/O observed\n  [no fault injected]\nunique mismatches across all allowed states:\n  ---diff1\n  first mismatch\n"))
 }
 
 func TestUniqueStrings(t *testing.T) {

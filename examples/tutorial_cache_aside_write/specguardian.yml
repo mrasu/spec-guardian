@@ -1,0 +1,43 @@
+version: "0.1"
+observers:
+  - id: db
+    plugin:
+      builtin: sql
+    config:
+      driver: pgx
+      connection_string: postgres://postgres@localhost:15432/postgres?sslmode=disable
+  - id: cache
+    plugin:
+      builtin: valkey
+    config:
+      address: localhost:16379
+fizzbee_files:
+  - output_dir: docs/spec/fizzbee_output
+    roles:
+      - name: DB
+        fields:
+          - name: records
+            observer:
+              id: db
+              config:
+                query: SELECT key, value FROM records
+                result:
+                  type: kv
+                  key_column: key
+                  value_column: value
+            type:
+              kind: map
+              values:
+                kind: string
+      - name: Cache
+        fields:
+          - name: cached_records
+            observer:
+              id: cache
+              config:
+                keys: "*"
+            type:
+              kind: map
+              values:
+                kind: string
+dev: true

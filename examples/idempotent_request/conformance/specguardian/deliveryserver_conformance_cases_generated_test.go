@@ -9,6 +9,9 @@ import (
 
 	"github.com/mrasu/spec-guardian/guardian"
 	"github.com/mrasu/spec-guardian/guardian/gcmp"
+	"github.com/mrasu/spec-guardian/guardian/observer"
+	dynamodbobserver "github.com/mrasu/spec-guardian/guardian/observer/dynamodb"
+	sqlobserver "github.com/mrasu/spec-guardian/guardian/observer/sql"
 )
 
 // DeliveryServerActions describes the application methods exercised by this role.
@@ -21,16 +24,37 @@ type DeliveryServerActions interface {
 type DeliveryServerConformanceEnvironment struct {
 	Actions DeliveryServerActions
 	*DeliveryServerEnvironment
+	observerDynamodb *dynamodbobserver.Observer
+	observerMysql    *sqlobserver.Observer
 }
 
 // NewDeliveryServerConformanceEnvironment builds the adapter and resources for a conformance case.
 func NewDeliveryServerConformanceEnvironment(t *testing.T, controller *guardian.InjectionController) *DeliveryServerConformanceEnvironment {
 	t.Helper()
 	actions, environment := BuildDeliveryServerConformanceComponents(t, controller)
-
+	configDynamodb, fieldsDynamodb := _sgObserverDynamodbSettings()
+	observerDynamodb, errDynamodb := dynamodbobserver.New(
+		dynamodbobserver.Config{},
+		configDynamodb,
+		fieldsDynamodb,
+	)
+	if errDynamodb != nil {
+		t.Fatalf("observer dynamodb New: %v", errDynamodb)
+	}
+	configMysql, fieldsMysql := _sgObserverMysqlSettings()
+	observerMysql, errMysql := sqlobserver.New(
+		sqlobserver.Config{},
+		configMysql,
+		fieldsMysql,
+	)
+	if errMysql != nil {
+		t.Fatalf("observer mysql New: %v", errMysql)
+	}
 	return &DeliveryServerConformanceEnvironment{
 		Actions:                   actions,
 		DeliveryServerEnvironment: environment,
+		observerDynamodb:          observerDynamodb,
+		observerMysql:             observerMysql,
 	}
 }
 
@@ -46,6 +70,22 @@ func (e *DeliveryServerConformanceEnvironment) PrepareDeliverCase(t *testing.T) 
 	t.Cleanup(func() {
 		e.CleanupDeliverCase(t)
 	})
+	if err := e.observerDynamodb.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer dynamodb PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerDynamodb.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer dynamodb CleanupCase: %v", err)
+		}
+	})
+	if err := e.observerMysql.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer mysql PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerMysql.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer mysql CleanupCase: %v", err)
+		}
+	})
 }
 
 // PrepareDeliverAttempt sets up one fault attempt and registers its cleanup.
@@ -53,6 +93,22 @@ func (e *DeliveryServerConformanceEnvironment) PrepareDeliverAttempt(t *testing.
 	e.SetupDeliverAttempt(t, input)
 	t.Cleanup(func() {
 		e.CleanupDeliverAttempt(t)
+	})
+	if err := e.observerDynamodb.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer dynamodb PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerDynamodb.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer dynamodb CleanupAttempt: %v", err)
+		}
+	})
+	if err := e.observerMysql.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer mysql PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerMysql.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer mysql CleanupAttempt: %v", err)
+		}
 	})
 }
 
@@ -63,10 +119,81 @@ func (e *DeliveryServerConformanceEnvironment) ExecuteDeliver(ctx context.Contex
 
 // ObserveDeliverState collects the state and output visible after the action.
 func (e *DeliveryServerConformanceEnvironment) ObserveDeliverState(t *testing.T, input FizzbeeDeliveryServerState, output DeliveryServerDeliverOutput, actionErr error) guardian.ObservedState[*DeliveryServerObservedState] {
-	observedState := e.ObserveCurrentState(t)
-	resultState := e.BuildObservedDeliverState(t, observedState, input, output, actionErr)
+	valueDynamoDBDeliveryRecords, err := e.observerDynamodb.Observe(t.Context(), _sgFieldDynamoDBDeliveryRecords)
+	if err != nil {
+		t.Fatalf("observer dynamodb Observe %s: %v", _sgFieldDynamoDBDeliveryRecords, err)
+	}
+	typedDynamoDBDeliveryRecords, convertErr := observer.Convert[map[string]DynamoDBDeliveryRecordsField](valueDynamoDBDeliveryRecords)
+	if convertErr != nil {
+		t.Fatalf("observer dynamodb Observe %s: %v", _sgFieldDynamoDBDeliveryRecords, convertErr)
+	}
+	valueDynamoDBOrderIdempotencyRecords, err := e.observerDynamodb.Observe(t.Context(), _sgFieldDynamoDBOrderIdempotencyRecords)
+	if err != nil {
+		t.Fatalf("observer dynamodb Observe %s: %v", _sgFieldDynamoDBOrderIdempotencyRecords, err)
+	}
+	typedDynamoDBOrderIdempotencyRecords, convertErr := observer.Convert[map[string]DynamoDBOrderIdempotencyRecordsField](valueDynamoDBOrderIdempotencyRecords)
+	if convertErr != nil {
+		t.Fatalf("observer dynamodb Observe %s: %v", _sgFieldDynamoDBOrderIdempotencyRecords, convertErr)
+	}
+	valueMySQLOrderRecords, err := e.observerMysql.Observe(t.Context(), _sgFieldMySQLOrderRecords)
+	if err != nil {
+		t.Fatalf("observer mysql Observe %s: %v", _sgFieldMySQLOrderRecords, err)
+	}
+	typedMySQLOrderRecords, convertErr := observer.Convert[map[string]MySQLOrderRecordsField](valueMySQLOrderRecords)
+	if convertErr != nil {
+		t.Fatalf("observer mysql Observe %s: %v", _sgFieldMySQLOrderRecords, convertErr)
+	}
+	fetched := DeliveryServerFetchedObservation{
+		Fields: DeliveryServerFetchedField{
+			DynamoDB: DeliveryServerDynamoDBFetchedField{
+				DeliveryRecords:         typedDynamoDBDeliveryRecords,
+				OrderIdempotencyRecords: typedDynamoDBOrderIdempotencyRecords,
+			},
+			MySQL: DeliveryServerMySQLFetchedField{
+				OrderRecords: typedMySQLOrderRecords,
+			},
+		},
+	}
+
+	manual := e.BuildDeliverManualObservation(t, fetched, input, output, actionErr)
+
+	resultState := DeliveryServerObservedState{Fields: DeliveryServerObservedField{
+		DynamoDB: DeliveryServerDynamoDBObservedField{
+			DeliveryRecords:         _sgToDynamoDBDeliveryRecordsObservedField(fetched.Fields.DynamoDB.DeliveryRecords),
+			OrderIdempotencyRecords: _sgToDynamoDBOrderIdempotencyRecordsObservedField(fetched.Fields.DynamoDB.OrderIdempotencyRecords),
+		},
+		MySQL: DeliveryServerMySQLObservedField{
+			OrderRecords: _sgToMySQLOrderRecordsObservedField(fetched.Fields.MySQL.OrderRecords),
+		},
+		DeliveryServer: DeliveryServerDeliveryServerObservedField{
+			OrderId:             manual.Fields.DeliveryServer.OrderId,
+			RequestDeliveryData: manual.Fields.DeliveryServer.RequestDeliveryData,
+			Result:              manual.Fields.DeliveryServer.Result,
+		},
+	}}
 
 	return guardian.NewObservedState(&resultState)
+}
+
+// BuildAllowedDeliverState maps every comparable model field to its allowed value.
+func (e *DeliveryServerConformanceEnvironment) BuildAllowedDeliverState(t *testing.T, allowed FizzbeeDeliveryServerState) DeliveryServerComparisonState {
+	t.Helper()
+	return DeliveryServerComparisonState{
+		Fields: DeliveryServerComparisonField{
+			DynamoDB: DeliveryServerDynamoDBComparisonField{
+				DeliveryRecords:         _sgToDynamoDBDeliveryRecordsComparisonField(allowed.Fields.DynamoDB.DeliveryRecords),
+				OrderIdempotencyRecords: _sgToDynamoDBOrderIdempotencyRecordsComparisonField(allowed.Fields.DynamoDB.OrderIdempotencyRecords),
+			},
+			MySQL: DeliveryServerMySQLComparisonField{
+				OrderRecords: _sgToMySQLOrderRecordsComparisonField(allowed.Fields.MySQL.OrderRecords),
+			},
+			DeliveryServer: DeliveryServerDeliveryServerComparisonField{
+				OrderId:             gcmp.Equal(allowed.Fields.DeliveryServer.OrderId),
+				RequestDeliveryData: gcmp.Equal(allowed.Fields.DeliveryServer.RequestDeliveryData),
+				Result:              gcmp.Equal(allowed.Fields.DeliveryServer.Result),
+			},
+		},
+	}
 }
 
 // BuildAllowedDeliverStates maps FizzBee outcomes to comparable states.
@@ -90,44 +217,44 @@ type DeliveryServerCase struct {
 // FizzbeeDeliveryServerState contains the model parameters and fields for this role.
 type FizzbeeDeliveryServerState struct {
 	Params DeliveryServerParams `json:"params"`
-	Fields DeliveryServerFields `json:"fields"`
+	Fields DeliveryServerField  `json:"fields"`
 }
 
 // DeliveryServerParams contains each role's model parameters.
 type DeliveryServerParams struct {
 }
 
-// DeliveryServerFields contains each role's model fields.
-type DeliveryServerFields struct {
-	DynamoDB          DeliveryServerDynamoDBFields          `json:"DynamoDB"`
-	MySQL             DeliveryServerMySQLFields             `json:"MySQL"`
-	RequestPreparator DeliveryServerRequestPreparatorFields `json:"RequestPreparator"`
-	DeliveryServer    DeliveryServerDeliveryServerFields    `json:"DeliveryServer"`
+// DeliveryServerField contains each role's model fields.
+type DeliveryServerField struct {
+	DynamoDB          DeliveryServerDynamoDBField          `json:"DynamoDB"`
+	MySQL             DeliveryServerMySQLField             `json:"MySQL"`
+	RequestPreparator DeliveryServerRequestPreparatorField `json:"RequestPreparator"`
+	DeliveryServer    DeliveryServerDeliveryServerField    `json:"DeliveryServer"`
 }
 
-// DeliveryServerDynamoDBFields contains model fields for DynamoDB.
-type DeliveryServerDynamoDBFields struct {
-	DeliveryRecords         map[string]any `json:"delivery_records"`
-	OrderIdempotencyRecords map[string]any `json:"order_idempotency_records"`
+// DeliveryServerDynamoDBField contains model fields for DynamoDB.
+type DeliveryServerDynamoDBField struct {
+	DeliveryRecords         map[string]DynamoDBDeliveryRecordsField         `json:"delivery_records"`
+	OrderIdempotencyRecords map[string]DynamoDBOrderIdempotencyRecordsField `json:"order_idempotency_records"`
 }
 
-// DeliveryServerMySQLFields contains model fields for MySQL.
-type DeliveryServerMySQLFields struct {
-	DeliveryPreparedCount int            `json:"delivery_prepared_count"`
-	NextOrderId           int            `json:"next_order_id"`
-	OrderRecords          map[string]any `json:"order_records"`
+// DeliveryServerMySQLField contains model fields for MySQL.
+type DeliveryServerMySQLField struct {
+	DeliveryPreparedCount int                               `json:"delivery_prepared_count"`
+	NextOrderId           int                               `json:"next_order_id"`
+	OrderRecords          map[string]MySQLOrderRecordsField `json:"order_records"`
 }
 
-// DeliveryServerRequestPreparatorFields contains model fields for RequestPreparator.
-type DeliveryServerRequestPreparatorFields struct {
+// DeliveryServerRequestPreparatorField contains model fields for RequestPreparator.
+type DeliveryServerRequestPreparatorField struct {
 	SecondDeliveryData            string `json:"second_delivery_data"`
 	SecondDeliveryRequestPrepared bool   `json:"second_delivery_request_prepared"`
 	SecondOrderPayload            string `json:"second_order_payload"`
 	SecondOrderRequestPrepared    bool   `json:"second_order_request_prepared"`
 }
 
-// DeliveryServerDeliveryServerFields contains model fields for DeliveryServer.
-type DeliveryServerDeliveryServerFields struct {
+// DeliveryServerDeliveryServerField contains model fields for DeliveryServer.
+type DeliveryServerDeliveryServerField struct {
 	OrderId             *int   `json:"order_id"`
 	RequestDeliveryData string `json:"request_delivery_data"`
 	Result              string `json:"result"`
@@ -135,45 +262,63 @@ type DeliveryServerDeliveryServerFields struct {
 
 // DeliveryServerObservedState holds values observed from the application.
 type DeliveryServerObservedState struct {
-	Params DeliveryServerObservedParams
-	Fields DeliveryServerObservedFields
+	Fields DeliveryServerObservedField
 }
 
-// DeliveryServerObservedParams contains observed parameters for each role.
-type DeliveryServerObservedParams struct {
+// DeliveryServerObservedField contains observed fields for each role.
+type DeliveryServerObservedField struct {
+	DynamoDB       DeliveryServerDynamoDBObservedField
+	MySQL          DeliveryServerMySQLObservedField
+	DeliveryServer DeliveryServerDeliveryServerObservedField
 }
 
-// DeliveryServerObservedFields contains observed fields for each role.
-type DeliveryServerObservedFields struct {
-	DynamoDB          DeliveryServerDynamoDBObservedFields
-	MySQL             DeliveryServerMySQLObservedFields
-	RequestPreparator DeliveryServerRequestPreparatorObservedFields
-	DeliveryServer    DeliveryServerDeliveryServerObservedFields
+// DeliveryServerDynamoDBObservedField contains observed fields for DynamoDB.
+type DeliveryServerDynamoDBObservedField struct {
+	DeliveryRecords         map[string]*gcmp.ObservedMessage[DynamoDBDeliveryRecordsObservedField]
+	OrderIdempotencyRecords map[string]*gcmp.ObservedMessage[DynamoDBOrderIdempotencyRecordsObservedField]
 }
 
-// DeliveryServerDynamoDBObservedFields contains observed fields for DynamoDB.
-type DeliveryServerDynamoDBObservedFields struct {
-	DeliveryRecords         *gcmp.ObservedField[map[string]any]
-	OrderIdempotencyRecords *gcmp.ObservedField[map[string]any]
+// DeliveryServerMySQLObservedField contains observed fields for MySQL.
+type DeliveryServerMySQLObservedField struct {
+	OrderRecords map[string]*gcmp.ObservedMessage[MySQLOrderRecordsObservedField]
 }
 
-// DeliveryServerMySQLObservedFields contains observed fields for MySQL.
-type DeliveryServerMySQLObservedFields struct {
-	DeliveryPreparedCount *gcmp.ObservedField[int]
-	NextOrderId           *gcmp.ObservedField[int]
-	OrderRecords          *gcmp.ObservedField[map[string]any]
+// DeliveryServerDeliveryServerObservedField contains observed fields for DeliveryServer.
+type DeliveryServerDeliveryServerObservedField struct {
+	OrderId             *gcmp.ObservedField[*int]
+	RequestDeliveryData *gcmp.ObservedField[string]
+	Result              *gcmp.ObservedField[string]
 }
 
-// DeliveryServerRequestPreparatorObservedFields contains observed fields for RequestPreparator.
-type DeliveryServerRequestPreparatorObservedFields struct {
-	SecondDeliveryData            *gcmp.ObservedField[string]
-	SecondDeliveryRequestPrepared *gcmp.ObservedField[bool]
-	SecondOrderPayload            *gcmp.ObservedField[string]
-	SecondOrderRequestPrepared    *gcmp.ObservedField[bool]
+// DeliveryServerFetchedObservation contains fields collected by declared observers.
+type DeliveryServerFetchedObservation struct {
+	Fields DeliveryServerFetchedField
 }
 
-// DeliveryServerDeliveryServerObservedFields contains observed fields for DeliveryServer.
-type DeliveryServerDeliveryServerObservedFields struct {
+type DeliveryServerFetchedField struct {
+	DynamoDB DeliveryServerDynamoDBFetchedField
+	MySQL    DeliveryServerMySQLFetchedField
+}
+
+type DeliveryServerDynamoDBFetchedField struct {
+	DeliveryRecords         map[string]DynamoDBDeliveryRecordsField
+	OrderIdempotencyRecords map[string]DynamoDBOrderIdempotencyRecordsField
+}
+
+type DeliveryServerMySQLFetchedField struct {
+	OrderRecords map[string]MySQLOrderRecordsField
+}
+
+// DeliveryServerManualObservation contains fields supplied by the application.
+type DeliveryServerManualObservation struct {
+	Fields DeliveryServerManualField
+}
+
+type DeliveryServerManualField struct {
+	DeliveryServer DeliveryServerDeliveryServerManualField
+}
+
+type DeliveryServerDeliveryServerManualField struct {
 	OrderId             *gcmp.ObservedField[*int]
 	RequestDeliveryData *gcmp.ObservedField[string]
 	Result              *gcmp.ObservedField[string]
@@ -181,8 +326,7 @@ type DeliveryServerDeliveryServerObservedFields struct {
 
 // DeliveryServerComparisonState configures checks for an allowed model state.
 type DeliveryServerComparisonState struct {
-	Params DeliveryServerComparisonParams
-	Fields DeliveryServerComparisonFields
+	Fields DeliveryServerComparisonField
 }
 
 // ExpectedState identifies the FizzBee state type compared with this state.
@@ -190,41 +334,26 @@ func (actual *DeliveryServerComparisonState) ExpectedState() FizzbeeDeliveryServ
 	return FizzbeeDeliveryServerState{}
 }
 
-// DeliveryServerComparisonParams contains parameter comparisons for each role.
-type DeliveryServerComparisonParams struct {
+// DeliveryServerComparisonField contains field comparisons for each role.
+type DeliveryServerComparisonField struct {
+	DynamoDB       DeliveryServerDynamoDBComparisonField
+	MySQL          DeliveryServerMySQLComparisonField
+	DeliveryServer DeliveryServerDeliveryServerComparisonField
 }
 
-// DeliveryServerComparisonFields contains field comparisons for each role.
-type DeliveryServerComparisonFields struct {
-	DynamoDB          DeliveryServerDynamoDBComparisonFields
-	MySQL             DeliveryServerMySQLComparisonFields
-	RequestPreparator DeliveryServerRequestPreparatorComparisonFields
-	DeliveryServer    DeliveryServerDeliveryServerComparisonFields
+// DeliveryServerDynamoDBComparisonField contains field comparisons for DynamoDB.
+type DeliveryServerDynamoDBComparisonField struct {
+	DeliveryRecords         map[string]*gcmp.ComparisonMessage[DynamoDBDeliveryRecordsComparisonField]
+	OrderIdempotencyRecords map[string]*gcmp.ComparisonMessage[DynamoDBOrderIdempotencyRecordsComparisonField]
 }
 
-// DeliveryServerDynamoDBComparisonFields contains field comparisons for DynamoDB.
-type DeliveryServerDynamoDBComparisonFields struct {
-	DeliveryRecords         *gcmp.ComparisonField[map[string]any]
-	OrderIdempotencyRecords *gcmp.ComparisonField[map[string]any]
+// DeliveryServerMySQLComparisonField contains field comparisons for MySQL.
+type DeliveryServerMySQLComparisonField struct {
+	OrderRecords map[string]*gcmp.ComparisonMessage[MySQLOrderRecordsComparisonField]
 }
 
-// DeliveryServerMySQLComparisonFields contains field comparisons for MySQL.
-type DeliveryServerMySQLComparisonFields struct {
-	DeliveryPreparedCount *gcmp.ComparisonField[int]
-	NextOrderId           *gcmp.ComparisonField[int]
-	OrderRecords          *gcmp.ComparisonField[map[string]any]
-}
-
-// DeliveryServerRequestPreparatorComparisonFields contains field comparisons for RequestPreparator.
-type DeliveryServerRequestPreparatorComparisonFields struct {
-	SecondDeliveryData            *gcmp.ComparisonField[string]
-	SecondDeliveryRequestPrepared *gcmp.ComparisonField[bool]
-	SecondOrderPayload            *gcmp.ComparisonField[string]
-	SecondOrderRequestPrepared    *gcmp.ComparisonField[bool]
-}
-
-// DeliveryServerDeliveryServerComparisonFields contains field comparisons for DeliveryServer.
-type DeliveryServerDeliveryServerComparisonFields struct {
+// DeliveryServerDeliveryServerComparisonField contains field comparisons for DeliveryServer.
+type DeliveryServerDeliveryServerComparisonField struct {
 	OrderId             *gcmp.ComparisonField[*int]
 	RequestDeliveryData *gcmp.ComparisonField[string]
 	Result              *gcmp.ComparisonField[string]

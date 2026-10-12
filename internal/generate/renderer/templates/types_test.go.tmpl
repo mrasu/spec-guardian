@@ -8,7 +8,11 @@ import (
 	"testing"
 
 	"github.com/mrasu/spec-guardian/guardian"
-	"github.com/mrasu/spec-guardian/guardian/gcmp"
+{{if .ObservedRoles}}	"github.com/mrasu/spec-guardian/guardian/gcmp"
+{{end}}{{if .Observers}}	"github.com/mrasu/spec-guardian/guardian/observer"
+{{range .PluginImports}}	{{.Alias}} {{printf "%q" .Path}}
+{{end}}
+{{end}}
 )
 
 // {{.Role}}Actions describes the application methods exercised by this role.
@@ -23,16 +27,30 @@ type {{.Role}}Actions interface {
 type {{.Role}}ConformanceEnvironment struct {
 	Actions {{.Role}}Actions
 	*{{.Role}}Environment
+{{- range .ObserverGroups}}
+	observer{{.GoName}} *{{.PluginAlias}}.Observer
+{{- end}}
 }
 
 // New{{.Role}}ConformanceEnvironment builds the adapter and resources for a conformance case.
 func New{{.Role}}ConformanceEnvironment(t *testing.T, controller *guardian.InjectionController) *{{.Role}}ConformanceEnvironment {
 	t.Helper()
 	actions, environment := Build{{.Role}}ConformanceComponents(t, controller)
-
-	return &{{.Role}}ConformanceEnvironment{
+{{range .ObserverGroups}}	config{{.GoName}}, fields{{.GoName}} := _sgObserver{{.GoName}}Settings()
+	observer{{.GoName}}, err{{.GoName}} := {{.PluginAlias}}.New(
+		{{.PluginAlias}}.Config{},
+		config{{.GoName}},
+		fields{{.GoName}},
+	)
+	if err{{.GoName}} != nil {
+		t.Fatalf("observer {{.ID}} New: %v", err{{.GoName}})
+	}
+{{end}}	return &{{.Role}}ConformanceEnvironment{
 		Actions: actions,
 		{{.Role}}Environment: environment,
+{{- range .ObserverGroups}}
+		observer{{.GoName}}: observer{{.GoName}},
+{{- end}}
 	}
 }
 
@@ -49,7 +67,15 @@ func (e *{{.Role}}ConformanceEnvironment) Prepare{{.Name}}Case(t *testing.T) {
 	t.Cleanup(func() {
 		e.Cleanup{{.Name}}Case(t)
 	})
-}
+{{range $.ObserverGroups}}	if err := e.observer{{.GoName}}.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer {{.ID}} PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observer{{.GoName}}.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer {{.ID}} CleanupCase: %v", err)
+		}
+	})
+{{end}}}
 
 // Prepare{{.Name}}Attempt sets up one fault attempt and registers its cleanup.
 func (e *{{.Role}}ConformanceEnvironment) Prepare{{.Name}}Attempt(t *testing.T, input Fizzbee{{.Role}}State) {
@@ -57,7 +83,15 @@ func (e *{{.Role}}ConformanceEnvironment) Prepare{{.Name}}Attempt(t *testing.T, 
 	t.Cleanup(func() {
 		e.Cleanup{{.Name}}Attempt(t)
 	})
-}
+{{range $.ObserverGroups}}	if err := e.observer{{.GoName}}.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer {{.ID}} PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observer{{.GoName}}.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer {{.ID}} CleanupAttempt: %v", err)
+		}
+	})
+{{end}}}
 
 // Execute{{.Name}} invokes the application action.
 func (e *{{.Role}}ConformanceEnvironment) Execute{{.Name}}(ctx context.Context, input {{.Role}}{{.Name}}Input) ({{.Role}}{{.Name}}Output, error) {
@@ -66,10 +100,65 @@ func (e *{{.Role}}ConformanceEnvironment) Execute{{.Name}}(ctx context.Context, 
 
 // Observe{{.Name}}State collects the state and output visible after the action.
 func (e *{{.Role}}ConformanceEnvironment) Observe{{.Name}}State(t *testing.T, input Fizzbee{{.Role}}State, output {{.Role}}{{.Name}}Output, actionErr error) guardian.ObservedState[*{{.Role}}ObservedState] {
-	observedState := e.ObserveCurrentState(t)
-	resultState := e.BuildObserved{{.Name}}State(t, observedState, input, output, actionErr)
+{{range $.Observers}}	value{{.RoleName}}{{.GoName}}, err := e.observer{{.ObserverGoName}}.Observe(t.Context(), _sgField{{.RoleName}}{{.GoName}})
+	if err != nil {
+		t.Fatalf("observer {{.ObserverID}} Observe %s: %v", _sgField{{.RoleName}}{{.GoName}}, err)
+	}
+	typed{{.RoleName}}{{.GoName}}, convertErr := observer.Convert[{{.ConvertType}}](value{{.RoleName}}{{.GoName}})
+	if convertErr != nil {
+		t.Fatalf("observer {{.ObserverID}} Observe %s: %v", _sgField{{.RoleName}}{{.GoName}}, convertErr)
+	}
+{{end -}}
+	fetched := {{.Role}}FetchedObservation{
+{{if $.FetchedRoles}}		Fields: {{.Role}}FetchedField{
+{{- range $.FetchedRoles}}
+			{{.Name}}: {{$.Role}}{{.Name}}FetchedField{
+{{- $roleName := .Name}}
+{{- range .Fields}}{{if .Observed}}
+				{{.GoName}}: typed{{$roleName}}{{.GoName}},
+{{- end}}{{- end}}
+			},
+{{- end}}
+		},
+{{end}}	}
+
+	manual := e.Build{{.Name}}ManualObservation(t, fetched, input, output, actionErr)
+{{if $.ObservedRoles}}{{if $.Observers}}{{if not ($.ManualRoles)}}	_ = manual
+{{end}}
+	resultState := {{.Role}}ObservedState{Fields: {{.Role}}ObservedField{
+{{- range $.ObservedRoles}}
+		{{.Name}}: {{$.Role}}{{.Name}}ObservedField{
+{{- $roleName := .Name}}
+{{- range .Fields}}{{if not .Unobservable}}
+	{{.GoName}}: {{if .Observed}}{{if .Shape}}{{.Shape.ObservedConvert}}(fetched.Fields.{{$roleName}}.{{.GoName}}){{else}}gcmp.Observed(fetched.Fields.{{$roleName}}.{{.GoName}}){{end}}{{else}}manual.Fields.{{$roleName}}.{{.GoName}}{{end}},
+{{- end}}{{- end}}
+		},
+{{- end}}
+	}}
+{{else}}
+	resultState := {{.Role}}ObservedState{Fields: manual.Fields}
+{{end}}{{else}}	_ = manual
+	resultState := {{.Role}}ObservedState{}
+{{end}}
 
 	return guardian.NewObservedState(&resultState)
+}
+
+// BuildAllowed{{.Name}}State maps every comparable model field to its allowed value.
+func (e *{{.Role}}ConformanceEnvironment) BuildAllowed{{.Name}}State(t *testing.T, allowed Fizzbee{{.Role}}State) {{.Role}}ComparisonState {
+	t.Helper()
+	return {{.Role}}ComparisonState{
+{{if $.ObservedRoles}}		Fields: {{.Role}}ComparisonField{
+{{- range $.ObservedRoles}}
+			{{.Name}}: {{$.Role}}{{.Name}}ComparisonField{
+{{- $roleName := .Name}}
+{{- range .Fields}}{{if not .Unobservable}}
+				{{.GoName}}: {{if .Shape}}{{.Shape.ComparisonConvert}}(allowed.Fields.{{$roleName}}.{{.GoName}}){{else}}gcmp.Equal(allowed.Fields.{{$roleName}}.{{.GoName}}){{end}},
+{{- end}}{{- end}}
+			},
+{{- end}}
+		},
+{{end}}	}
 }
 
 // BuildAllowed{{.Name}}States maps FizzBee outcomes to comparable states.
@@ -94,7 +183,7 @@ type {{.Role}}Case struct {
 // Fizzbee{{.Role}}State contains the model parameters and fields for this role.
 type Fizzbee{{.Role}}State struct {
 	Params {{.Role}}Params `json:"params"`
-	Fields {{.Role}}Fields `json:"fields"`
+	Fields {{.Role}}Field `json:"fields"`
 }
 
 // {{.Role}}Params contains each role's model parameters.
@@ -113,16 +202,16 @@ type {{$role}}{{.Name}}Params struct {
 {{- end}}
 }
 {{end}}{{end}}
-// {{.Role}}Fields contains each role's model fields.
-type {{.Role}}Fields struct {
+// {{.Role}}Field contains each role's model fields.
+type {{.Role}}Field struct {
 {{- range .Roles}}
-	{{.Name}} {{$role}}{{.Name}}Fields `json:"{{.Name}}"`
+	{{.Name}} {{$role}}{{.Name}}Field `json:"{{.Name}}"`
 {{- end}}
 }
 
 {{range .Roles}}
-// {{$role}}{{.Name}}Fields contains model fields for {{.Name}}.
-type {{$role}}{{.Name}}Fields struct {
+// {{$role}}{{.Name}}Field contains model fields for {{.Name}}.
+type {{$role}}{{.Name}}Field struct {
 {{- range .Fields}}
 	{{.GoName}} {{.GoType}} `json:"{{.JSONName}}"`
 {{- end}}
@@ -130,44 +219,76 @@ type {{$role}}{{.Name}}Fields struct {
 {{end}}
 // {{.Role}}ObservedState holds values observed from the application.
 type {{.Role}}ObservedState struct {
-	Params {{.Role}}ObservedParams
-	Fields {{.Role}}ObservedFields
+{{if .ObservedRoles}}	Fields {{.Role}}ObservedField
+{{end}}
 }
 
-// {{.Role}}ObservedParams contains observed parameters for each role.
-type {{.Role}}ObservedParams struct {
-{{- range .Roles}}{{if .Params}}
-	{{.Name}} {{$role}}{{.Name}}ObservedParams
+{{if .ObservedRoles}}
+// {{.Role}}ObservedField contains observed fields for each role.
+type {{.Role}}ObservedField struct {
+{{- range .ObservedRoles}}
+	{{.Name}} {{$role}}{{.Name}}ObservedField
+{{- end}}
+}
+
+{{range .ObservedRoles}}
+// {{$role}}{{.Name}}ObservedField contains observed fields for {{.Name}}.
+type {{$role}}{{.Name}}ObservedField struct {
+{{- range .Fields}}{{if not .Unobservable}}
+	{{.GoName}} {{if .Shape}}{{.Shape.ObservedType}}{{else}}*gcmp.ObservedField[{{.ComparisonType}}]{{end}}
 {{- end}}{{- end}}
 }
-
-{{range .Roles}}{{if .Params}}
-// {{$role}}{{.Name}}ObservedParams contains observed parameters for {{.Name}}.
-type {{$role}}{{.Name}}ObservedParams struct {
-{{- range .Params}}
-	{{.GoName}} *gcmp.ObservedField[{{.ComparisonType}}]
-{{- end}}
+{{end}}
+{{end}}
+// {{.Role}}FetchedObservation contains fields collected by declared observers.
+{{if .FetchedRoles -}}
+type {{.Role}}FetchedObservation struct {
+	Fields {{.Role}}FetchedField
 }
-{{end}}{{end}}
-// {{.Role}}ObservedFields contains observed fields for each role.
-type {{.Role}}ObservedFields struct {
-{{- range .Roles}}
-	{{.Name}} {{$role}}{{.Name}}ObservedFields
+
+type {{.Role}}FetchedField struct {
+{{- range .FetchedRoles}}
+	{{.Name}} {{$.Role}}{{.Name}}FetchedField
 {{- end}}
 }
 
-{{range .Roles}}
-// {{$role}}{{.Name}}ObservedFields contains observed fields for {{.Name}}.
-type {{$role}}{{.Name}}ObservedFields struct {
-{{- range .Fields}}
-	{{.GoName}} *gcmp.ObservedField[{{.ComparisonType}}]
-{{- end}}
+{{range .FetchedRoles}}
+type {{$role}}{{.Name}}FetchedField struct {
+{{- range .Fields}}{{if .Observed}}
+	{{.GoName}} {{.ComparisonType}}
+{{- end}}{{- end}}
 }
 {{end}}
+{{else -}}
+type {{.Role}}FetchedObservation struct{}
+{{end}}
+
+// {{.Role}}ManualObservation contains fields supplied by the application.
+type {{.Role}}ManualObservation struct {
+{{if .ManualRoles}}	Fields {{.Role}}{{if .Observers}}Manual{{else}}Observed{{end}}Field
+{{end}}
+}
+
+{{if and .Observers (.ManualRoles)}}
+type {{.Role}}ManualField struct {
+{{- range .ManualRoles}}
+	{{.Name}} {{$.Role}}{{.Name}}ManualField
+{{- end}}
+}
+
+{{range .ManualRoles}}
+type {{$role}}{{.Name}}ManualField struct {
+{{- range .Fields}}{{if and (not .Observed) (not .Unobservable)}}
+	{{.GoName}} {{if .Shape}}{{.Shape.ObservedType}}{{else}}*gcmp.ObservedField[{{.ComparisonType}}]{{end}}
+{{- end}}{{- end}}
+}
+{{end}}
+{{end}}
+
 // {{.Role}}ComparisonState configures checks for an allowed model state.
 type {{.Role}}ComparisonState struct {
-	Params {{.Role}}ComparisonParams
-	Fields {{.Role}}ComparisonFields
+{{if .ObservedRoles}}	Fields {{.Role}}ComparisonField
+{{end}}
 }
 
 // ExpectedState identifies the FizzBee state type compared with this state.
@@ -175,33 +296,20 @@ func (actual *{{.Role}}ComparisonState) ExpectedState() Fizzbee{{.Role}}State {
 	return Fizzbee{{.Role}}State{}
 }
 
-// {{.Role}}ComparisonParams contains parameter comparisons for each role.
-type {{.Role}}ComparisonParams struct {
-{{- range .Roles}}{{if .Params}}
-	{{.Name}} {{$role}}{{.Name}}ComparisonParams
+{{if .ObservedRoles}}
+// {{.Role}}ComparisonField contains field comparisons for each role.
+type {{.Role}}ComparisonField struct {
+{{- range .ObservedRoles}}
+	{{.Name}} {{$role}}{{.Name}}ComparisonField
+{{- end}}
+}
+
+{{range .ObservedRoles}}
+// {{$role}}{{.Name}}ComparisonField contains field comparisons for {{.Name}}.
+type {{$role}}{{.Name}}ComparisonField struct {
+{{- range .Fields}}{{if not .Unobservable}}
+	{{.GoName}} {{if .Shape}}{{.Shape.ComparisonType}}{{else}}*gcmp.ComparisonField[{{.ComparisonType}}]{{end}}
 {{- end}}{{- end}}
 }
-
-{{range .Roles}}{{if .Params}}
-// {{$role}}{{.Name}}ComparisonParams contains parameter comparisons for {{.Name}}.
-type {{$role}}{{.Name}}ComparisonParams struct {
-{{- range .Params}}
-	{{.GoName}} *gcmp.ComparisonField[{{.ComparisonType}}]
-{{- end}}
-}
-{{end}}{{end}}
-// {{.Role}}ComparisonFields contains field comparisons for each role.
-type {{.Role}}ComparisonFields struct {
-{{- range .Roles}}
-	{{.Name}} {{$role}}{{.Name}}ComparisonFields
-{{- end}}
-}
-
-{{range .Roles}}
-// {{$role}}{{.Name}}ComparisonFields contains field comparisons for {{.Name}}.
-type {{$role}}{{.Name}}ComparisonFields struct {
-{{- range .Fields}}
-	{{.GoName}} *gcmp.ComparisonField[{{.ComparisonType}}]
-{{- end}}
-}
+{{end}}
 {{end}}

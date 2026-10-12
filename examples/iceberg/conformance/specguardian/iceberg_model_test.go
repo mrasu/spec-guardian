@@ -39,8 +39,7 @@ func NewModelOperation(t *testing.T, state FizzbeeIcebergTableState) *modelOpera
 
 func (o *modelOperation) appendRow(t *testing.T) icebergRow {
 	t.Helper()
-	require.Len(t, o.row, 3)
-	return icebergRow{o.row[0], o.row[1], o.row[2]}
+	return toIcebergRow(t, o.row)
 }
 
 func (o *modelOperation) predicateExpression(t *testing.T) iceberggo.BooleanExpression {
@@ -99,122 +98,89 @@ func (o *modelOperation) replaceValues(row icebergRow) icebergRow {
 
 // modelObjectStore resolves the files in one FizzBee object store snapshot.
 type modelObjectStore struct {
-	objects map[string]json.RawMessage
+	metadataFiles           ObjectStoreMetadataFilesValue
+	manifestLists           ObjectStoreManifestListsValue
+	manifestFiles           ObjectStoreManifestFilesValue
+	dataFiles               ObjectStoreDataFilesValue
+	metadataByLocation      map[string]int
+	manifestListsByLocation map[string]int
+	manifestsByLocation     map[string]int
 }
 
-func NewModelObjectStore(t *testing.T, objects map[string]any) *modelObjectStore {
+func NewModelObjectStore(t *testing.T, metadataFiles ObjectStoreMetadataFilesValue, manifestLists ObjectStoreManifestListsValue, manifestFiles ObjectStoreManifestFilesValue, dataFiles ObjectStoreDataFilesValue) *modelObjectStore {
 	t.Helper()
-	require.NotNil(t, objects)
-	var decoded map[string]json.RawMessage
-	decodeModelValue(t, objects, &decoded)
-	return &modelObjectStore{objects: decoded}
+	s := &modelObjectStore{
+		metadataFiles: metadataFiles, manifestLists: manifestLists, manifestFiles: manifestFiles, dataFiles: dataFiles,
+		metadataByLocation: make(map[string]int), manifestListsByLocation: make(map[string]int), manifestsByLocation: make(map[string]int),
+	}
+	for i, value := range metadataFiles {
+		require.NotEmpty(t, value.Location)
+		s.metadataByLocation[value.Location] = i
+	}
+	for i, value := range manifestLists {
+		require.NotEmpty(t, value.Location)
+		s.manifestListsByLocation[value.Location] = i
+	}
+	for i, value := range manifestFiles {
+		require.NotEmpty(t, value.Location)
+		s.manifestsByLocation[value.Location] = i
+	}
+	return s
 }
 
 // scanLiveFiles follows only the catalog's committed snapshot.
 func (s *modelObjectStore) scanLiveFiles(t *testing.T, metadataLocation string) [][]icebergRow {
 	t.Helper()
-	metadata := s.findMetadata(t, metadataLocation)
-	if metadata.CurrentSnapshot == nil {
+	index, found := s.metadataByLocation[metadataLocation]
+	require.True(t, found, "model metadata %q is missing", metadataLocation)
+	snapshot := s.metadataFiles[index].CurrentSnapshot
+	if snapshot == nil {
 		return nil
 	}
-	return s.scanSnapshot(t, *metadata.CurrentSnapshot)
+	return s.scanManifestList(t, snapshot.ManifestListPath)
 }
 
-func (s *modelObjectStore) scanSnapshot(t *testing.T, snapshot modelSnapshot) [][]icebergRow {
+func (s *modelObjectStore) scanManifestList(t *testing.T, location string) [][]icebergRow {
 	t.Helper()
-	manifestList := s.findManifestList(t, snapshot.ManifestListPath)
+	index, found := s.manifestListsByLocation[location]
+	require.True(t, found, "model manifest list %q is missing", location)
 	var files [][]icebergRow
-	for _, listed := range manifestList {
-		manifest := s.findManifest(t, listed.ManifestPath)
-		files = append(files, s.scanManifest(t, manifest)...)
+	for _, entry := range s.manifestLists[index].Entries {
+		files = append(files, s.scanManifest(t, entry.ManifestPath)...)
 	}
 	return files
 }
 
-func (s *modelObjectStore) scanManifest(t *testing.T, manifest modelManifest) [][]icebergRow {
+func (s *modelObjectStore) scanManifest(t *testing.T, location string) [][]icebergRow {
 	t.Helper()
+	index, found := s.manifestsByLocation[location]
+	require.True(t, found, "model manifest %q is missing", location)
 	var files [][]icebergRow
-	for _, entry := range manifest.Entries {
+	for _, entry := range s.manifestFiles[index].File.Entries {
 		if entry.Status == "DELETED" || entry.DataFile.Content != "DATA" {
 			continue
 		}
-		dataFile := s.findDataFile(t, entry.DataFile.FilePath)
-		files = append(files, scanDataFileRows(t, dataFile))
+		fileIndex := entry.DataFile.FileIndex
+		require.GreaterOrEqual(t, fileIndex, int64(0))
+		require.Less(t, fileIndex, int64(len(s.dataFiles)))
+		files = append(files, toIcebergRows(t, s.dataFiles[fileIndex].Rows))
 	}
 	return files
 }
 
-func (s *modelObjectStore) findMetadata(t *testing.T, location string) modelMetadata {
+func toIcebergRows(t *testing.T, values [][]string) []icebergRow {
 	t.Helper()
-	var metadata modelMetadata
-	s.decodeFile(t, location, &metadata)
-	return metadata
-}
-
-func (s *modelObjectStore) findManifestList(t *testing.T, path string) []modelManifestListEntry {
-	t.Helper()
-	var manifestList []modelManifestListEntry
-	s.decodeFile(t, path, &manifestList)
-	return manifestList
-}
-
-func (s *modelObjectStore) findManifest(t *testing.T, path string) modelManifest {
-	t.Helper()
-	var manifest modelManifest
-	s.decodeFile(t, path, &manifest)
-	return manifest
-}
-
-func (s *modelObjectStore) findDataFile(t *testing.T, path string) modelDataFile {
-	t.Helper()
-	var dataFile modelDataFile
-	s.decodeFile(t, path, &dataFile)
-	return dataFile
-}
-
-func (s *modelObjectStore) decodeFile(t *testing.T, path string, destination any) {
-	t.Helper()
-	contents, found := s.objects[path]
-	require.True(t, found, "model object %q is missing", path)
-	require.NoError(t, json.Unmarshal(contents, destination), "decode model object %q", path)
-}
-
-type modelMetadata struct {
-	CurrentSnapshot *modelSnapshot `json:"current_snapshot"`
-}
-
-type modelSnapshot struct {
-	ManifestListPath string `json:"manifest_list_path"`
-}
-
-type modelManifestListEntry struct {
-	ManifestPath string `json:"manifest_path"`
-}
-
-type modelManifest struct {
-	Entries []modelManifestEntry `json:"entries"`
-}
-
-type modelManifestEntry struct {
-	Status   string `json:"status"`
-	DataFile struct {
-		Content  string `json:"content"`
-		FilePath string `json:"file_path"`
-	} `json:"data_file"`
-}
-
-type modelDataFile struct {
-	Rows [][]string `json:"rows"`
-}
-
-func scanDataFileRows(t *testing.T, file modelDataFile) []icebergRow {
-	t.Helper()
-	rows := make([]icebergRow, 0, len(file.Rows))
-	for _, values := range file.Rows {
-		require.Len(t, values, 3)
-		rows = append(rows, icebergRow{values[0], values[1], values[2]})
+	rows := make([]icebergRow, len(values))
+	for i, value := range values {
+		rows[i] = toIcebergRow(t, value)
 	}
 	return rows
+}
+
+func toIcebergRow(t *testing.T, values []string) icebergRow {
+	t.Helper()
+	require.Len(t, values, 3)
+	return icebergRow{values[0], values[1], values[2]}
 }
 
 func decodeModelValue(t *testing.T, value, destination any) {
@@ -226,17 +192,10 @@ func decodeModelValue(t *testing.T, value, destination any) {
 
 func modelLiveFiles(t *testing.T, state FizzbeeIcebergTableState) [][]icebergRow {
 	t.Helper()
-	store := NewModelObjectStore(t, state.Fields.ObjectStore.Objects)
+	store := NewModelObjectStore(t,
+		state.Fields.ObjectStore.MetadataFiles,
+		state.Fields.ObjectStore.ManifestLists,
+		state.Fields.ObjectStore.ManifestFiles,
+		state.Fields.ObjectStore.DataFiles)
 	return store.scanLiveFiles(t, state.Fields.Catalog.MetadataLocation)
-}
-
-func modelDataFiles(t *testing.T, state FizzbeeIcebergTableState) []dataFileRows {
-	t.Helper()
-	modelFiles := modelLiveFiles(t, state)
-	files := make([]dataFileRows, 0, len(modelFiles))
-	for _, rows := range modelFiles {
-		files = append(files, dataFileRows{Rows: append([]icebergRow{}, rows...)})
-	}
-	sortDataFiles(files)
-	return files
 }

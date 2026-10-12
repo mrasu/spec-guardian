@@ -297,25 +297,30 @@ func writeIndent(builder *strings.Builder, depth int) {
 
 func formatEvents(events []IOEvent) string {
 	if len(events) == 0 {
-		return "no supported I/O observed"
+		return "no supported I/O observed\n[no fault injected]"
 	}
 
 	const contextSize = 10
 	start, end := eventRange(events, contextSize)
 
 	var builder strings.Builder
+	injected := false
 	if start > 0 {
 		fmt.Fprintf(&builder, "... %d earlier I/O events omitted\n", start)
 	}
 	for _, event := range events[start:end] {
 		fmt.Fprintf(&builder, "%d. %s", event.Number, event.Operation)
 		if event.Injected {
+			injected = true
 			builder.WriteString(" [fault injected; call not executed]")
 		}
 		builder.WriteByte('\n')
 	}
 	if end < len(events) {
 		fmt.Fprintf(&builder, "... %d later I/O events omitted\n", len(events)-end)
+	}
+	if !injected {
+		builder.WriteString("[no fault injected]\n")
 	}
 	return strings.TrimSuffix(builder.String(), "\n")
 }

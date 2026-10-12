@@ -418,3 +418,16 @@ func TestPublicStateConstructorsRejectInvalidValues(t *testing.T) {
 	_, err = NewActionCase(action, input, nil)
 	assert.ErrorContains(t, err, "outputs are empty")
 }
+
+func TestSelectTestBoundaryRoleStates_DoesNotIncludeTopLevelVariables(t *testing.T) {
+	graph := &artifact.Graph{}
+	state := &artifact.State{
+		Globals:    json.RawMessage(`{"counter":42}`),
+		RoleStates: []artifact.RoleState{{Name: "Request", Ref: 0, Params: json.RawMessage(`{}`), Fields: json.RawMessage(`{"status":"ready"}`)}},
+	}
+	roles, err := selectTestBoundaryRoleStates(graph, state, "Request", 0)
+	require.NoError(t, err)
+	require.Equal(t, []RoleState{
+		{Name: "Request", Params: JSONObject{}, Fields: JSONObject{"status": "ready"}},
+	}, roles)
+}

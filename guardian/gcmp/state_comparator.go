@@ -3,6 +3,8 @@ package gcmp
 import (
 	"fmt"
 	"reflect"
+	"slices"
+	"strings"
 )
 
 // StateFor binds a comparison struct to the expected state type.
@@ -90,13 +92,7 @@ func comparisonStructValue[State any](state State) (reflect.Value, error) {
 }
 
 func validateComparisonFields(state reflect.Value) error {
-	return walkComparisonFields(state, state, "", func(actual, _ reflect.Value, path string) error {
-		validator, ok := actual.Interface().(interface{ Validate(string) error })
-		if !ok {
-			return fmt.Errorf("%s: field is not a comparison", path)
-		}
-		return validator.Validate(path)
-	})
+	return walkComparisonFields(state, state, "", validateComparisonField)
 }
 
 func matchComparisonField(actual, allowed reflect.Value, path string) error {
@@ -113,13 +109,20 @@ func matchComparisonField(actual, allowed reflect.Value, path string) error {
 
 // Validate reports the first unconfigured field comparison.
 func (c *StateComparator[Expected, Actual]) Validate() error {
-	return c.walk(*new(Expected), func(actual, _ reflect.Value, path string) error {
-		validator, ok := actual.Interface().(interface{ Validate(string) error })
-		if !ok {
-			return fmt.Errorf("%s: field is not a comparison", path)
-		}
-		return validator.Validate(path)
-	})
+	if c == nil {
+		return fmt.Errorf("comparison is nil")
+	}
+	actual := reflect.ValueOf(c.actual).Elem()
+	want := reflect.ValueOf(*new(Expected))
+	return walkComparisonFields(actual, want, "", validateComparisonField)
+}
+
+func validateComparisonField(actual, _ reflect.Value, path string) error {
+	validator, ok := actual.Interface().(interface{ Validate(string) error })
+	if !ok {
+		return fmt.Errorf("%s: field is not a comparison", path)
+	}
+	return validator.Validate(path)
 }
 
 // Match returns differences from all fields of the expected state.
@@ -137,16 +140,29 @@ func (c *StateComparator[Expected, Actual]) Match(want Expected) []string {
 
 func walkComparisonFieldsAll(actual, want reflect.Value, path string, action comparisonFieldAction) []string {
 	if !actual.IsValid() || !want.IsValid() {
-		return []string{fmt.Sprintf("%s: field is missing from comparison or expected state", path)}
+		return []string{comparisonShapeDifference(path, "field is missing from comparison or expected state", actual, want)}
 	}
-	if actual.Kind() != reflect.Struct {
+	if _, ok := containerAt(actual); ok {
+		return matchContainer(actual, want, path, action)
+	}
+	switch actual.Kind() {
+	case reflect.Struct:
+		return walkComparisonStructAll(actual, want, path, action)
+	case reflect.Map:
+		return walkComparisonMapAll(actual, want, path, action)
+	case reflect.Slice:
+		return walkComparisonSliceAll(actual, want, path, action)
+	default:
 		if err := action(actual, want, path); err != nil {
 			return []string{err.Error()}
 		}
 		return nil
 	}
+}
+
+func walkComparisonStructAll(actual, want reflect.Value, path string, action comparisonFieldAction) []string {
 	if want.Kind() != reflect.Struct {
-		return []string{fmt.Sprintf("%s: expected state field is not a struct", path)}
+		return []string{comparisonShapeDifference(path, "expected state field is not a struct", actual, want)}
 	}
 
 	var diffs []string
@@ -161,40 +177,108 @@ func walkComparisonFieldsAll(actual, want reflect.Value, path string, action com
 	return diffs
 }
 
-type comparisonFieldAction func(actual, want reflect.Value, path string) error
-
-func (c *StateComparator[Expected, Actual]) walk(want Expected, action comparisonFieldAction) error {
-	if c == nil {
-		return fmt.Errorf("comparison is nil")
+func walkComparisonMapAll(actual, want reflect.Value, path string, action comparisonFieldAction) []string {
+	if want.Kind() != reflect.Map || actual.Type().Key() != want.Type().Key() {
+		return []string{comparisonShapeDifference(path, "map types are incompatible", actual, want)}
 	}
-	actualValue := reflect.ValueOf(c.actual).Elem()
-	wantValue := reflect.ValueOf(want)
-	return walkComparisonFields(actualValue, wantValue, "", action)
+	var diffs []string
+	if actual.IsNil() != want.IsNil() {
+		diffs = append(diffs, comparisonShapeDifference(path, "nil and non-nil maps differ", actual, want))
+	}
+	for _, key := range sortedMapKeys(actual) {
+		keyPath := fmt.Sprintf("%s[%#v]", path, key.Interface())
+		expected := want.MapIndex(key)
+		if !expected.IsValid() {
+			diffs = append(diffs, comparisonShapeDifference(keyPath, "key is missing from expected state", actual, want))
+			continue
+		}
+		diffs = append(diffs, walkComparisonFieldsAll(actual.MapIndex(key), expected, keyPath, action)...)
+	}
+	for _, key := range sortedMapKeys(want) {
+		if !actual.MapIndex(key).IsValid() {
+			keyPath := fmt.Sprintf("%s[%#v]", path, key.Interface())
+			diffs = append(diffs, comparisonShapeDifference(keyPath, "key is missing from comparison", actual, want))
+		}
+	}
+	return diffs
 }
+
+func sortedMapKeys(value reflect.Value) []reflect.Value {
+	keys := value.MapKeys()
+	slices.SortFunc(keys, func(left, right reflect.Value) int {
+		return strings.Compare(fmt.Sprintf("%T:%#v", left.Interface(), left.Interface()), fmt.Sprintf("%T:%#v", right.Interface(), right.Interface()))
+	})
+	return keys
+}
+
+func walkComparisonSliceAll(actual, want reflect.Value, path string, action comparisonFieldAction) []string {
+	if want.Kind() != reflect.Slice {
+		return []string{comparisonShapeDifference(path, "expected state field is not a slice", actual, want)}
+	}
+	var diffs []string
+	if actual.IsNil() != want.IsNil() {
+		diffs = append(diffs, comparisonShapeDifference(path, "nil and non-nil slices differ", actual, want))
+	}
+	if actual.Len() != want.Len() {
+		diffs = append(diffs, comparisonShapeDifference(path, fmt.Sprintf("got %d elements, want %d", actual.Len(), want.Len()), actual, want))
+	}
+	for index := range min(actual.Len(), want.Len()) {
+		indexPath := fmt.Sprintf("%s[%d]", path, index)
+		diffs = append(diffs, walkComparisonFieldsAll(actual.Index(index), want.Index(index), indexPath, action)...)
+	}
+	return diffs
+}
+
+func comparisonShapeDifference(path, message string, actual, want reflect.Value) string {
+	return fmt.Sprintf("%s: %s; got %#v, want %#v", path, message, comparisonDiagnosticValue(actual), comparisonDiagnosticValue(want))
+}
+
+type comparisonFieldAction func(actual, want reflect.Value, path string) error
 
 func walkComparisonFields(actual, want reflect.Value, path string, action comparisonFieldAction) error {
 	if !actual.IsValid() || !want.IsValid() {
 		return fmt.Errorf("%s: field is missing from comparison or expected state", path)
 	}
-	if actual.Kind() == reflect.Struct {
-		return walkComparisonStruct(actual, want, path, action)
+	if container, ok := containerAt(actual); ok {
+		return container.Validate(path)
 	}
-	return action(actual, want, path)
-}
-
-func walkComparisonStruct(actual, want reflect.Value, path string, action comparisonFieldAction) error {
-	if want.Kind() != reflect.Struct {
-		return fmt.Errorf("%s: expected state field is not a struct", path)
-	}
-	for index := range actual.NumField() {
-		name := actual.Type().Field(index).Name
-		fieldPath := name
-		if path != "" {
-			fieldPath = path + "." + name
+	switch actual.Kind() {
+	case reflect.Struct:
+		if want.Kind() != reflect.Struct {
+			return fmt.Errorf("%s: expected state field is not a struct", path)
 		}
-		if err := walkComparisonFields(actual.Field(index), want.FieldByName(name), fieldPath, action); err != nil {
-			return err
+		for index := range actual.NumField() {
+			name := actual.Type().Field(index).Name
+			fieldPath := name
+			if path != "" {
+				fieldPath = path + "." + name
+			}
+			if err := walkComparisonFields(actual.Field(index), want.FieldByName(name), fieldPath, action); err != nil {
+				return err
+			}
 		}
+	case reflect.Map:
+		if want.Kind() != reflect.Map || actual.Type().Key() != want.Type().Key() {
+			return fmt.Errorf("%s: map types are incompatible", path)
+		}
+		for _, key := range sortedMapKeys(actual) {
+			keyPath := fmt.Sprintf("%s[%#v]", path, key.Interface())
+			if err := walkComparisonFields(actual.MapIndex(key), reflect.Zero(want.Type().Elem()), keyPath, action); err != nil {
+				return err
+			}
+		}
+	case reflect.Slice:
+		if want.Kind() != reflect.Slice {
+			return fmt.Errorf("%s: expected state field is not a slice", path)
+		}
+		for index := range actual.Len() {
+			indexPath := fmt.Sprintf("%s[%d]", path, index)
+			if err := walkComparisonFields(actual.Index(index), reflect.Zero(want.Type().Elem()), indexPath, action); err != nil {
+				return err
+			}
+		}
+	default:
+		return action(actual, want, path)
 	}
 	return nil
 }
@@ -220,18 +304,53 @@ func (c *StateComparator[Expected, Actual]) DiagnosticValue() any {
 }
 
 func comparisonDiagnosticValue(value reflect.Value) any {
+	if !value.IsValid() {
+		return "<missing>"
+	}
 	if diagnostic, ok := value.Interface().(interface{ DiagnosticValue() any }); ok {
 		return diagnostic.DiagnosticValue()
 	}
-	if value.Kind() != reflect.Struct {
+	switch value.Kind() {
+	case reflect.Map:
+		if value.IsNil() {
+			return nil
+		}
+		if value.Type().Key().Kind() == reflect.String {
+			fields := make(map[string]any, value.Len())
+			for _, key := range value.MapKeys() {
+				fields[key.String()] = comparisonDiagnosticValue(value.MapIndex(key))
+			}
+			return fields
+		}
+		fields := make(map[any]any, value.Len())
+		for _, key := range value.MapKeys() {
+			fields[key.Interface()] = comparisonDiagnosticValue(value.MapIndex(key))
+		}
+		return fields
+	case reflect.Slice:
+		if value.IsNil() {
+			return nil
+		}
+		fields := make([]any, value.Len())
+		for index := range fields {
+			fields[index] = comparisonDiagnosticValue(value.Index(index))
+		}
+		return fields
+	case reflect.Pointer:
+		if value.IsNil() {
+			return nil
+		}
+		return comparisonDiagnosticValue(value.Elem())
+	case reflect.Struct:
+		fields := make(map[string]any, value.NumField())
+		for index := range value.NumField() {
+			field := value.Type().Field(index)
+			if field.IsExported() {
+				fields[field.Name] = comparisonDiagnosticValue(value.Field(index))
+			}
+		}
+		return fields
+	default:
 		return value.Interface()
 	}
-	fields := make(map[string]any, value.NumField())
-	for index := range value.NumField() {
-		field := value.Type().Field(index)
-		if field.IsExported() {
-			fields[field.Name] = comparisonDiagnosticValue(value.Field(index))
-		}
-	}
-	return fields
 }

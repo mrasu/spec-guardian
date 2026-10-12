@@ -6,14 +6,26 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"time"
 
+	"github.com/lmittmann/tint"
 	"github.com/mrasu/spec-guardian/cmd"
 )
 
 func main() {
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, nil)))
+	slog.SetDefault(
+		slog.New(
+			tint.NewTextHandler(
+				os.Stderr,
+				&tint.Options{
+					TimeFormat: time.RFC3339,
+				},
+			),
+		),
+	)
+
 	if err := cmd.Execute(context.Background(), os.Args[1:]); err != nil {
-		slog.ErrorContext(context.Background(), "spec-guardian failed", slog.String("error", fmt.Sprintf("%+v", err)))
+		slog.ErrorContext(context.Background(), fmt.Sprintf("spec-guardian failed:\n%+v", err))
 		os.Exit(1)
 	}
 }

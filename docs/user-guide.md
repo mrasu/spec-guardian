@@ -1,6 +1,6 @@
-# Use SpecGuardian with Cache-Aside
+# Use SpecGuardian in Your Go Project
 
-Use this guide to run the [cache-aside example](../examples/cache_aside/), then build a `Write` conformance test in a separate Go project. A conformance test runs an action in the application and checks its resulting state against the spec's allowed states.
+This guide explains how to add SpecGuardian to your Go project using the [cache-aside example](../examples/cache_aside/).
 
 ## Getting Started
 
@@ -17,17 +17,19 @@ The example already includes the FizzBee exploration results and generated tests
 
 ## Build and Connect the Tests
 
-You have run the finished example. Now build the cache-aside `Write` conformance test in a separate Go project. Start from the [completed tutorial](../examples/tutorial_cache_aside_write/), then explore the spec and generate the tests yourself.
+You have run the finished example. Now follow the steps for connecting SpecGuardian to a project, using the [tutorial application](../examples/tutorial_cache_aside_write/) to build a `Write` conformance test.
 
 ### 1. Prepare an independent project
 
-Install [FizzBee](https://fizzbee.io/) separately. Set `TUTORIAL_ROOT` to the completed tutorial in your checkout and `NEW_TUTORIAL_DIR` to a new directory of your choice. Copy the tutorial, then reset the copy so you can generate the results and tests yourself:
+Install [FizzBee](https://fizzbee.io/) separately. For this tutorial, copy the completed project and remove its configuration and generated tests so you can create them yourself. Set `TUTORIAL_ROOT` to the tutorial in your checkout and `NEW_TUTORIAL_DIR` to a new directory of your choice:
 
 ```bash
 TUTORIAL_ROOT="/path/to/spec-guardian/examples/tutorial_cache_aside_write"
 NEW_TUTORIAL_DIR="/path/to/your/tutorial_cache_aside_write"
 cp -R "$TUTORIAL_ROOT" "$NEW_TUTORIAL_DIR"
-rm -rf "$NEW_TUTORIAL_DIR/conformance" "$NEW_TUTORIAL_DIR/docs"
+rm -rf "$NEW_TUTORIAL_DIR/conformance" "$NEW_TUTORIAL_DIR/docs" "$NEW_TUTORIAL_DIR/specguardian.yml" "$NEW_TUTORIAL_DIR/go.mod" "$NEW_TUTORIAL_DIR/go.sum"
+cd "$NEW_TUTORIAL_DIR"
+go mod init spec-guardian/examples/tutorial-cache-aside-write
 ```
 
 The application writes to PostgreSQL and invalidates the Valkey cache.
@@ -80,20 +82,29 @@ cd "$NEW_TUTORIAL_DIR"
 fizz --output-dir docs/spec/fizzbee_output docs/spec/CacheAside.fizz
 ```
 
-When FizzBee succeeds, it writes exploration results to `docs/spec/fizzbee_output`. SpecGuardian reads those results; it does not run FizzBee. Run FizzBee again after changing the spec.
+FizzBee writes exploration results to `docs/spec/fizzbee_output`. SpecGuardian uses these results to generate the tests.
 
-### 3. Generate the conformance tests
+### 3. Initialize and generate the conformance tests
 
-Generate conformance tests from the FizzBee exploration results. Set `SPEC_GUARDIAN_PATH` to the path of your SpecGuardian checkout, then update the copied `go.mod`:
+Install SpecGuardian and initialize the project:
 
 ```bash
 cd "$NEW_TUTORIAL_DIR"
-SPEC_GUARDIAN_PATH="/path/to/spec-guardian"
-go mod edit -replace="github.com/mrasu/spec-guardian=$SPEC_GUARDIAN_PATH" -replace="github.com/mrasu/spec-guardian/guardian=$SPEC_GUARDIAN_PATH/guardian"
-go run github.com/mrasu/spec-guardian generate --project-dir . --fizz-output-dir docs/spec/fizzbee_output
+go get -tool github.com/mrasu/spec-guardian
+go tool spec-guardian init --fizzbee-output-dir docs/spec/fizzbee_output
 ```
 
-The command creates tagged tests and an application-specific scaffold under `conformance/`.
+`init` creates the initial configuration and a `go generate` entry point.
+
+For this tutorial, use the [completed configuration](../examples/tutorial_cache_aside_write/specguardian.yml), which declares SQL and Valkey observers. Omit its `dev` setting, which is used for developing SpecGuardian:
+
+```bash
+sed '/^dev:/d' "$TUTORIAL_ROOT/specguardian.yml" > specguardian.yml
+go generate ./conformance
+go mod tidy
+```
+
+`go generate ./conformance` generates tests and application connection code under `conformance/specguardian/` using `specguardian.yml`.
 
 Run the generated test once before connecting the application:
 
@@ -102,7 +113,7 @@ cd "$NEW_TUTORIAL_DIR"
 go test -tags=specguardian ./conformance/...
 ```
 
-The test fails with `TODO: implement me` because the TODOs are not filled in yet. The tests cannot run the application or observe its state.
+The test fails with `TODO: implement me` because the application connection code is not filled in yet.
 
 ### 4. Connect the spec to the application
 
@@ -113,7 +124,7 @@ cd "$NEW_TUTORIAL_DIR"
 cp "$TUTORIAL_ROOT"/conformance/specguardian/{application_conformance_impl_test.go,records_test.go} conformance/specguardian/
 ```
 
-The copied code exercises the application under injected I/O failures and retrieves its resulting state. SpecGuardian hooks can return an injected error immediately before a supported I/O call executes. The generated test compares that state with the spec's allowed states. For your own application, change the code that runs the action and retrieves its state.
+The copied code sets up the database and cache, runs `Write`, and supplies its result. The observers in `specguardian.yml` read the database and cache state for comparison with the spec.
 
 ### 5. Run the connected test
 
@@ -126,9 +137,21 @@ docker compose up -d
 go test -tags=specguardian ./conformance/...
 ```
 
-The generated test exercises `Write` with injected I/O failures. It passes when every observed state is allowed by the spec.
-If the observed state matches no state allowed by the spec, the test fails and reports the differences.
+The generated test exercises `Write` with injected I/O failures. It passes when every observed state is allowed by the spec. If the observed state matches no state allowed by the spec, the test fails and reports the differences.
 
 ### 6. Complete the tutorial
 
 You now have a working `Write` conformance test that checks the application's state against the FizzBee spec. To test `Read`, see the [full cache-aside example](../examples/cache_aside/).
+
+Follow the same flow in your own project: explore your FizzBee spec, initialize SpecGuardian, configure observation, connect the generated tests to your application, and run them. Use your project's spec, `specguardian.yml`, and application connection code in place of the tutorial files.
+
+When you change the spec, rerun FizzBee and regenerate the tests:
+
+```bash
+fizz --output-dir docs/spec/fizzbee_output docs/spec/CacheAside.fizz
+go generate ./conformance
+```
+
+If you only change `specguardian.yml`, run `go generate ./conformance`. Your application connection code is preserved when you regenerate.
+
+See the [configuration schema](spec-guardian.schema.yaml) for available settings in `specguardian.yml`.

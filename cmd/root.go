@@ -10,7 +10,7 @@ import (
 
 func newRootCommand() *cobra.Command {
 	command := &cobra.Command{Use: "spec-guardian", Short: "Generate conformance tests from FizzBee artifacts.", SilenceErrors: true, SilenceUsage: true}
-	command.AddCommand(newGenerateCommand())
+	command.AddCommand(newGenerateCommand(), newInitCommand())
 	return command
 }
 

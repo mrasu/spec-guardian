@@ -8,22 +8,18 @@ import (
 )
 
 func newGenerateCommand() *cobra.Command {
-	var projectDir, fizzOutputDir string
-	var dev bool
+	var configPath string
 	command := &cobra.Command{
-		Use:   "generate --fizz-output-dir DIR",
+		Use:   "generate --config FILE",
 		Short: "Generate SpecGuardian files for a Go project.",
 		Args:  cobra.NoArgs,
 		RunE: func(command *cobra.Command, _ []string) error {
-			if fizzOutputDir == "" {
-				return fmt.Errorf("--fizz-output-dir is required")
+			if configPath == "" {
+				return fmt.Errorf("--config is required")
 			}
-
-			return generate.Run(command.Context(), generate.Options{ProjectDir: projectDir, FizzOutputDir: fizzOutputDir, Development: dev})
+			return generate.Run(command.Context(), generate.Options{ConfigPath: configPath})
 		},
 	}
-	command.Flags().StringVar(&projectDir, "project-dir", ".", "project directory")
-	command.Flags().StringVar(&fizzOutputDir, "fizz-output-dir", "", "FizzBee artifact directory")
-	command.Flags().BoolVar(&dev, "dev", false, "use for the local development")
+	command.Flags().StringVar(&configPath, "config", "", "SpecGuardian configuration file")
 	return command
 }

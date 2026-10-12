@@ -1,0 +1,153 @@
+version: "0.1"
+observers:
+  - id: metadata_files_observer
+    plugin:
+      go_package: spec-guardian/examples/iceberg/conformance/specguardian/observer/metadatafiles
+  - id: manifest_lists_observer
+    plugin:
+      go_package: spec-guardian/examples/iceberg/conformance/specguardian/observer/manifestlists
+  - id: manifest_files_observer
+    plugin:
+      go_package: spec-guardian/examples/iceberg/conformance/specguardian/observer/manifestfiles
+  - id: data_files_observer
+    plugin:
+      go_package: spec-guardian/examples/iceberg/conformance/specguardian/observer/datafiles
+  - id: delete_files_observer
+    plugin:
+      go_package: spec-guardian/examples/iceberg/conformance/specguardian/observer/deletefiles
+fizzbee_files:
+  - output_dir: docs/spec/fizzbee_output
+    roles:
+      - name: ObjectStore
+        fields:
+          - name: metadata_files
+            observer:
+              id: metadata_files_observer
+            type:
+              kind: list
+              compare_order: false
+              values:
+                kind: message
+                fields:
+                  location: {kind: string, compare: false, reason: implementation-specific path}
+                  version: {kind: int64}
+                  current_snapshot:
+                    kind: message
+                    nullable: true
+                    fields:
+                      sequence_no: {kind: int64}
+                      snapshot_id: {kind: int64, compare: false, reason: implementation-generated ID}
+                      parent_snapshot_id: {kind: int64, nullable: true, compare: false, reason: implementation-generated ID}
+                      operation: {kind: string}
+                      manifest_list_path: {kind: string, compare: false, reason: implementation-specific path}
+                  snapshots:
+                    kind: list
+                    values:
+                      kind: message
+                      fields:
+                        sequence_no: {kind: int64}
+                        snapshot_id: {kind: int64, compare: false, reason: implementation-generated ID}
+                        parent_snapshot_id: {kind: int64, nullable: true, compare: false, reason: implementation-generated ID}
+                        operation: {kind: string}
+                        manifest_list_path: {kind: string, compare: false, reason: implementation-specific path}
+                  last_sequence_no: {kind: int64}
+          - name: manifest_lists
+            observer:
+              id: manifest_lists_observer
+            type:
+              kind: list
+              compare_order: false
+              values:
+                kind: message
+                fields:
+                  location: {kind: string, compare: false, reason: implementation-specific path}
+                  entries:
+                    kind: list
+                    values:
+                      kind: message
+                      fields:
+                        manifest_path: {kind: string, compare: false, reason: implementation-specific manifest path}
+                        content: {kind: string}
+                        sequence_no: {kind: int64}
+                        min_sequence_no: {kind: int64}
+                        snapshot_id: {kind: int64, compare: false, reason: implementation-generated ID}
+                        added_file_count: {kind: int64}
+                        deleted_file_count: {kind: int64}
+                        existing_file_count: {kind: int64}
+          - name: manifest_files
+            observer:
+              id: manifest_files_observer
+            type:
+              kind: list
+              compare_order: false
+              values:
+                kind: message
+                fields:
+                  location: {kind: string, compare: false, reason: implementation-specific path}
+                  file:
+                    kind: message
+                    fields:
+                      content: {kind: string}
+                      entries:
+                        kind: list
+                        values:
+                          kind: message
+                          fields:
+                            status: {kind: string}
+                            data_sequence_no: {kind: int64, compare: false, reason: implementation-specific sequence number}
+                            file_sequence_no: {kind: int64, compare: false, reason: implementation-specific sequence number}
+                            snapshot_id: {kind: int64, compare: false, reason: implementation-generated ID}
+                            data_file:
+                              kind: message
+                              fields:
+                                content: {kind: string}
+                                file_index: {kind: int64, compare: false, reason: model-specific file identifier}
+                      snapshot_id: {kind: int64, compare: false, reason: implementation-generated ID}
+                      sequence_no: {kind: int64, compare: false, reason: implementation-specific sequence number}
+                      min_sequence_no: {kind: int64, compare: false, reason: implementation-specific sequence number}
+                      added_file_count: {kind: int64}
+                      deleted_file_count: {kind: int64}
+                      existing_file_count: {kind: int64}
+          - name: data_files
+            observer:
+              id: data_files_observer
+            type:
+              kind: list
+              compare_order: false
+              values:
+                kind: message
+                fields:
+                  file_path: {kind: string, compare: false, reason: implementation-specific path}
+                  rows:
+                    kind: list
+                    values:
+                      kind: list
+                      values: {kind: string}
+          - name: delete_files
+            observer:
+              id: delete_files_observer
+            type:
+              kind: list
+              compare_order: false
+              values:
+                kind: message
+                fields:
+                  location: {kind: string, compare: false, reason: implementation-specific path}
+                  file:
+                    kind: list
+                    compare_order: false
+                    values:
+                      kind: message
+                      fields:
+                        file_index: {kind: int64, compare: false, reason: model-specific file identifier}
+                        row_index: {kind: int64}
+      - name: Catalog
+        compare: false
+        reason: implementation-specific metadata path
+      - name: Writer
+        compare: false
+        reason: internal writer state
+      - name: IcebergTable
+        compare: false
+        reason: internal action status
+dev: true
