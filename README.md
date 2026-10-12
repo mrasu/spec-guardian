@@ -124,10 +124,10 @@ See the [user guide](docs/user-guide.md) for the complete setup.
 
 ## Examples
 
-- [Cache-aside write tutorial](examples/tutorial_cache_aside_write/README.md) is the completed project from the [user guide](docs/user-guide.md).
-- [Cache-aside](examples/cache_aside/README.md) demonstrates the cache-aside pattern.
-- [Idempotent request](examples/idempotent_request/README.md) demonstrates idempotent requests.
-- [Iceberg](examples/iceberg/README.md) is a real-world example that tests [apache/iceberg-go](https://github.com/apache/iceberg-go).
+- [Cache-aside write tutorial](examples/tutorial_cache_aside_write) is the completed project from the [user guide](docs/user-guide.md).
+- [Cache-aside](examples/cache_aside) demonstrates the cache-aside pattern.
+- [Idempotent request](examples/idempotent_request) demonstrates idempotent requests.
+- [Iceberg](examples/iceberg) is a real-world example that tests [apache/iceberg-go](https://github.com/apache/iceberg-go).
 
 ## Current Scope
 
