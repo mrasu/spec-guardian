@@ -16,6 +16,10 @@ func TestValidate_RejectsInvalidConfiguration(t *testing.T) {
 		{"numeric version", `{"version":0.1,"fizzbee_files":[{"output_dir":"artifacts"}]}`, "/version"},
 		{"unknown kind", `{"version":"0.1","fizzbee_files":[{"output_dir":"artifacts","roles":[{"name":"DB","fields":[{"name":"x","type":{"kind":"unknown"}}]}]}]}`, "value must be one of 'string', 'int64'"},
 		{"missing exclusion reason", `{"version":"0.1","fizzbee_files":[{"output_dir":"artifacts","roles":[{"name":"DB","compare":false}]}]}`, "missing property 'reason'"},
+		{"unknown metadata", `{"version":"0.1","fizzbee_files":[{"output_dir":"artifacts","sg_metadata":{"unknown":{}}}]}`, "unknown"},
+		{"old metadata name", `{"version":"0.1","fizzbee_files":[{"output_dir":"artifacts","sg_metadata":{"action_error":{}}}]}`, "action_error"},
+		{"invalid crash comparison", `{"version":"0.1","fizzbee_files":[{"output_dir":"artifacts","sg_metadata":{"action_crashed":{"compare":"false"}}}]}`, "boolean"},
+		{"unknown observer kind", `{"version":"0.1","fizzbee_files":[{"output_dir":"artifacts"}],"observers":[{"id":"x","kind":"unknown","plugin":{"builtin":"error_as_crashed"}}]}`, "state"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -23,6 +27,23 @@ func TestValidate_RejectsInvalidConfiguration(t *testing.T) {
 			require.NoError(t, yaml.Unmarshal([]byte(tt.document), &node))
 			err := Validate(&node)
 			require.ErrorContains(t, err, tt.want)
+		})
+	}
+}
+
+func TestValidate_AllowsDedicatedActionCrashedSettings(t *testing.T) {
+	tests := []string{
+		`{}`,
+		`{"action_crashed":{}}`,
+		`{"action_crashed":{"compare":true}}`,
+		`{"action_crashed":{"compare":false}}`,
+	}
+	for _, metadata := range tests {
+		t.Run(metadata, func(t *testing.T) {
+			var node yaml.Node
+			document := `{"version":"0.1","fizzbee_files":[{"output_dir":"artifacts","sg_metadata":` + metadata + `}]}`
+			require.NoError(t, yaml.Unmarshal([]byte(document), &node))
+			require.NoError(t, Validate(&node))
 		})
 	}
 }

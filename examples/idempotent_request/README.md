@@ -1,6 +1,6 @@
 # Idempotent Request Example
 
-This example tests `OrderServer.CreateOrder` and `DeliveryServer.Deliver` against a FizzBee spec. The tests check how order and delivery records in MySQL and DynamoDB, along with request results, change when an I/O call fails. They also check repeated and conflicting requests against the states allowed by the spec.
+This example checks an order and delivery workflow against a FizzBee model, including failures, retries, and conflicting requests.
 
 ## Run the tests
 

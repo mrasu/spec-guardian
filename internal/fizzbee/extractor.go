@@ -47,14 +47,19 @@ type actionExecution struct {
 	// Input is the model state before that Action started.
 	Input *artifact.State
 	// Ends contains model states where the tracked thread no longer exists.
-	Ends []*artifact.State
+	Ends []actionEnd
 }
 
-// ReadActionCases reads dir and extracts cases for every @conformance Action.
-func ReadActionCases(dir string) ([]ActionCase, error) {
+type actionEnd struct {
+	State         *artifact.State
+	ActionCrashed bool
+}
+
+// ReadModel reads dir and extracts cases for every @conformance Action.
+func ReadModel(dir string) (Model, error) {
 	artifacts, err := artifact.ReadArtifacts(dir)
 	if err != nil {
-		return nil, err
+		return Model{}, err
 	}
 
 	var cases []ActionCase
@@ -62,16 +67,16 @@ func ReadActionCases(dir string) ([]ActionCase, error) {
 		for _, action := range role.Actions {
 			actionCases, err := extractActionCases(artifacts.Graph, role.Name, action)
 			if err != nil {
-				return nil, err
+				return Model{}, err
 			}
 			validatedCases, err := NewActionCases(actionCases)
 			if err != nil {
-				return nil, err
+				return Model{}, err
 			}
 			cases = append(cases, validatedCases...)
 		}
 	}
-	return cases, nil
+	return Model{Options: ModelOptions{CrashOnYield: artifacts.StateConfig.GetOptions().GetCrashOnYield()}, Cases: cases}, nil
 }
 
 // extractActionCases extracts complete action executions for every reachable input.
@@ -110,7 +115,7 @@ func extractActionCases(graph *artifact.Graph, role, action string) ([]ActionCas
 			outputs[outputKey] = output
 		}
 		for _, end := range execution.Ends {
-			roleStates, err := selectTestBoundaryRoleStates(graph, end, execution.Action.Role, execution.Action.Ref)
+			roleStates, err := selectTestBoundaryRoleStates(graph, end.State, execution.Action.Role, execution.Action.Ref)
 			if err != nil {
 				return nil, err
 			}
@@ -118,6 +123,7 @@ func extractActionCases(graph *artifact.Graph, role, action string) ([]ActionCas
 			if err != nil {
 				return nil, err
 			}
+			output.SgMetadata.ActionCrashed = end.ActionCrashed
 			outputKey, err := canonicalizeJSON(output)
 			if err != nil {
 				return nil, err
@@ -191,11 +197,11 @@ func findActionStarts(graph *artifact.Graph, role, action string) ([]actionStart
 	return starts, nil
 }
 
-func findActionEndStates(graph *artifact.Graph, start actionStart) ([]*artifact.State, bool, error) {
+func findActionEndStates(graph *artifact.Graph, start actionStart) ([]actionEnd, bool, error) {
 	startLink := graph.Links[start.LinkIndex]
 	queue := []threadNode{{NodeIndex: int(startLink.Dst), ThreadID: start.ThreadID}}
 	visited := make(map[threadNode]bool)
-	var ends []*artifact.State
+	var ends []actionEnd
 	skippedInterleaving := false
 	for len(queue) > 0 {
 		current := queue[0]
@@ -207,13 +213,17 @@ func findActionEndStates(graph *artifact.Graph, start actionStart) ([]*artifact.
 
 		running := isThreadRunning(graph, current.NodeIndex, current.ThreadID)
 		if !running {
-			ends = append(ends, graph.Nodes[current.NodeIndex].State)
+			ends = append(ends, actionEnd{State: graph.Nodes[current.NodeIndex].State})
 			continue
 		}
 		for _, linkIndex := range graph.Nodes[current.NodeIndex].Outbound {
 			link := graph.Links[linkIndex]
 			if link.Type == "action" || link.ReqID != current.ThreadID {
 				skippedInterleaving = true
+				continue
+			}
+			if link.Name == "crash" {
+				ends = append(ends, actionEnd{State: graph.Nodes[link.Dst].State, ActionCrashed: true})
 				continue
 			}
 			nextThreadID, ok := mapThreadID(current.ThreadID, link)

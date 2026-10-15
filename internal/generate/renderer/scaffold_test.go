@@ -61,9 +61,34 @@ func minimalScaffold(t *testing.T) *Scaffold {
 	t.Helper()
 	role := fizzbee.RoleState{Name: "Reader", Params: fizzbee.JSONObject{"key": json.Number("1")}, Fields: fizzbee.JSONObject{"status": "INIT"}}
 	outputRole := fizzbee.RoleState{Name: "Reader", Params: fizzbee.JSONObject{"key": json.Number("1")}, Fields: fizzbee.JSONObject{"status": "DONE"}}
-	sources, err := GenerateScaffold("example.test/project", []fizzbee.ActionCase{{Action: fizzbee.ActionRef{Role: "Reader", Action: "Read"}, Input: fizzbee.Input{Roles: []fizzbee.RoleState{role}}, Outputs: []fizzbee.Output{{Roles: []fizzbee.RoleState{outputRole}}}}}, Declarations{})
+	sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: []fizzbee.ActionCase{{Action: fizzbee.ActionRef{Role: "Reader", Action: "Read"}, Input: fizzbee.Input{Roles: []fizzbee.RoleState{role}}, Outputs: []fizzbee.Output{{Roles: []fizzbee.RoleState{outputRole}}}}}}, Declarations{})
 	require.NoError(t, err)
 	return sources
+}
+
+func TestGenerateScaffold_ActionCrashedComparisonDefaultsAndOverrides(t *testing.T) {
+	trueValue, falseValue := true, false
+	tests := []struct {
+		name         string
+		crashOnYield bool
+		compare      *bool
+		want         string
+	}{
+		{name: "crash enabled default", crashOnYield: true, want: "true"},
+		{name: "crash disabled default", want: "false"},
+		{name: "explicit disable", crashOnYield: true, compare: &falseValue, want: "false"},
+		{name: "explicit enable", compare: &trueValue, want: "true"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actionCase := newRendererActionCase("Reader", "Read")
+			actionCase.Outputs[0].SgMetadata.ActionCrashed = true
+			sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Options: fizzbee.ModelOptions{CrashOnYield: tt.crashOnYield}, Cases: []fizzbee.ActionCase{actionCase}}, Declarations{CompareActionCrashed: tt.compare})
+			require.NoError(t, err)
+			require.Contains(t, string(sources.RoleCases["Reader"]), map[string]string{"true": "gcmp.Equal(allowed.SgMetadata.ActionCrashed)", "false": "gcmp.Ignore[bool]"}[tt.want])
+			require.Contains(t, string(sources.CaseData["reader_read_cases_generated.json"]), `"action_crashed": true`)
+		})
+	}
 }
 
 func TestGenerateProducesParseableDeterministicSources(t *testing.T) {
@@ -71,9 +96,9 @@ func TestGenerateProducesParseableDeterministicSources(t *testing.T) {
 		newRendererActionCase("Reader", "Read"),
 		newRendererActionCase("Writer", "Write"),
 	}
-	first, err := GenerateScaffold("example.test/project", cases, Declarations{})
+	first, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: cases}, Declarations{})
 	require.NoError(t, err)
-	second, err := GenerateScaffold("example.test/project", cases, Declarations{})
+	second, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: cases}, Declarations{})
 	require.NoError(t, err)
 	require.Equal(t, first, second)
 	require.Contains(t, first.RoleConformances, "Reader")
@@ -101,7 +126,7 @@ func TestRepeatedRolesKeepSourceNameForExclusions(t *testing.T) {
 	table := fizzbee.RoleState{Name: "Table", Params: fizzbee.JSONObject{}, Fields: fizzbee.JSONObject{"result": "READY"}}
 	roleStates := []fizzbee.RoleState{writer, writer, table}
 	cases := []fizzbee.ActionCase{{Action: fizzbee.ActionRef{Role: "Table", Action: "Append"}, Input: fizzbee.Input{Roles: roleStates}, Outputs: []fizzbee.Output{{Roles: roleStates}}}}
-	data, err := BuildTemplateData("example.test/project", "Table", cases, Declarations{Unobservable: []UnobservableField{{Field: mustField(t, "Writer.op"), Reason: "internal"}}})
+	data, err := BuildTemplateData("example.test/project", "Table", fizzbee.Model{Cases: cases}, Declarations{Unobservable: []UnobservableField{{Field: mustField(t, "Writer.op"), Reason: "internal"}}})
 	require.NoError(t, err)
 	require.Equal(t, "Writer1", data.Roles[0].Name)
 	require.Equal(t, "Writer2", data.Roles[1].Name)
@@ -114,7 +139,7 @@ func TestRepeatedRolesKeepSourceNameForExclusions(t *testing.T) {
 func TestTypeOnlyDeclarationIsGeneratedOnceInCommonFile(t *testing.T) {
 	cases := []fizzbee.ActionCase{newRendererActionCase("Reader", "Read"), newRendererActionCase("Reader", "Refresh")}
 	declarations := Declarations{TypedFields: []TypedField{{Field: mustField(t, "Reader.status"), Type: Type{Kind: KindString}}}}
-	sources, err := GenerateScaffold("example.test/project", cases, declarations)
+	sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: cases}, declarations)
 	require.NoError(t, err)
 	common := string(sources.Common)
 	require.Contains(t, common, "type ReaderReaderStatusValue string")
@@ -129,7 +154,7 @@ func TestGenerateSharesStateTypesAcrossActions(t *testing.T) {
 		newRendererActionCase("Reader", "Read"),
 		newRendererActionCase("Reader", "Refresh"),
 	}
-	sources, err := GenerateScaffold("example.test/project", cases, Declarations{})
+	sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: cases}, Declarations{})
 	require.NoError(t, err)
 
 	caseSource := string(sources.RoleCases["Reader"])
@@ -170,7 +195,7 @@ func TestGeneratedObserverFieldUsesOneConstant(t *testing.T) {
 			ValueKind:        "string",
 		},
 	}
-	sources, err := GenerateScaffold("example.test/project", cases, Declarations{Observers: observers})
+	sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: cases}, Declarations{Observers: observers})
 	require.NoError(t, err)
 	source := string(sources.RoleCases["Reader"])
 	common := string(sources.Common)
@@ -199,7 +224,7 @@ func TestGenerateSharedObserverFieldAcrossRoles(t *testing.T) {
 			"name": {Kind: KindString},
 		}}},
 	}}}
-	sources, err := GenerateScaffold("example.test/project", cases, declarations)
+	sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: cases}, declarations)
 	require.NoError(t, err)
 	common := string(sources.Common)
 	require.Equal(t, 1, strings.Count(common, "_sgFieldDBRecords = \"DB.records\""))
@@ -234,7 +259,7 @@ func TestGenerateListObserverUsesDeclaredFieldType(t *testing.T) {
 			"rows":      {Kind: KindList, Values: &Type{Kind: KindList, Values: &Type{Kind: KindString}}},
 		}}},
 	}}}
-	sources, err := GenerateScaffold("example.test/project", []fizzbee.ActionCase{caseData}, declarations)
+	sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: []fizzbee.ActionCase{caseData}}, declarations)
 	require.NoError(t, err)
 	roleSource := string(sources.RoleCases["Reader"])
 	commonSource := string(sources.Common)
@@ -259,7 +284,7 @@ func TestGenerateMapObserverIgnoresNestedField(t *testing.T) {
 			"name": {Kind: KindString}, "source": {Kind: KindString, SkipComparison: true},
 		}}},
 	}}}
-	sources, err := GenerateScaffold("example.test/project", []fizzbee.ActionCase{caseData}, declarations)
+	sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: []fizzbee.ActionCase{caseData}}, declarations)
 	require.NoError(t, err)
 	roleSource := string(sources.RoleCases["Reader"])
 	require.Contains(t, roleSource, "Records: _sgToDBRecordsComparisonField(allowed.Fields.DB.Records)")
@@ -293,7 +318,7 @@ func TestGenerateListComparison_IgnoresDeclaredOrder(t *testing.T) {
 			} else {
 				declarations.TypedFields = []TypedField{{Field: field, Type: output}}
 			}
-			sources, err := GenerateScaffold("example.test/project", []fizzbee.ActionCase{caseData}, declarations)
+			sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: []fizzbee.ActionCase{caseData}}, declarations)
 			require.NoError(t, err)
 			require.Equal(t, 2, strings.Count(string(sources.Common), "return gcmp.ListUnordered(result)"))
 			require.NotContains(t, string(sources.Common), "gcmp.Ignore[string](\"compare: false\")")
@@ -314,7 +339,7 @@ func TestGenerateBuildsFetchedObservationAfterAllConversions(t *testing.T) {
 		{Field: mustField(t, "Reader.first"), ObserverID: "first", PluginImportPath: "example.test/observer", PluginAlias: "stateobserver", ValueKind: "string"},
 		{Field: mustField(t, "Reader.second"), ObserverID: "second", PluginImportPath: "example.test/observer", PluginAlias: "stateobserver", ValueKind: "string"},
 	}}
-	sources, err := GenerateScaffold("example.test/project", []fizzbee.ActionCase{actionCase}, declarations)
+	sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: []fizzbee.ActionCase{actionCase}}, declarations)
 	require.NoError(t, err)
 	source := string(sources.RoleCases["Reader"])
 
@@ -346,7 +371,7 @@ func TestUnobservableFieldRemainsInModelButNotComparison(t *testing.T) {
 		Observers:    []Observer{{Field: mustField(t, "Reader.records"), ObserverID: "store", PluginImportPath: "example.test/observer", PluginAlias: "storeobserver", ValueKind: "string"}},
 		Unobservable: []UnobservableField{{Field: mustField(t, "Reader.history"), Reason: "not retained"}},
 	}
-	sources, err := GenerateScaffold("example.test/project", []fizzbee.ActionCase{read, refresh}, declarations)
+	sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: []fizzbee.ActionCase{read, refresh}}, declarations)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -383,7 +408,9 @@ func TestUnobservableFieldRemainsInModelButNotComparison(t *testing.T) {
 			}},
 		}
 	}
-	wantCases := []map[string]any{{"name": "case1", "input": state("INIT"), "allowed": []any{state("DONE")}}}
+	allowedState := state("DONE")
+	allowedState["sg_metadata"] = map[string]any{"action_crashed": false}
+	wantCases := []map[string]any{{"name": "case1", "input": state("INIT"), "allowed": []any{allowedState}}}
 	for _, action := range []string{"read", "refresh"} {
 		var gotCases []map[string]any
 		name := "reader_" + action + "_cases_generated.json"
@@ -412,7 +439,7 @@ func TestGenerateOmitsRolesWithoutManualFields(t *testing.T) {
 			{Field: mustField(t, "Cache.cached_records"), ObserverID: "cache", PluginImportPath: "example.test/observer", PluginAlias: "cacheobserver", ValueKind: "string"},
 		},
 	}
-	sources, err := GenerateScaffold("example.test/project", []fizzbee.ActionCase{read}, declarations)
+	sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: []fizzbee.ActionCase{read}}, declarations)
 	require.NoError(t, err)
 
 	source := string(sources.RoleCases["Reader"])
@@ -440,18 +467,20 @@ func TestGenerateOmitsEmptyObservationAndComparisonFields(t *testing.T) {
 				read.Input.Roles[0].Fields = fizzbee.JSONObject{}
 				read.Outputs[0].Roles[0].Fields = fizzbee.JSONObject{}
 			}
-			sources, err := GenerateScaffold("example.test/project", []fizzbee.ActionCase{read}, declarations)
+			sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: []fizzbee.ActionCase{read}}, declarations)
 			require.NoError(t, err)
 			source := string(sources.RoleCases["Reader"])
-			for _, name := range []string{"ObservedState", "ComparisonState", "FetchedObservation", "ManualObservation"} {
+			for _, name := range []string{"FetchedObservation", "ManualObservation"} {
 				require.Empty(t, generatedStructFields(t, source, "Reader"+name))
 			}
+			require.Equal(t, map[string]string{"SgMetadata": "guardian.SgObservedMetadata"}, generatedStructFields(t, source, "ReaderObservedState"))
+			require.Equal(t, map[string]string{"SgMetadata": "guardian.SgComparisonMetadata"}, generatedStructFields(t, source, "ReaderComparisonState"))
 			for _, name := range []string{"ObservedField", "ComparisonField", "FetchedField", "ManualField"} {
 				require.NotContains(t, source, "type Reader"+name+" struct")
 				require.NotContains(t, source, "type ReaderReader"+name+" struct")
 			}
 			require.NotContains(t, source, "manual.Fields")
-			require.NotContains(t, source, "guardian/gcmp")
+			require.Contains(t, source, "gcmp.Ignore[bool]")
 			if tt.excluded {
 				require.Equal(t, map[string]string{"Status": "string"}, generatedStructFields(t, source, "ReaderReaderField"))
 			}
@@ -469,7 +498,7 @@ func TestGenerateOmitsEmptyManualAndRoleFields(t *testing.T) {
 		Observers:    []Observer{{Field: mustField(t, "Reader.records"), ObserverID: "store", PluginImportPath: "example.test/observer", PluginAlias: "storeobserver", ValueKind: "string"}},
 		Unobservable: []UnobservableField{{Field: mustField(t, "Internal.status"), Reason: "internal state"}},
 	}
-	sources, err := GenerateScaffold("example.test/project", []fizzbee.ActionCase{read}, declarations)
+	sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: []fizzbee.ActionCase{read}}, declarations)
 	require.NoError(t, err)
 	source := string(sources.RoleCases["Reader"])
 	require.Empty(t, generatedStructFields(t, source, "ReaderManualObservation"))
@@ -525,7 +554,7 @@ func TestGenerateRejectsDifferentRoleSchemasAcrossActions(t *testing.T) {
 	refresh.Input.Roles[0].Fields = fizzbee.JSONObject{"other": "INIT"}
 	refresh.Outputs[0].Roles[0].Fields = fizzbee.JSONObject{"other": "DONE"}
 
-	_, err := GenerateScaffold("example.test/project", []fizzbee.ActionCase{read, refresh}, Declarations{})
+	_, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: []fizzbee.ActionCase{read, refresh}}, Declarations{})
 	require.ErrorContains(t, err, "different role schema")
 }
 
@@ -557,7 +586,7 @@ func TestGenerateListObserver_NullableAndWholeContainerIgnore(t *testing.T) {
 			"rows":     {Kind: KindList, SkipComparison: true, Values: &Type{Kind: KindString}},
 		}}},
 	}}}
-	sources, err := GenerateScaffold("example.test/project", []fizzbee.ActionCase{caseData}, declarations)
+	sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: []fizzbee.ActionCase{caseData}}, declarations)
 	require.NoError(t, err)
 	common := string(sources.Common)
 	require.Equal(t, map[string]string{

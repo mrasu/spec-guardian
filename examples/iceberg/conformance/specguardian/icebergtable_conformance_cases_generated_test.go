@@ -204,7 +204,8 @@ func (e *IcebergTableConformanceEnvironment) ExecuteAppend(ctx context.Context, 
 }
 
 // ObserveAppendState collects the state and output visible after the action.
-func (e *IcebergTableConformanceEnvironment) ObserveAppendState(t *testing.T, input FizzbeeIcebergTableState, output IcebergTableAppendOutput, actionErr error) guardian.ObservedState[*IcebergTableObservedState] {
+func (e *IcebergTableConformanceEnvironment) ObserveAppendState(t *testing.T, input FizzbeeIcebergTableState, output IcebergTableAppendOutput, actionErr error) *IcebergTableObservedState {
+	t.Helper()
 	valueObjectStoreDataFiles, err := e.observerDataFilesObserver.Observe(t.Context(), _sgFieldObjectStoreDataFiles)
 	if err != nil {
 		t.Fatalf("observer data_files_observer Observe %s: %v", _sgFieldObjectStoreDataFiles, err)
@@ -260,17 +261,20 @@ func (e *IcebergTableConformanceEnvironment) ObserveAppendState(t *testing.T, in
 	manual := e.BuildAppendManualObservation(t, fetched, input, output, actionErr)
 	_ = manual
 
-	resultState := IcebergTableObservedState{Fields: IcebergTableObservedField{
-		ObjectStore: IcebergTableObjectStoreObservedField{
-			DataFiles:     _sgToObjectStoreDataFilesObservedList(fetched.Fields.ObjectStore.DataFiles),
-			DeleteFiles:   _sgToObjectStoreDeleteFilesObservedList(fetched.Fields.ObjectStore.DeleteFiles),
-			ManifestFiles: _sgToObjectStoreManifestFilesObservedList(fetched.Fields.ObjectStore.ManifestFiles),
-			ManifestLists: _sgToObjectStoreManifestListsObservedList(fetched.Fields.ObjectStore.ManifestLists),
-			MetadataFiles: _sgToObjectStoreMetadataFilesObservedList(fetched.Fields.ObjectStore.MetadataFiles),
+	return &IcebergTableObservedState{
+		Fields: IcebergTableObservedField{
+			ObjectStore: IcebergTableObjectStoreObservedField{
+				DataFiles:     _sgToObjectStoreDataFilesObservedList(fetched.Fields.ObjectStore.DataFiles),
+				DeleteFiles:   _sgToObjectStoreDeleteFilesObservedList(fetched.Fields.ObjectStore.DeleteFiles),
+				ManifestFiles: _sgToObjectStoreManifestFilesObservedList(fetched.Fields.ObjectStore.ManifestFiles),
+				ManifestLists: _sgToObjectStoreManifestListsObservedList(fetched.Fields.ObjectStore.ManifestLists),
+				MetadataFiles: _sgToObjectStoreMetadataFilesObservedList(fetched.Fields.ObjectStore.MetadataFiles),
+			},
 		},
-	}}
-
-	return guardian.NewObservedState(&resultState)
+		SgMetadata: guardian.SgObservedMetadata{
+			ActionCrashed: gcmp.Unobservable[bool]("Action crash comparison is disabled"),
+		},
+	}
 }
 
 // BuildAllowedAppendState maps every comparable model field to its allowed value.
@@ -286,15 +290,19 @@ func (e *IcebergTableConformanceEnvironment) BuildAllowedAppendState(t *testing.
 				MetadataFiles: _sgToObjectStoreMetadataFilesComparisonList(allowed.Fields.ObjectStore.MetadataFiles),
 			},
 		},
+		SgMetadata: guardian.SgComparisonMetadata{
+			ActionCrashed: gcmp.Ignore[bool]("Action crash comparison is disabled"),
+		},
 	}
 }
 
 // BuildAllowedAppendStates maps FizzBee outcomes to comparable states.
-func (e *IcebergTableConformanceEnvironment) BuildAllowedAppendStates(t *testing.T, allowed []FizzbeeIcebergTableState) []guardian.ComparisonState[*IcebergTableComparisonState] {
-	allowedStates := make([]guardian.ComparisonState[*IcebergTableComparisonState], len(allowed))
+func (e *IcebergTableConformanceEnvironment) BuildAllowedAppendStates(t *testing.T, allowed []FizzbeeIcebergTableState) []*IcebergTableComparisonState {
+	t.Helper()
+	allowedStates := make([]*IcebergTableComparisonState, len(allowed))
 	for i, allowed := range allowed {
 		allowedState := e.BuildAllowedAppendState(t, allowed)
-		allowedStates[i] = guardian.NewComparisonState(&allowedState)
+		allowedStates[i] = &allowedState
 	}
 
 	return allowedStates
@@ -402,7 +410,8 @@ func (e *IcebergTableConformanceEnvironment) ExecuteDelete(ctx context.Context, 
 }
 
 // ObserveDeleteState collects the state and output visible after the action.
-func (e *IcebergTableConformanceEnvironment) ObserveDeleteState(t *testing.T, input FizzbeeIcebergTableState, output IcebergTableDeleteOutput, actionErr error) guardian.ObservedState[*IcebergTableObservedState] {
+func (e *IcebergTableConformanceEnvironment) ObserveDeleteState(t *testing.T, input FizzbeeIcebergTableState, output IcebergTableDeleteOutput, actionErr error) *IcebergTableObservedState {
+	t.Helper()
 	valueObjectStoreDataFiles, err := e.observerDataFilesObserver.Observe(t.Context(), _sgFieldObjectStoreDataFiles)
 	if err != nil {
 		t.Fatalf("observer data_files_observer Observe %s: %v", _sgFieldObjectStoreDataFiles, err)
@@ -458,17 +467,20 @@ func (e *IcebergTableConformanceEnvironment) ObserveDeleteState(t *testing.T, in
 	manual := e.BuildDeleteManualObservation(t, fetched, input, output, actionErr)
 	_ = manual
 
-	resultState := IcebergTableObservedState{Fields: IcebergTableObservedField{
-		ObjectStore: IcebergTableObjectStoreObservedField{
-			DataFiles:     _sgToObjectStoreDataFilesObservedList(fetched.Fields.ObjectStore.DataFiles),
-			DeleteFiles:   _sgToObjectStoreDeleteFilesObservedList(fetched.Fields.ObjectStore.DeleteFiles),
-			ManifestFiles: _sgToObjectStoreManifestFilesObservedList(fetched.Fields.ObjectStore.ManifestFiles),
-			ManifestLists: _sgToObjectStoreManifestListsObservedList(fetched.Fields.ObjectStore.ManifestLists),
-			MetadataFiles: _sgToObjectStoreMetadataFilesObservedList(fetched.Fields.ObjectStore.MetadataFiles),
+	return &IcebergTableObservedState{
+		Fields: IcebergTableObservedField{
+			ObjectStore: IcebergTableObjectStoreObservedField{
+				DataFiles:     _sgToObjectStoreDataFilesObservedList(fetched.Fields.ObjectStore.DataFiles),
+				DeleteFiles:   _sgToObjectStoreDeleteFilesObservedList(fetched.Fields.ObjectStore.DeleteFiles),
+				ManifestFiles: _sgToObjectStoreManifestFilesObservedList(fetched.Fields.ObjectStore.ManifestFiles),
+				ManifestLists: _sgToObjectStoreManifestListsObservedList(fetched.Fields.ObjectStore.ManifestLists),
+				MetadataFiles: _sgToObjectStoreMetadataFilesObservedList(fetched.Fields.ObjectStore.MetadataFiles),
+			},
 		},
-	}}
-
-	return guardian.NewObservedState(&resultState)
+		SgMetadata: guardian.SgObservedMetadata{
+			ActionCrashed: gcmp.Unobservable[bool]("Action crash comparison is disabled"),
+		},
+	}
 }
 
 // BuildAllowedDeleteState maps every comparable model field to its allowed value.
@@ -484,15 +496,19 @@ func (e *IcebergTableConformanceEnvironment) BuildAllowedDeleteState(t *testing.
 				MetadataFiles: _sgToObjectStoreMetadataFilesComparisonList(allowed.Fields.ObjectStore.MetadataFiles),
 			},
 		},
+		SgMetadata: guardian.SgComparisonMetadata{
+			ActionCrashed: gcmp.Ignore[bool]("Action crash comparison is disabled"),
+		},
 	}
 }
 
 // BuildAllowedDeleteStates maps FizzBee outcomes to comparable states.
-func (e *IcebergTableConformanceEnvironment) BuildAllowedDeleteStates(t *testing.T, allowed []FizzbeeIcebergTableState) []guardian.ComparisonState[*IcebergTableComparisonState] {
-	allowedStates := make([]guardian.ComparisonState[*IcebergTableComparisonState], len(allowed))
+func (e *IcebergTableConformanceEnvironment) BuildAllowedDeleteStates(t *testing.T, allowed []FizzbeeIcebergTableState) []*IcebergTableComparisonState {
+	t.Helper()
+	allowedStates := make([]*IcebergTableComparisonState, len(allowed))
 	for i, allowed := range allowed {
 		allowedState := e.BuildAllowedDeleteState(t, allowed)
-		allowedStates[i] = guardian.NewComparisonState(&allowedState)
+		allowedStates[i] = &allowedState
 	}
 
 	return allowedStates
@@ -600,7 +616,8 @@ func (e *IcebergTableConformanceEnvironment) ExecuteOverwrite(ctx context.Contex
 }
 
 // ObserveOverwriteState collects the state and output visible after the action.
-func (e *IcebergTableConformanceEnvironment) ObserveOverwriteState(t *testing.T, input FizzbeeIcebergTableState, output IcebergTableOverwriteOutput, actionErr error) guardian.ObservedState[*IcebergTableObservedState] {
+func (e *IcebergTableConformanceEnvironment) ObserveOverwriteState(t *testing.T, input FizzbeeIcebergTableState, output IcebergTableOverwriteOutput, actionErr error) *IcebergTableObservedState {
+	t.Helper()
 	valueObjectStoreDataFiles, err := e.observerDataFilesObserver.Observe(t.Context(), _sgFieldObjectStoreDataFiles)
 	if err != nil {
 		t.Fatalf("observer data_files_observer Observe %s: %v", _sgFieldObjectStoreDataFiles, err)
@@ -656,17 +673,20 @@ func (e *IcebergTableConformanceEnvironment) ObserveOverwriteState(t *testing.T,
 	manual := e.BuildOverwriteManualObservation(t, fetched, input, output, actionErr)
 	_ = manual
 
-	resultState := IcebergTableObservedState{Fields: IcebergTableObservedField{
-		ObjectStore: IcebergTableObjectStoreObservedField{
-			DataFiles:     _sgToObjectStoreDataFilesObservedList(fetched.Fields.ObjectStore.DataFiles),
-			DeleteFiles:   _sgToObjectStoreDeleteFilesObservedList(fetched.Fields.ObjectStore.DeleteFiles),
-			ManifestFiles: _sgToObjectStoreManifestFilesObservedList(fetched.Fields.ObjectStore.ManifestFiles),
-			ManifestLists: _sgToObjectStoreManifestListsObservedList(fetched.Fields.ObjectStore.ManifestLists),
-			MetadataFiles: _sgToObjectStoreMetadataFilesObservedList(fetched.Fields.ObjectStore.MetadataFiles),
+	return &IcebergTableObservedState{
+		Fields: IcebergTableObservedField{
+			ObjectStore: IcebergTableObjectStoreObservedField{
+				DataFiles:     _sgToObjectStoreDataFilesObservedList(fetched.Fields.ObjectStore.DataFiles),
+				DeleteFiles:   _sgToObjectStoreDeleteFilesObservedList(fetched.Fields.ObjectStore.DeleteFiles),
+				ManifestFiles: _sgToObjectStoreManifestFilesObservedList(fetched.Fields.ObjectStore.ManifestFiles),
+				ManifestLists: _sgToObjectStoreManifestListsObservedList(fetched.Fields.ObjectStore.ManifestLists),
+				MetadataFiles: _sgToObjectStoreMetadataFilesObservedList(fetched.Fields.ObjectStore.MetadataFiles),
+			},
 		},
-	}}
-
-	return guardian.NewObservedState(&resultState)
+		SgMetadata: guardian.SgObservedMetadata{
+			ActionCrashed: gcmp.Unobservable[bool]("Action crash comparison is disabled"),
+		},
+	}
 }
 
 // BuildAllowedOverwriteState maps every comparable model field to its allowed value.
@@ -682,15 +702,19 @@ func (e *IcebergTableConformanceEnvironment) BuildAllowedOverwriteState(t *testi
 				MetadataFiles: _sgToObjectStoreMetadataFilesComparisonList(allowed.Fields.ObjectStore.MetadataFiles),
 			},
 		},
+		SgMetadata: guardian.SgComparisonMetadata{
+			ActionCrashed: gcmp.Ignore[bool]("Action crash comparison is disabled"),
+		},
 	}
 }
 
 // BuildAllowedOverwriteStates maps FizzBee outcomes to comparable states.
-func (e *IcebergTableConformanceEnvironment) BuildAllowedOverwriteStates(t *testing.T, allowed []FizzbeeIcebergTableState) []guardian.ComparisonState[*IcebergTableComparisonState] {
-	allowedStates := make([]guardian.ComparisonState[*IcebergTableComparisonState], len(allowed))
+func (e *IcebergTableConformanceEnvironment) BuildAllowedOverwriteStates(t *testing.T, allowed []FizzbeeIcebergTableState) []*IcebergTableComparisonState {
+	t.Helper()
+	allowedStates := make([]*IcebergTableComparisonState, len(allowed))
 	for i, allowed := range allowed {
 		allowedState := e.BuildAllowedOverwriteState(t, allowed)
-		allowedStates[i] = guardian.NewComparisonState(&allowedState)
+		allowedStates[i] = &allowedState
 	}
 
 	return allowedStates
@@ -705,8 +729,9 @@ type IcebergTableCase struct {
 
 // FizzbeeIcebergTableState contains the model parameters and fields for this role.
 type FizzbeeIcebergTableState struct {
-	Params IcebergTableParams `json:"params"`
-	Fields IcebergTableField  `json:"fields"`
+	Params     IcebergTableParams         `json:"params"`
+	Fields     IcebergTableField          `json:"fields"`
+	SgMetadata guardian.SgFizzbeeMetadata `json:"sg_metadata"`
 }
 
 // IcebergTableParams contains each role's model parameters.
@@ -777,7 +802,8 @@ type IcebergTableIcebergTableField struct {
 
 // IcebergTableObservedState holds values observed from the application.
 type IcebergTableObservedState struct {
-	Fields IcebergTableObservedField
+	Fields     IcebergTableObservedField
+	SgMetadata guardian.SgObservedMetadata
 }
 
 // IcebergTableObservedField contains observed fields for each role.
@@ -817,7 +843,8 @@ type IcebergTableManualObservation struct {
 
 // IcebergTableComparisonState configures checks for an allowed model state.
 type IcebergTableComparisonState struct {
-	Fields IcebergTableComparisonField
+	Fields     IcebergTableComparisonField
+	SgMetadata guardian.SgComparisonMetadata
 }
 
 // ExpectedState identifies the FizzBee state type compared with this state.

@@ -10,6 +10,7 @@ import (
 	"github.com/mrasu/spec-guardian/guardian"
 	"github.com/mrasu/spec-guardian/guardian/gcmp"
 	"github.com/mrasu/spec-guardian/guardian/observer"
+	errorascrashedobserver "github.com/mrasu/spec-guardian/guardian/observer/errorascrashed"
 	sqlobserver "github.com/mrasu/spec-guardian/guardian/observer/sql"
 	valkeyobserver "github.com/mrasu/spec-guardian/guardian/observer/valkey"
 )
@@ -25,8 +26,9 @@ type ApplicationActions interface {
 type ApplicationConformanceEnvironment struct {
 	Actions ApplicationActions
 	*ApplicationEnvironment
-	observerCache *valkeyobserver.Observer
-	observerDb    *sqlobserver.Observer
+	observerCache          *valkeyobserver.Observer
+	observerDb             *sqlobserver.Observer
+	observerErrorAsCrashed *errorascrashedobserver.Observer
 }
 
 // NewApplicationConformanceEnvironment builds the adapter and resources for a conformance case.
@@ -51,11 +53,21 @@ func NewApplicationConformanceEnvironment(t *testing.T, controller *guardian.Inj
 	if errDb != nil {
 		t.Fatalf("observer db New: %v", errDb)
 	}
+	configErrorAsCrashed, fieldsErrorAsCrashed := _sgObserverErrorAsCrashedSettings()
+	observerErrorAsCrashed, errErrorAsCrashed := errorascrashedobserver.New(
+		errorascrashedobserver.Config{},
+		configErrorAsCrashed,
+		fieldsErrorAsCrashed,
+	)
+	if errErrorAsCrashed != nil {
+		t.Fatalf("observer error_as_crashed New: %v", errErrorAsCrashed)
+	}
 	return &ApplicationConformanceEnvironment{
 		Actions:                actions,
 		ApplicationEnvironment: environment,
 		observerCache:          observerCache,
 		observerDb:             observerDb,
+		observerErrorAsCrashed: observerErrorAsCrashed,
 	}
 }
 
@@ -87,6 +99,14 @@ func (e *ApplicationConformanceEnvironment) PrepareReadCase(t *testing.T) {
 			t.Errorf("observer db CleanupCase: %v", err)
 		}
 	})
+	if err := e.observerErrorAsCrashed.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer error_as_crashed PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerErrorAsCrashed.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer error_as_crashed CleanupCase: %v", err)
+		}
+	})
 }
 
 // PrepareReadAttempt sets up one fault attempt and registers its cleanup.
@@ -111,6 +131,14 @@ func (e *ApplicationConformanceEnvironment) PrepareReadAttempt(t *testing.T, inp
 			t.Errorf("observer db CleanupAttempt: %v", err)
 		}
 	})
+	if err := e.observerErrorAsCrashed.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer error_as_crashed PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerErrorAsCrashed.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer error_as_crashed CleanupAttempt: %v", err)
+		}
+	})
 }
 
 // ExecuteRead invokes the application action.
@@ -119,7 +147,8 @@ func (e *ApplicationConformanceEnvironment) ExecuteRead(ctx context.Context, inp
 }
 
 // ObserveReadState collects the state and output visible after the action.
-func (e *ApplicationConformanceEnvironment) ObserveReadState(t *testing.T, input FizzbeeApplicationState, output ApplicationReadOutput, actionErr error) guardian.ObservedState[*ApplicationObservedState] {
+func (e *ApplicationConformanceEnvironment) ObserveReadState(t *testing.T, input FizzbeeApplicationState, output ApplicationReadOutput, actionErr error) *ApplicationObservedState {
+	t.Helper()
 	valueCacheCachedRecords, err := e.observerCache.Observe(t.Context(), _sgFieldCacheCachedRecords)
 	if err != nil {
 		t.Fatalf("observer cache Observe %s: %v", _sgFieldCacheCachedRecords, err)
@@ -136,6 +165,14 @@ func (e *ApplicationConformanceEnvironment) ObserveReadState(t *testing.T, input
 	if convertErr != nil {
 		t.Fatalf("observer db Observe %s: %v", _sgFieldDBRecords, convertErr)
 	}
+	valueSgMetadataActionCrashed, err := e.observerErrorAsCrashed.Observe(t.Context(), _sgFieldSgMetadataActionCrashed, output, actionErr)
+	if err != nil {
+		t.Fatalf("observer error_as_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, err)
+	}
+	typedSgMetadataActionCrashed, convertErr := observer.Convert[bool](valueSgMetadataActionCrashed)
+	if convertErr != nil {
+		t.Fatalf("observer error_as_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, convertErr)
+	}
 	fetched := ApplicationFetchedObservation{
 		Fields: ApplicationFetchedField{
 			DB: ApplicationDBFetchedField{
@@ -145,25 +182,29 @@ func (e *ApplicationConformanceEnvironment) ObserveReadState(t *testing.T, input
 				CachedRecords: typedCacheCachedRecords,
 			},
 		},
+		SgMetadata: guardian.SgFetchedMetadata{
+			ActionCrashed: typedSgMetadataActionCrashed,
+		},
 	}
 
 	manual := e.BuildReadManualObservation(t, fetched, input, output, actionErr)
 
-	resultState := ApplicationObservedState{Fields: ApplicationObservedField{
-		DB: ApplicationDBObservedField{
-			Records: gcmp.Observed(fetched.Fields.DB.Records),
+	return &ApplicationObservedState{
+		Fields: ApplicationObservedField{
+			DB: ApplicationDBObservedField{
+				Records: gcmp.Observed(fetched.Fields.DB.Records),
+			},
+			Cache: ApplicationCacheObservedField{
+				CachedRecords: gcmp.Observed(fetched.Fields.Cache.CachedRecords),
+			},
+			Application: ApplicationApplicationObservedField{
+				ReadResValue: manual.Fields.Application.ReadResValue,
+			},
 		},
-		Cache: ApplicationCacheObservedField{
-			CachedRecords: gcmp.Observed(fetched.Fields.Cache.CachedRecords),
+		SgMetadata: guardian.SgObservedMetadata{
+			ActionCrashed: gcmp.Observed(fetched.SgMetadata.ActionCrashed),
 		},
-		Application: ApplicationApplicationObservedField{
-			ReadResValue: manual.Fields.Application.ReadResValue,
-			ReadStatus:   manual.Fields.Application.ReadStatus,
-			WriteStatus:  manual.Fields.Application.WriteStatus,
-		},
-	}}
-
-	return guardian.NewObservedState(&resultState)
+	}
 }
 
 // BuildAllowedReadState maps every comparable model field to its allowed value.
@@ -179,19 +220,21 @@ func (e *ApplicationConformanceEnvironment) BuildAllowedReadState(t *testing.T, 
 			},
 			Application: ApplicationApplicationComparisonField{
 				ReadResValue: gcmp.Equal(allowed.Fields.Application.ReadResValue),
-				ReadStatus:   gcmp.Equal(allowed.Fields.Application.ReadStatus),
-				WriteStatus:  gcmp.Equal(allowed.Fields.Application.WriteStatus),
 			},
+		},
+		SgMetadata: guardian.SgComparisonMetadata{
+			ActionCrashed: gcmp.Equal(allowed.SgMetadata.ActionCrashed),
 		},
 	}
 }
 
 // BuildAllowedReadStates maps FizzBee outcomes to comparable states.
-func (e *ApplicationConformanceEnvironment) BuildAllowedReadStates(t *testing.T, allowed []FizzbeeApplicationState) []guardian.ComparisonState[*ApplicationComparisonState] {
-	allowedStates := make([]guardian.ComparisonState[*ApplicationComparisonState], len(allowed))
+func (e *ApplicationConformanceEnvironment) BuildAllowedReadStates(t *testing.T, allowed []FizzbeeApplicationState) []*ApplicationComparisonState {
+	t.Helper()
+	allowedStates := make([]*ApplicationComparisonState, len(allowed))
 	for i, allowed := range allowed {
 		allowedState := e.BuildAllowedReadState(t, allowed)
-		allowedStates[i] = guardian.NewComparisonState(&allowedState)
+		allowedStates[i] = &allowedState
 	}
 
 	return allowedStates
@@ -219,6 +262,14 @@ func (e *ApplicationConformanceEnvironment) PrepareWriteCase(t *testing.T) {
 			t.Errorf("observer db CleanupCase: %v", err)
 		}
 	})
+	if err := e.observerErrorAsCrashed.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer error_as_crashed PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerErrorAsCrashed.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer error_as_crashed CleanupCase: %v", err)
+		}
+	})
 }
 
 // PrepareWriteAttempt sets up one fault attempt and registers its cleanup.
@@ -243,6 +294,14 @@ func (e *ApplicationConformanceEnvironment) PrepareWriteAttempt(t *testing.T, in
 			t.Errorf("observer db CleanupAttempt: %v", err)
 		}
 	})
+	if err := e.observerErrorAsCrashed.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer error_as_crashed PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerErrorAsCrashed.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer error_as_crashed CleanupAttempt: %v", err)
+		}
+	})
 }
 
 // ExecuteWrite invokes the application action.
@@ -251,7 +310,8 @@ func (e *ApplicationConformanceEnvironment) ExecuteWrite(ctx context.Context, in
 }
 
 // ObserveWriteState collects the state and output visible after the action.
-func (e *ApplicationConformanceEnvironment) ObserveWriteState(t *testing.T, input FizzbeeApplicationState, output ApplicationWriteOutput, actionErr error) guardian.ObservedState[*ApplicationObservedState] {
+func (e *ApplicationConformanceEnvironment) ObserveWriteState(t *testing.T, input FizzbeeApplicationState, output ApplicationWriteOutput, actionErr error) *ApplicationObservedState {
+	t.Helper()
 	valueCacheCachedRecords, err := e.observerCache.Observe(t.Context(), _sgFieldCacheCachedRecords)
 	if err != nil {
 		t.Fatalf("observer cache Observe %s: %v", _sgFieldCacheCachedRecords, err)
@@ -268,6 +328,14 @@ func (e *ApplicationConformanceEnvironment) ObserveWriteState(t *testing.T, inpu
 	if convertErr != nil {
 		t.Fatalf("observer db Observe %s: %v", _sgFieldDBRecords, convertErr)
 	}
+	valueSgMetadataActionCrashed, err := e.observerErrorAsCrashed.Observe(t.Context(), _sgFieldSgMetadataActionCrashed, output, actionErr)
+	if err != nil {
+		t.Fatalf("observer error_as_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, err)
+	}
+	typedSgMetadataActionCrashed, convertErr := observer.Convert[bool](valueSgMetadataActionCrashed)
+	if convertErr != nil {
+		t.Fatalf("observer error_as_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, convertErr)
+	}
 	fetched := ApplicationFetchedObservation{
 		Fields: ApplicationFetchedField{
 			DB: ApplicationDBFetchedField{
@@ -277,25 +345,29 @@ func (e *ApplicationConformanceEnvironment) ObserveWriteState(t *testing.T, inpu
 				CachedRecords: typedCacheCachedRecords,
 			},
 		},
+		SgMetadata: guardian.SgFetchedMetadata{
+			ActionCrashed: typedSgMetadataActionCrashed,
+		},
 	}
 
 	manual := e.BuildWriteManualObservation(t, fetched, input, output, actionErr)
 
-	resultState := ApplicationObservedState{Fields: ApplicationObservedField{
-		DB: ApplicationDBObservedField{
-			Records: gcmp.Observed(fetched.Fields.DB.Records),
+	return &ApplicationObservedState{
+		Fields: ApplicationObservedField{
+			DB: ApplicationDBObservedField{
+				Records: gcmp.Observed(fetched.Fields.DB.Records),
+			},
+			Cache: ApplicationCacheObservedField{
+				CachedRecords: gcmp.Observed(fetched.Fields.Cache.CachedRecords),
+			},
+			Application: ApplicationApplicationObservedField{
+				ReadResValue: manual.Fields.Application.ReadResValue,
+			},
 		},
-		Cache: ApplicationCacheObservedField{
-			CachedRecords: gcmp.Observed(fetched.Fields.Cache.CachedRecords),
+		SgMetadata: guardian.SgObservedMetadata{
+			ActionCrashed: gcmp.Observed(fetched.SgMetadata.ActionCrashed),
 		},
-		Application: ApplicationApplicationObservedField{
-			ReadResValue: manual.Fields.Application.ReadResValue,
-			ReadStatus:   manual.Fields.Application.ReadStatus,
-			WriteStatus:  manual.Fields.Application.WriteStatus,
-		},
-	}}
-
-	return guardian.NewObservedState(&resultState)
+	}
 }
 
 // BuildAllowedWriteState maps every comparable model field to its allowed value.
@@ -311,19 +383,21 @@ func (e *ApplicationConformanceEnvironment) BuildAllowedWriteState(t *testing.T,
 			},
 			Application: ApplicationApplicationComparisonField{
 				ReadResValue: gcmp.Equal(allowed.Fields.Application.ReadResValue),
-				ReadStatus:   gcmp.Equal(allowed.Fields.Application.ReadStatus),
-				WriteStatus:  gcmp.Equal(allowed.Fields.Application.WriteStatus),
 			},
+		},
+		SgMetadata: guardian.SgComparisonMetadata{
+			ActionCrashed: gcmp.Equal(allowed.SgMetadata.ActionCrashed),
 		},
 	}
 }
 
 // BuildAllowedWriteStates maps FizzBee outcomes to comparable states.
-func (e *ApplicationConformanceEnvironment) BuildAllowedWriteStates(t *testing.T, allowed []FizzbeeApplicationState) []guardian.ComparisonState[*ApplicationComparisonState] {
-	allowedStates := make([]guardian.ComparisonState[*ApplicationComparisonState], len(allowed))
+func (e *ApplicationConformanceEnvironment) BuildAllowedWriteStates(t *testing.T, allowed []FizzbeeApplicationState) []*ApplicationComparisonState {
+	t.Helper()
+	allowedStates := make([]*ApplicationComparisonState, len(allowed))
 	for i, allowed := range allowed {
 		allowedState := e.BuildAllowedWriteState(t, allowed)
-		allowedStates[i] = guardian.NewComparisonState(&allowedState)
+		allowedStates[i] = &allowedState
 	}
 
 	return allowedStates
@@ -338,8 +412,9 @@ type ApplicationCase struct {
 
 // FizzbeeApplicationState contains the model parameters and fields for this role.
 type FizzbeeApplicationState struct {
-	Params ApplicationParams `json:"params"`
-	Fields ApplicationField  `json:"fields"`
+	Params     ApplicationParams          `json:"params"`
+	Fields     ApplicationField           `json:"fields"`
+	SgMetadata guardian.SgFizzbeeMetadata `json:"sg_metadata"`
 }
 
 // ApplicationParams contains each role's model parameters.
@@ -380,7 +455,8 @@ type ApplicationApplicationField struct {
 
 // ApplicationObservedState holds values observed from the application.
 type ApplicationObservedState struct {
-	Fields ApplicationObservedField
+	Fields     ApplicationObservedField
+	SgMetadata guardian.SgObservedMetadata
 }
 
 // ApplicationObservedField contains observed fields for each role.
@@ -403,13 +479,12 @@ type ApplicationCacheObservedField struct {
 // ApplicationApplicationObservedField contains observed fields for Application.
 type ApplicationApplicationObservedField struct {
 	ReadResValue *gcmp.ObservedField[*string]
-	ReadStatus   *gcmp.ObservedField[string]
-	WriteStatus  *gcmp.ObservedField[string]
 }
 
 // ApplicationFetchedObservation contains fields collected by declared observers.
 type ApplicationFetchedObservation struct {
-	Fields ApplicationFetchedField
+	Fields     ApplicationFetchedField
+	SgMetadata guardian.SgFetchedMetadata
 }
 
 type ApplicationFetchedField struct {
@@ -436,13 +511,12 @@ type ApplicationManualField struct {
 
 type ApplicationApplicationManualField struct {
 	ReadResValue *gcmp.ObservedField[*string]
-	ReadStatus   *gcmp.ObservedField[string]
-	WriteStatus  *gcmp.ObservedField[string]
 }
 
 // ApplicationComparisonState configures checks for an allowed model state.
 type ApplicationComparisonState struct {
-	Fields ApplicationComparisonField
+	Fields     ApplicationComparisonField
+	SgMetadata guardian.SgComparisonMetadata
 }
 
 // ExpectedState identifies the FizzBee state type compared with this state.
@@ -470,6 +544,4 @@ type ApplicationCacheComparisonField struct {
 // ApplicationApplicationComparisonField contains field comparisons for Application.
 type ApplicationApplicationComparisonField struct {
 	ReadResValue *gcmp.ComparisonField[*string]
-	ReadStatus   *gcmp.ComparisonField[string]
-	WriteStatus  *gcmp.ComparisonField[string]
 }

@@ -61,14 +61,22 @@ func (e *ReaderConformanceEnvironment) ExecuteRead(ctx context.Context, input Re
 }
 
 // ObserveReadState collects the state and output visible after the action.
-func (e *ReaderConformanceEnvironment) ObserveReadState(t *testing.T, input FizzbeeReaderState, output ReaderReadOutput, actionErr error) guardian.ObservedState[*ReaderObservedState] {
+func (e *ReaderConformanceEnvironment) ObserveReadState(t *testing.T, input FizzbeeReaderState, output ReaderReadOutput, actionErr error) *ReaderObservedState {
+	t.Helper()
 	fetched := ReaderFetchedObservation{}
 
 	manual := e.BuildReadManualObservation(t, fetched, input, output, actionErr)
 
-	resultState := ReaderObservedState{Fields: manual.Fields}
-
-	return guardian.NewObservedState(&resultState)
+	return &ReaderObservedState{
+		Fields: ReaderObservedField{
+			Reader: ReaderReaderObservedField{
+				Status: manual.Fields.Reader.Status,
+			},
+		},
+		SgMetadata: guardian.SgObservedMetadata{
+			ActionCrashed: gcmp.Unobservable[bool]("Action crash comparison is disabled"),
+		},
+	}
 }
 
 // BuildAllowedReadState maps every comparable model field to its allowed value.
@@ -80,15 +88,19 @@ func (e *ReaderConformanceEnvironment) BuildAllowedReadState(t *testing.T, allow
 				Status: gcmp.Equal(allowed.Fields.Reader.Status),
 			},
 		},
+		SgMetadata: guardian.SgComparisonMetadata{
+			ActionCrashed: gcmp.Ignore[bool]("Action crash comparison is disabled"),
+		},
 	}
 }
 
 // BuildAllowedReadStates maps FizzBee outcomes to comparable states.
-func (e *ReaderConformanceEnvironment) BuildAllowedReadStates(t *testing.T, allowed []FizzbeeReaderState) []guardian.ComparisonState[*ReaderComparisonState] {
-	allowedStates := make([]guardian.ComparisonState[*ReaderComparisonState], len(allowed))
+func (e *ReaderConformanceEnvironment) BuildAllowedReadStates(t *testing.T, allowed []FizzbeeReaderState) []*ReaderComparisonState {
+	t.Helper()
+	allowedStates := make([]*ReaderComparisonState, len(allowed))
 	for i, allowed := range allowed {
 		allowedState := e.BuildAllowedReadState(t, allowed)
-		allowedStates[i] = guardian.NewComparisonState(&allowedState)
+		allowedStates[i] = &allowedState
 	}
 
 	return allowedStates
@@ -103,8 +115,9 @@ type ReaderCase struct {
 
 // FizzbeeReaderState contains the model parameters and fields for this role.
 type FizzbeeReaderState struct {
-	Params ReaderParams `json:"params"`
-	Fields ReaderField  `json:"fields"`
+	Params     ReaderParams               `json:"params"`
+	Fields     ReaderField                `json:"fields"`
+	SgMetadata guardian.SgFizzbeeMetadata `json:"sg_metadata"`
 }
 
 // ReaderParams contains each role's model parameters.
@@ -129,7 +142,8 @@ type ReaderReaderField struct {
 
 // ReaderObservedState holds values observed from the application.
 type ReaderObservedState struct {
-	Fields ReaderObservedField
+	Fields     ReaderObservedField
+	SgMetadata guardian.SgObservedMetadata
 }
 
 // ReaderObservedField contains observed fields for each role.
@@ -143,7 +157,8 @@ type ReaderReaderObservedField struct {
 }
 
 // ReaderFetchedObservation contains fields collected by declared observers.
-type ReaderFetchedObservation struct{}
+type ReaderFetchedObservation struct {
+}
 
 // ReaderManualObservation contains fields supplied by the application.
 type ReaderManualObservation struct {
@@ -152,7 +167,8 @@ type ReaderManualObservation struct {
 
 // ReaderComparisonState configures checks for an allowed model state.
 type ReaderComparisonState struct {
-	Fields ReaderComparisonField
+	Fields     ReaderComparisonField
+	SgMetadata guardian.SgComparisonMetadata
 }
 
 // ExpectedState identifies the FizzBee state type compared with this state.

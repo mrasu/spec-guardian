@@ -14,15 +14,17 @@ import (
 
 // TemplateData contains the values and presentation helpers consumed by source templates.
 type TemplateData struct {
-	Module         string
-	Role           string
-	Actions        []*action
-	Roles          []roleSchema
-	DeclaredTypes  []DeclaredType
-	Observers      []Observer
-	ObserverGroups []ObserverGroup
-	PluginImports  []PluginImport
-	ShapeFunctions []string
+	FetchedActionCrashed bool
+	ManualActionCrashed  bool
+	Module               string
+	Role                 string
+	Actions              []*action
+	Roles                []roleSchema
+	DeclaredTypes        []DeclaredType
+	Observers            []Observer
+	ObserverGroups       []ObserverGroup
+	PluginImports        []PluginImport
+	ShapeFunctions       []string
 }
 
 func (d *TemplateData) ObservedRoles() []roleSchema {
@@ -55,10 +57,12 @@ type DeclaredType struct {
 
 // Declarations contains validated field settings used during generation.
 type Declarations struct {
-	Observers     []Observer
-	TypedFields   []TypedField
-	Unobservable  []UnobservableField
-	ExcludedRoles []ExcludedRole
+	CompareActionCrashed  *bool
+	ActionCrashedObserver *Observer
+	Observers             []Observer
+	TypedFields           []TypedField
+	Unobservable          []UnobservableField
+	ExcludedRoles         []ExcludedRole
 }
 
 // ExcludedRole excludes every field of a source role from observation and comparison.
@@ -81,6 +85,9 @@ type UnobservableField struct {
 
 // Observer is a validated field request for a declared observer.
 type Observer struct {
+	ObserverField                                           string
+	Metadata                                                bool
+	Result                                                  bool
 	Field                                                   *Field
 	ObserverID, RoleName, FieldName, GoName, ObserverGoName string
 	PluginImportPath, PluginAlias                           string
@@ -93,6 +100,7 @@ type Observer struct {
 
 // ObserverGroup contains all fields served by one named observer.
 type ObserverGroup struct {
+	GoField     string
 	ID          string
 	GoName      string
 	PluginAlias string
@@ -107,10 +115,11 @@ type PluginImport struct {
 }
 
 type action struct {
-	Role, Name string
-	CaseFile   string
-	Cases      []actionCase
-	Roles      []roleSchema
+	Role, Name           string
+	CompareActionCrashed bool
+	CaseFile             string
+	Cases                []actionCase
+	Roles                []roleSchema
 }
 
 type actionCase struct {
@@ -118,7 +127,10 @@ type actionCase struct {
 	Outputs []roleState
 }
 
-type roleState struct{ Roles []stateRole }
+type roleState struct {
+	Roles      []stateRole
+	SgMetadata fizzbee.SgMetadata
+}
 
 type stateRole struct {
 	Name           string
@@ -155,17 +167,34 @@ type fieldValue struct {
 }
 
 // BuildTemplateData builds source-template data from validated Action cases.
-func BuildTemplateData(modulePath, role string, cases []fizzbee.ActionCase, declarations Declarations) (*TemplateData, error) {
+func BuildTemplateData(modulePath, role string, model fizzbee.Model, declarations Declarations) (*TemplateData, error) {
 	if modulePath == "" {
 		return nil, fmt.Errorf("module path is empty")
 	}
-	actions, err := newActions(cases)
+	actions, err := newActions(model.Cases)
 	if err != nil {
 		return nil, err
 	}
 	data := newTemplateData(modulePath, role, actions)
-	if len(declarations.Observers) > 0 {
-		applyObservers(data, declarations.Observers)
+	for _, action := range actions {
+		action.CompareActionCrashed = model.Options.CrashOnYield
+		if declarations.CompareActionCrashed != nil {
+			action.CompareActionCrashed = *declarations.CompareActionCrashed
+		}
+		if action.CompareActionCrashed {
+			if declarations.ActionCrashedObserver != nil {
+				data.FetchedActionCrashed = true
+			} else {
+				data.ManualActionCrashed = true
+			}
+		}
+	}
+	observers := append([]Observer(nil), declarations.Observers...)
+	if data.FetchedActionCrashed {
+		observers = append(observers, *declarations.ActionCrashedObserver)
+	}
+	if len(observers) > 0 {
+		applyObservers(data, observers)
 	}
 	if len(declarations.TypedFields) > 0 {
 		applyTypedFields(data, declarations.TypedFields)
@@ -254,6 +283,15 @@ func applyObservers(data *TemplateData, observers []Observer) {
 		observer.FieldName = observer.Field.FieldName()
 		observer.GoName = goName(observer.FieldName)
 		observer.ObserverGoName = goName(observer.ObserverID)
+		if observer.ObserverConfig == nil {
+			observer.ObserverConfig = map[string]any{}
+		}
+		if observer.FieldConfig == nil {
+			observer.FieldConfig = map[string]any{}
+		}
+		if observer.Metadata {
+			observer.RoleName = "SgMetadata"
+		}
 		observer.ConvertType = "map[string]" + observer.ValueKind
 		if observer.Type.Kind != "" {
 			observer.ConvertType = observer.Type.GoType()
@@ -264,6 +302,9 @@ func applyObservers(data *TemplateData, observers []Observer) {
 		}
 		data.Observers = append(data.Observers, observer)
 		for _, action := range data.Actions {
+			if observer.Metadata {
+				continue
+			}
 			applyObserverType(action, observer)
 		}
 	}
@@ -271,6 +312,13 @@ func applyObservers(data *TemplateData, observers []Observer) {
 		return data.Observers[i].Field.String() < data.Observers[j].Field.String()
 	})
 	data.ObserverGroups = groupObservers(data.Observers)
+	for i := range data.Observers {
+		for _, group := range data.ObserverGroups {
+			if data.Observers[i].ObserverID == group.ID {
+				data.Observers[i].ObserverField = group.GoField
+			}
+		}
+	}
 	data.PluginImports = pluginImports(data.ObserverGroups)
 }
 
@@ -325,6 +373,7 @@ func groupObservers(observers []Observer) []ObserverGroup {
 		group := byID[observer.ObserverID]
 		if group == nil {
 			group = &ObserverGroup{
+				GoField:     "observer" + observer.ObserverGoName,
 				ID:          observer.ObserverID,
 				GoName:      observer.ObserverGoName,
 				PluginAlias: observer.PluginAlias,
@@ -494,6 +543,7 @@ func newAction(cases []fizzbee.ActionCase) (*action, error) {
 			if err != nil {
 				return nil, err
 			}
+			state.SgMetadata = output.SgMetadata
 			outputs = append(outputs, state)
 		}
 		action.Cases = append(action.Cases, actionCase{Input: input, Outputs: outputs})

@@ -1,14 +1,17 @@
 ---
 deadlock_detection: false
-options:
-  crash_on_yield: false
+action_options:
+  "OrderServer#.CreateOrder":
+    max_concurrent_actions: 1
+  "DeliveryServer#.Deliver":
+    max_concurrent_actions: 1
 ---
 
 OrderStatus = enum("CREATED", "DELIVERING", "DELIVERED")
 IdempotencyStatus = enum("PROCESSING", "DONE")
-OrderResult = enum("INIT", "PROCESSING", "FAILED", "ORDERED", "CONFLICT")
-DeliveryResult = enum("INIT", "PROCESSING", "FAILED", "DELIVERED", "CONFLICT", "NOT_FOUND", "ALREADY_DELIVERED")
-PersistenceResult = enum("SUCCEEDED", "FAILED", "CONFLICT", "NOT_FOUND", "ALREADY_DELIVERED")
+OrderResult = enum("INIT", "PROCESSING", "ORDERED", "CONFLICT")
+DeliveryResult = enum("INIT", "PROCESSING", "DELIVERED", "CONFLICT", "NOT_FOUND", "ALREADY_DELIVERED")
+PersistenceResult = enum("SUCCEEDED", "CONFLICT", "NOT_FOUND", "ALREADY_DELIVERED")
 
 always assertion DoneIdempotencyRecordHasOrder:
   for request_id in dynamodb.order_idempotency_records:
@@ -58,10 +61,6 @@ role DynamoDB:
     self.delivery_records = {}
 
   atomic func begin_order_idempotent_request(request_id, payload):
-    succeeds = oneof [True, False]
-    if not succeeds:
-      return PersistenceResult.FAILED
-
     if request_id not in self.order_idempotency_records:
       self.order_idempotency_records[request_id] = {"payload": payload, "status": IdempotencyStatus.PROCESSING, "order_id": None}
     elif self.order_idempotency_records[request_id]["payload"] != payload:
@@ -69,20 +68,12 @@ role DynamoDB:
     return PersistenceResult.SUCCEEDED
 
   atomic func end_order_idempotent_request(request_id, order_id):
-    succeeds = oneof [True, False]
-    if not succeeds:
-      return False
-
     record = self.order_idempotency_records[request_id]
     record["order_id"] = order_id
     record["status"] = IdempotencyStatus.DONE
     return True
 
   atomic func create_delivery_record(delivery_id, order_id, data):
-    succeeds = oneof [True, False]
-    if not succeeds:
-      return PersistenceResult.FAILED
-
     delivery = {"order_id": order_id, "data": data}
     if delivery_id not in self.delivery_records:
       self.delivery_records[delivery_id] = delivery
@@ -101,10 +92,6 @@ role MySQL:
     return self.next_order_id
 
   atomic func create_order(request_id, payload):
-    succeeds = oneof [True, False]
-    if not succeeds:
-      return [PersistenceResult.FAILED, None]
-
     for order_id in self.order_records:
       order = self.order_records[order_id]
       if order["request_id"] == request_id:
@@ -121,19 +108,16 @@ role MySQL:
     return "delivery-id-" + str(self.delivery_prepared_count)
 
   atomic func mark_order_delivering(order_id, delivery_data):
-    succeeds = oneof [True, False]
-    if not succeeds:
-      return [PersistenceResult.FAILED, None, None]
     if order_id not in self.order_records:
       return [PersistenceResult.NOT_FOUND, None, None]
 
-    delivery_id = self.generate_delivery_id()
     order = self.order_records[order_id]
     if order["status"] == OrderStatus.DELIVERED:
       return [PersistenceResult.ALREADY_DELIVERED, None, None]
     elif order["status"] == OrderStatus.DELIVERING and order["delivery_data"] != delivery_data:
       return [PersistenceResult.CONFLICT, None, None]
     elif order["status"] == OrderStatus.CREATED:
+      delivery_id = self.generate_delivery_id()
       order["status"] = OrderStatus.DELIVERING
       order["delivery_id"] = delivery_id
       order["delivery_data"] = delivery_data
@@ -141,9 +125,6 @@ role MySQL:
     return [PersistenceResult.SUCCEEDED, order["delivery_id"], order["delivery_data"]]
 
   atomic func mark_order_delivered(order_id):
-    succeeds = oneof [True, False]
-    if not succeeds:
-      return False
     self.order_records[order_id]["status"] = OrderStatus.DELIVERED
     return True
 
@@ -159,30 +140,24 @@ role OrderServer:
     self.result = OrderResult.INIT
 
   fair action CreateOrder:
-    require self.result == OrderResult.INIT
+    require self.result == OrderResult.INIT or self.result == OrderResult.PROCESSING
     self.result = OrderResult.PROCESSING
+    # Yield to allow a crash before the first I/O.
+    atomic:
+      pass
 
     idempotency_result = dynamodb.begin_order_idempotent_request(self.request_id, self.request_payload)
-    if idempotency_result == PersistenceResult.FAILED:
-      self.result = OrderResult.FAILED
-      return
-    elif idempotency_result == PersistenceResult.CONFLICT:
+    if idempotency_result == PersistenceResult.CONFLICT:
       self.result = OrderResult.CONFLICT
       return
 
     order_creation = mysql.create_order(self.request_id, self.request_payload)
     order_result, order_id = order_creation
-    if order_result == PersistenceResult.FAILED:
-      self.result = OrderResult.FAILED
-      return
-    elif order_result == PersistenceResult.CONFLICT:
+    if order_result == PersistenceResult.CONFLICT:
       self.result = OrderResult.CONFLICT
       return
 
-    request_marked_done = dynamodb.end_order_idempotent_request(self.request_id, order_id)
-    if not request_marked_done:
-      self.result = OrderResult.FAILED
-      return
+    dynamodb.end_order_idempotent_request(self.request_id, order_id)
     self.ordered_id = order_id
     self.result = OrderResult.ORDERED
 
@@ -198,15 +173,15 @@ role DeliveryServer:
     self.result = DeliveryResult.INIT
 
   fair action Deliver:
-    require self.result == DeliveryResult.INIT
+    require self.result == DeliveryResult.INIT or self.result == DeliveryResult.PROCESSING
     self.result = DeliveryResult.PROCESSING
+    # Yield to allow a crash before the first I/O.
+    atomic:
+      pass
 
     preparation = mysql.mark_order_delivering(self.order_id, self.request_delivery_data)
     preparation_result, delivery_id, delivery_data = preparation
-    if preparation_result == PersistenceResult.FAILED:
-      self.result = DeliveryResult.FAILED
-      return
-    elif preparation_result == PersistenceResult.NOT_FOUND:
+    if preparation_result == PersistenceResult.NOT_FOUND:
       self.result = DeliveryResult.NOT_FOUND
       return
     elif preparation_result == PersistenceResult.ALREADY_DELIVERED:
@@ -217,17 +192,11 @@ role DeliveryServer:
       return
 
     delivery_result = dynamodb.create_delivery_record(delivery_id, self.order_id, delivery_data)
-    if delivery_result == PersistenceResult.FAILED:
-      self.result = DeliveryResult.FAILED
-      return
-    elif delivery_result == PersistenceResult.CONFLICT:
+    if delivery_result == PersistenceResult.CONFLICT:
       self.result = DeliveryResult.CONFLICT
       return
 
-    delivered = mysql.mark_order_delivered(self.order_id)
-    if not delivered:
-      self.result = DeliveryResult.FAILED
-      return
+    mysql.mark_order_delivered(self.order_id)
     self.result = DeliveryResult.DELIVERED
 
 ORDER_DATA = ["order-data", "different-order-data"]

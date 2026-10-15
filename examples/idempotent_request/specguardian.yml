@@ -14,8 +14,16 @@ observers:
       region: us-east-1
       access_key_id: test
       secret_access_key: test
+  - id: action_crashed
+    kind: result
+    plugin:
+      go_package: spec-guardian/examples/idempotent-request/conformance/specguardian/observer/actionerror
 fizzbee_files:
   - output_dir: docs/spec/fizzbee_output
+    sg_metadata:
+      action_crashed:
+        observer:
+          id: action_crashed
     roles:
       - name: DynamoDB
         fields:

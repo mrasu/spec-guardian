@@ -48,9 +48,9 @@ func TestGenerateScalarObserver_ObservesAndComparesDeclaredTypes(t *testing.T) {
 	}
 	role := fizzbee.RoleState{Name: "Reader", Fields: fields}
 	cases := []fizzbee.ActionCase{{Action: fizzbee.ActionRef{Role: "Reader", Action: "Read"}, Input: fizzbee.Input{Roles: []fizzbee.RoleState{role}}, Outputs: []fizzbee.Output{{Roles: []fizzbee.RoleState{role}}}}}
-	sources, err := GenerateScaffold("example.test/generated", cases, declarations)
+	sources, err := GenerateScaffold("example.test/generated", fizzbee.Model{Cases: cases}, declarations)
 	require.NoError(t, err)
-	repeated, err := GenerateScaffold("example.test/generated", cases, declarations)
+	repeated, err := GenerateScaffold("example.test/generated", fizzbee.Model{Cases: cases}, declarations)
 	require.NoError(t, err)
 	require.Equal(t, sources, repeated)
 	for _, tt := range tests {
@@ -132,7 +132,7 @@ func TestObserveScalarAndMessageFields(t *testing.T) {
    e := &ReaderConformanceEnvironment{ReaderEnvironment: &ReaderEnvironment{}, observerCustom: &custom.Observer{Values: values}}
    observed := e.ObserveReadState(t, FizzbeeReaderState{}, ReaderReadOutput{}, nil)
    comparison := e.BuildAllowedReadState(t, allowed)
-   comparator := gcmp.NewObservedStateComparator[*ReaderComparisonState](observed.Output)
+   comparator := gcmp.NewObservedStateComparator[*ReaderComparisonState](observed)
    if err := comparator.Validate(); err != nil { t.Fatal(err) }
    if diffs := comparator.Match(&comparison); len(diffs) != 0 { t.Fatal(diffs) }
    mismatches := []struct { name string; value any }{
@@ -153,7 +153,7 @@ func TestObserveScalarAndMessageFields(t *testing.T) {
     original := values["Reader."+mismatch.name]
     values["Reader."+mismatch.name] = mismatch.value
     got := e.ObserveReadState(t, FizzbeeReaderState{}, ReaderReadOutput{}, nil)
-    diffs := gcmp.NewObservedStateComparator[*ReaderComparisonState](got.Output).Match(&comparison)
+    diffs := gcmp.NewObservedStateComparator[*ReaderComparisonState](got).Match(&comparison)
     if len(diffs) == 0 || !strings.Contains(strings.Join(diffs, "\n"), mismatch.name) { t.Fatalf("%s mismatch: %v", mismatch.name, diffs) }
     values["Reader."+mismatch.name] = original
    }

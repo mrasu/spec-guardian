@@ -14,7 +14,7 @@ import (
 
 const (
 {{- range .Observers}}
-	_sgField{{.RoleName}}{{.GoName}} = {{printf "%q" .Field.String}}
+	_sgField{{.RoleName}}{{.GoName}} = {{if .Metadata}}observer.ActionCrashedField{{else}}{{printf "%q" .Field.String}}{{end}}
 {{- end}}
 )
 {{end}}
@@ -31,14 +31,14 @@ func _sgObserver{{.GoName}}Settings() (map[string]any, []observer.FieldRequest) 
 		{
 			Field:  _sgField{{.RoleName}}{{.GoName}},
 			Config: {{goLiteral .FieldConfig}},
-			Output: observer.OutputSpec{
+			Output: {{if .Metadata}}observer.ActionCrashedOutputSpec(),{{else}}observer.OutputSpec{
                 Type: {{if .TypeLiteral}}{{.TypeLiteral}}{{else}}observer.Type{
                     Kind: observer.KindMap,
                     Values: &observer.Type{
                         Kind: observer.KindString,
                     },
                 }{{end}},
-            },
+            },{{end}}
 		},
 {{- end}}
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/mrasu/spec-guardian/guardian/observer"
 	dynamodbobserver "github.com/mrasu/spec-guardian/guardian/observer/dynamodb"
 	sqlobserver "github.com/mrasu/spec-guardian/guardian/observer/sql"
+	_sgActionerror "spec-guardian/examples/idempotent-request/conformance/specguardian/observer/actionerror"
 )
 
 // DeliveryServerActions describes the application methods exercised by this role.
@@ -24,14 +25,24 @@ type DeliveryServerActions interface {
 type DeliveryServerConformanceEnvironment struct {
 	Actions DeliveryServerActions
 	*DeliveryServerEnvironment
-	observerDynamodb *dynamodbobserver.Observer
-	observerMysql    *sqlobserver.Observer
+	observerActionCrashed *_sgActionerror.Observer
+	observerDynamodb      *dynamodbobserver.Observer
+	observerMysql         *sqlobserver.Observer
 }
 
 // NewDeliveryServerConformanceEnvironment builds the adapter and resources for a conformance case.
 func NewDeliveryServerConformanceEnvironment(t *testing.T, controller *guardian.InjectionController) *DeliveryServerConformanceEnvironment {
 	t.Helper()
 	actions, environment := BuildDeliveryServerConformanceComponents(t, controller)
+	configActionCrashed, fieldsActionCrashed := _sgObserverActionCrashedSettings()
+	observerActionCrashed, errActionCrashed := _sgActionerror.New(
+		_sgActionerror.Config{},
+		configActionCrashed,
+		fieldsActionCrashed,
+	)
+	if errActionCrashed != nil {
+		t.Fatalf("observer action_crashed New: %v", errActionCrashed)
+	}
 	configDynamodb, fieldsDynamodb := _sgObserverDynamodbSettings()
 	observerDynamodb, errDynamodb := dynamodbobserver.New(
 		dynamodbobserver.Config{},
@@ -53,6 +64,7 @@ func NewDeliveryServerConformanceEnvironment(t *testing.T, controller *guardian.
 	return &DeliveryServerConformanceEnvironment{
 		Actions:                   actions,
 		DeliveryServerEnvironment: environment,
+		observerActionCrashed:     observerActionCrashed,
 		observerDynamodb:          observerDynamodb,
 		observerMysql:             observerMysql,
 	}
@@ -69,6 +81,14 @@ func (e *DeliveryServerConformanceEnvironment) PrepareDeliverCase(t *testing.T) 
 	e.SetupDeliverCase(t)
 	t.Cleanup(func() {
 		e.CleanupDeliverCase(t)
+	})
+	if err := e.observerActionCrashed.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer action_crashed PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerActionCrashed.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer action_crashed CleanupCase: %v", err)
+		}
 	})
 	if err := e.observerDynamodb.PrepareCase(t.Context()); err != nil {
 		t.Fatalf("observer dynamodb PrepareCase: %v", err)
@@ -94,6 +114,14 @@ func (e *DeliveryServerConformanceEnvironment) PrepareDeliverAttempt(t *testing.
 	t.Cleanup(func() {
 		e.CleanupDeliverAttempt(t)
 	})
+	if err := e.observerActionCrashed.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer action_crashed PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerActionCrashed.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer action_crashed CleanupAttempt: %v", err)
+		}
+	})
 	if err := e.observerDynamodb.PrepareAttempt(t.Context()); err != nil {
 		t.Fatalf("observer dynamodb PrepareAttempt: %v", err)
 	}
@@ -118,7 +146,8 @@ func (e *DeliveryServerConformanceEnvironment) ExecuteDeliver(ctx context.Contex
 }
 
 // ObserveDeliverState collects the state and output visible after the action.
-func (e *DeliveryServerConformanceEnvironment) ObserveDeliverState(t *testing.T, input FizzbeeDeliveryServerState, output DeliveryServerDeliverOutput, actionErr error) guardian.ObservedState[*DeliveryServerObservedState] {
+func (e *DeliveryServerConformanceEnvironment) ObserveDeliverState(t *testing.T, input FizzbeeDeliveryServerState, output DeliveryServerDeliverOutput, actionErr error) *DeliveryServerObservedState {
+	t.Helper()
 	valueDynamoDBDeliveryRecords, err := e.observerDynamodb.Observe(t.Context(), _sgFieldDynamoDBDeliveryRecords)
 	if err != nil {
 		t.Fatalf("observer dynamodb Observe %s: %v", _sgFieldDynamoDBDeliveryRecords, err)
@@ -143,6 +172,14 @@ func (e *DeliveryServerConformanceEnvironment) ObserveDeliverState(t *testing.T,
 	if convertErr != nil {
 		t.Fatalf("observer mysql Observe %s: %v", _sgFieldMySQLOrderRecords, convertErr)
 	}
+	valueSgMetadataActionCrashed, err := e.observerActionCrashed.Observe(t.Context(), _sgFieldSgMetadataActionCrashed, output, actionErr)
+	if err != nil {
+		t.Fatalf("observer action_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, err)
+	}
+	typedSgMetadataActionCrashed, convertErr := observer.Convert[bool](valueSgMetadataActionCrashed)
+	if convertErr != nil {
+		t.Fatalf("observer action_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, convertErr)
+	}
 	fetched := DeliveryServerFetchedObservation{
 		Fields: DeliveryServerFetchedField{
 			DynamoDB: DeliveryServerDynamoDBFetchedField{
@@ -153,26 +190,32 @@ func (e *DeliveryServerConformanceEnvironment) ObserveDeliverState(t *testing.T,
 				OrderRecords: typedMySQLOrderRecords,
 			},
 		},
+		SgMetadata: guardian.SgFetchedMetadata{
+			ActionCrashed: typedSgMetadataActionCrashed,
+		},
 	}
 
 	manual := e.BuildDeliverManualObservation(t, fetched, input, output, actionErr)
 
-	resultState := DeliveryServerObservedState{Fields: DeliveryServerObservedField{
-		DynamoDB: DeliveryServerDynamoDBObservedField{
-			DeliveryRecords:         _sgToDynamoDBDeliveryRecordsObservedField(fetched.Fields.DynamoDB.DeliveryRecords),
-			OrderIdempotencyRecords: _sgToDynamoDBOrderIdempotencyRecordsObservedField(fetched.Fields.DynamoDB.OrderIdempotencyRecords),
+	return &DeliveryServerObservedState{
+		Fields: DeliveryServerObservedField{
+			DynamoDB: DeliveryServerDynamoDBObservedField{
+				DeliveryRecords:         _sgToDynamoDBDeliveryRecordsObservedField(fetched.Fields.DynamoDB.DeliveryRecords),
+				OrderIdempotencyRecords: _sgToDynamoDBOrderIdempotencyRecordsObservedField(fetched.Fields.DynamoDB.OrderIdempotencyRecords),
+			},
+			MySQL: DeliveryServerMySQLObservedField{
+				OrderRecords: _sgToMySQLOrderRecordsObservedField(fetched.Fields.MySQL.OrderRecords),
+			},
+			DeliveryServer: DeliveryServerDeliveryServerObservedField{
+				OrderId:             manual.Fields.DeliveryServer.OrderId,
+				RequestDeliveryData: manual.Fields.DeliveryServer.RequestDeliveryData,
+				Result:              manual.Fields.DeliveryServer.Result,
+			},
 		},
-		MySQL: DeliveryServerMySQLObservedField{
-			OrderRecords: _sgToMySQLOrderRecordsObservedField(fetched.Fields.MySQL.OrderRecords),
+		SgMetadata: guardian.SgObservedMetadata{
+			ActionCrashed: gcmp.Observed(fetched.SgMetadata.ActionCrashed),
 		},
-		DeliveryServer: DeliveryServerDeliveryServerObservedField{
-			OrderId:             manual.Fields.DeliveryServer.OrderId,
-			RequestDeliveryData: manual.Fields.DeliveryServer.RequestDeliveryData,
-			Result:              manual.Fields.DeliveryServer.Result,
-		},
-	}}
-
-	return guardian.NewObservedState(&resultState)
+	}
 }
 
 // BuildAllowedDeliverState maps every comparable model field to its allowed value.
@@ -193,15 +236,19 @@ func (e *DeliveryServerConformanceEnvironment) BuildAllowedDeliverState(t *testi
 				Result:              gcmp.Equal(allowed.Fields.DeliveryServer.Result),
 			},
 		},
+		SgMetadata: guardian.SgComparisonMetadata{
+			ActionCrashed: gcmp.Equal(allowed.SgMetadata.ActionCrashed),
+		},
 	}
 }
 
 // BuildAllowedDeliverStates maps FizzBee outcomes to comparable states.
-func (e *DeliveryServerConformanceEnvironment) BuildAllowedDeliverStates(t *testing.T, allowed []FizzbeeDeliveryServerState) []guardian.ComparisonState[*DeliveryServerComparisonState] {
-	allowedStates := make([]guardian.ComparisonState[*DeliveryServerComparisonState], len(allowed))
+func (e *DeliveryServerConformanceEnvironment) BuildAllowedDeliverStates(t *testing.T, allowed []FizzbeeDeliveryServerState) []*DeliveryServerComparisonState {
+	t.Helper()
+	allowedStates := make([]*DeliveryServerComparisonState, len(allowed))
 	for i, allowed := range allowed {
 		allowedState := e.BuildAllowedDeliverState(t, allowed)
-		allowedStates[i] = guardian.NewComparisonState(&allowedState)
+		allowedStates[i] = &allowedState
 	}
 
 	return allowedStates
@@ -216,8 +263,9 @@ type DeliveryServerCase struct {
 
 // FizzbeeDeliveryServerState contains the model parameters and fields for this role.
 type FizzbeeDeliveryServerState struct {
-	Params DeliveryServerParams `json:"params"`
-	Fields DeliveryServerField  `json:"fields"`
+	Params     DeliveryServerParams       `json:"params"`
+	Fields     DeliveryServerField        `json:"fields"`
+	SgMetadata guardian.SgFizzbeeMetadata `json:"sg_metadata"`
 }
 
 // DeliveryServerParams contains each role's model parameters.
@@ -262,7 +310,8 @@ type DeliveryServerDeliveryServerField struct {
 
 // DeliveryServerObservedState holds values observed from the application.
 type DeliveryServerObservedState struct {
-	Fields DeliveryServerObservedField
+	Fields     DeliveryServerObservedField
+	SgMetadata guardian.SgObservedMetadata
 }
 
 // DeliveryServerObservedField contains observed fields for each role.
@@ -292,7 +341,8 @@ type DeliveryServerDeliveryServerObservedField struct {
 
 // DeliveryServerFetchedObservation contains fields collected by declared observers.
 type DeliveryServerFetchedObservation struct {
-	Fields DeliveryServerFetchedField
+	Fields     DeliveryServerFetchedField
+	SgMetadata guardian.SgFetchedMetadata
 }
 
 type DeliveryServerFetchedField struct {
@@ -326,7 +376,8 @@ type DeliveryServerDeliveryServerManualField struct {
 
 // DeliveryServerComparisonState configures checks for an allowed model state.
 type DeliveryServerComparisonState struct {
-	Fields DeliveryServerComparisonField
+	Fields     DeliveryServerComparisonField
+	SgMetadata guardian.SgComparisonMetadata
 }
 
 // ExpectedState identifies the FizzBee state type compared with this state.

@@ -52,9 +52,9 @@ func TestGenerateMapObserver_ConvertsAndComparesNestedValues(t *testing.T) {
 		shape := toDeclaredShape(*spec, "DB"+tt.name, true)
 		fmt.Fprintf(&runtimeTests, "func Test%s(t *testing.T) { check(t, %s, %s, %s, %s, %s) }\n", tt.name, tt.actual, tt.allowed, tt.mismatch, shape.ObservedConvert, shape.ComparisonConvert)
 	}
-	sources, err := GenerateScaffold("example.test/project", []fizzbee.ActionCase{caseData}, declarations)
+	sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: []fizzbee.ActionCase{caseData}}, declarations)
 	require.NoError(t, err)
-	repeated, err := GenerateScaffold("example.test/project", []fizzbee.ActionCase{caseData}, declarations)
+	repeated, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: []fizzbee.ActionCase{caseData}}, declarations)
 	require.NoError(t, err)
 	require.Equal(t, sources, repeated)
 	// The plain int64 map uses the generic field wrapper, so supply the equivalent

@@ -85,6 +85,31 @@ $defs:
         description: Settings for the model's roles.
         items:
           $ref: '#/$defs/role'
+      sg_metadata:
+        $ref: '#/$defs/sgMetadata'
+
+  sgMetadata:
+    description: Comparison settings for metadata produced by Spec Guardian.
+    type: object
+    additionalProperties: false
+    properties:
+      action_crashed:
+        $ref: '#/$defs/sgActionCrashed'
+
+  sgActionCrashed:
+    description: Comparison settings for whether the modeled Action was terminated by a crash.
+    type: object
+    additionalProperties: false
+    properties:
+      observer:
+        $ref: '#/$defs/fieldObserver'
+        description: Result observer for this metadata field. When omitted, supply its value through manual observation.
+      compare:
+        type: boolean
+        description: >-
+          Whether to compare modeled Action crashes with the observed crash-equivalent result. When omitted,
+          uses the effective FizzBee crash_on_yield option. An explicit value
+          overrides that option.
 
   role:
     description: Settings for a model role.
@@ -267,6 +292,11 @@ $defs:
         type: string
         minLength: 1
         description: Unique identifier used to reference this observer.
+      kind:
+        type: string
+        enum: [state, result]
+        default: state
+        description: State observers read external state; result observers receive the Action output and error.
       plugin:
         $ref: '#/$defs/plugin'
         description: Plugin used by this observer.
@@ -280,7 +310,7 @@ $defs:
     additionalProperties: false
     properties:
       builtin:
-        enum: [sql, valkey, dynamodb]
+        enum: [sql, valkey, dynamodb, error_as_crashed]
         description: Name of a built-in observer plugin.
       go_package:
         type: string

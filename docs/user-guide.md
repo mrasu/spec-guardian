@@ -44,29 +44,20 @@ mkdir -p docs/spec
 cp "$TUTORIAL_ROOT/docs/spec/CacheAside.fizz" docs/spec/
 ```
 
-The spec allows `Write` to succeed or fail depending on I/O. The `@conformance` marker identifies the role to check against the application. Its actions usually represent functions or endpoints; here, SpecGuardian tests `Write`.
+The spec enables `crash_on_yield` to model interrupted writes. The `@conformance` marker identifies the role to check against the application. Its actions usually represent functions or endpoints; here, SpecGuardian tests `Write`.
 
 ```fizzbee
 @conformance
 role Application:
   action Init:
-    self.write_status = RequestStatus.INIT
+    pass
 
   fair action Write:
-    require self.write_status == RequestStatus.INIT
-    self.write_status = RequestStatus.PROCESSING
-
-    db_succeeds = db.write(self.key, self.write_value)
-    if not db_succeeds:
-      self.write_status = RequestStatus.FAILED
-      return
-
-    delete_cache_succeeds = cache.delete_cache(self.key)
-    if not delete_cache_succeeds:
-      self.write_status = RequestStatus.FAILED
-      return
-
-    self.write_status = RequestStatus.DONE
+    # Yield before the first I/O without changing the observed state.
+    atomic:
+      pass
+    db.write(self.key, self.write_value)
+    cache.delete_cache(self.key)
 
 action Init:
   db = DB()
@@ -121,7 +112,7 @@ Connect the generated tests to the application. Copy the completed conformance c
 
 ```bash
 cd "$NEW_TUTORIAL_DIR"
-cp "$TUTORIAL_ROOT"/conformance/specguardian/{application_conformance_impl_test.go,records_test.go} conformance/specguardian/
+cp "$TUTORIAL_ROOT"/conformance/specguardian/application_conformance_impl_test.go conformance/specguardian/
 ```
 
 The copied code sets up the database and cache, runs `Write`, and supplies its result. The observers in `specguardian.yml` read the database and cache state for comparison with the spec.
@@ -137,7 +128,7 @@ docker compose up -d
 go test -tags=specguardian ./conformance/...
 ```
 
-The generated test exercises `Write` with injected I/O failures. It passes when every observed state is allowed by the spec. If the observed state matches no state allowed by the spec, the test fails and reports the differences.
+The test checks whether the application's state and failure outcome are allowed by the model. If no allowed outcome matches, it reports the differences.
 
 ### 6. Complete the tutorial
 

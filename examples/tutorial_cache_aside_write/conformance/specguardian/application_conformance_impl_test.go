@@ -12,7 +12,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/mrasu/spec-guardian/guardian"
-	"github.com/mrasu/spec-guardian/guardian/gcmp"
 	"github.com/mrasu/spec-guardian/guardian/gsql"
 	"github.com/mrasu/spec-guardian/guardian/gvalkeygo"
 	"github.com/stretchr/testify/require"
@@ -89,18 +88,10 @@ func (e *ApplicationEnvironment) BuildWriteInput(t *testing.T, input FizzbeeAppl
 	return &cacheaside.WriteInput{Key: input.Params.Application.Key, Value: input.Params.Application.WriteValue}
 }
 
-// BuildWriteManualObservation maps the action result to the model's write status.
+// BuildWriteManualObservation supplies fields not fetched by observers.
 func (e *ApplicationEnvironment) BuildWriteManualObservation(t *testing.T, fetched ApplicationFetchedObservation, input FizzbeeApplicationState, output ApplicationWriteOutput, actionErr error) ApplicationManualObservation {
 	t.Helper()
-	status := "DONE"
-	if actionErr != nil {
-		status = "FAILED"
-	}
-	return ApplicationManualObservation{
-		Fields: ApplicationManualField{
-			Application: ApplicationApplicationManualField{WriteStatus: gcmp.Observed(status)},
-		},
-	}
+	return ApplicationManualObservation{}
 }
 
 func setupRecords(t *testing.T, db *sql.DB, cache valkey.Client, dbRecords, cacheRecords map[string]string) {

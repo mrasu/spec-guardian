@@ -79,7 +79,7 @@ func readConfigurationSource(projectDir, outputDir string) ([]byte, error) {
 	if !filepath.IsAbs(outputDir) {
 		outputDir = filepath.Join(projectDir, outputDir)
 	}
-	cases, err := fizzbee.ReadActionCases(outputDir)
+	model, err := fizzbee.ReadModel(outputDir)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func readConfigurationSource(projectDir, outputDir string) ([]byte, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "resolve FizzBee output directory")
 	}
-	return toConfigurationSource(filepath.ToSlash(relative), cases)
+	return toConfigurationSource(filepath.ToSlash(relative), model.Cases)
 }
 
 func writeProjectFiles(configPath, entryPath string, config []byte) error {

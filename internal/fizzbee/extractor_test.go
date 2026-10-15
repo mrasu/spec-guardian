@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestReadActionCases(t *testing.T) {
+func TestReadModel(t *testing.T) {
 	tests := []struct {
 		name string
 		dir  string
@@ -79,13 +79,63 @@ func TestReadActionCases(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := ReadActionCases(filepath.Join("testdata", test.dir, "fizzbee_output"))
+			got, err := ReadModel(filepath.Join("testdata", test.dir, "fizzbee_output"))
 			require.NoError(t, err)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("ReadActionCases() mismatch (-want +got):\n%s", diff)
+			require.True(t, got.Options.CrashOnYield)
+			if diff := cmp.Diff(test.want, got.Cases); diff != "" {
+				t.Errorf("ReadModel() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
+}
+
+func TestExtractActionCases_DistinguishesCrashAndNormalCompletionAtSameState(t *testing.T) {
+	graph := newTestGraph(t,
+		`{"roles":[{"name":"Worker","ref":1,"params":{},"fields":{"value":0}}],"threads":[]}`,
+		`{"roles":[{"name":"Worker","ref":1,"params":{},"fields":{"value":0}}],"threads":[{}]}`,
+		`{"roles":[{"name":"Worker","ref":1,"params":{},"fields":{"value":9}}],"threads":[]}`,
+	)
+	graph.Links = []*artifact.Link{
+		{Src: 0, Dst: 1, Name: "Worker#1.Run", ReqID: 0, Type: "action"},
+		{Src: 1, Dst: 0, Name: "crash", ReqID: 0},
+		{Src: 1, Dst: 0, Name: "thread-0", ReqID: 0},
+		{Src: 1, Dst: 2, Name: "crash", ReqID: 1},
+	}
+	connectGraph(t, graph)
+
+	cases, err := extractActionCases(graph, "Worker", "Run")
+	require.NoError(t, err)
+	require.Len(t, cases, 1)
+	roles := cases[0].Input.Roles
+	require.Equal(t, []Output{
+		{Roles: roles, SgMetadata: SgMetadata{ActionCrashed: false}},
+		{Roles: roles, SgMetadata: SgMetadata{ActionCrashed: true}},
+	}, cases[0].Outputs)
+	validated, err := NewActionCases(cases)
+	require.NoError(t, err)
+	require.Equal(t, cases, validated)
+}
+
+func TestExtractActionCases_DetectsCrashAfterThreadRemapping(t *testing.T) {
+	graph := newTestGraph(t,
+		`{"roles":[{"name":"Worker","ref":1,"params":{},"fields":{"value":0}}],"threads":[]}`,
+		`{"roles":[{"name":"Worker","ref":1,"params":{},"fields":{"value":0}}],"threads":[{}]}`,
+		`{"roles":[{"name":"Worker","ref":1,"params":{},"fields":{"value":1}}],"threads":[null,{}]}`,
+		`{"roles":[{"name":"Worker","ref":1,"params":{},"fields":{"value":1}}],"threads":[]}`,
+	)
+	graph.Links = []*artifact.Link{
+		{Src: 0, Dst: 1, Name: "Worker#1.Run", ReqID: 0, Type: "action"},
+		{Src: 1, Dst: 2, Name: "thread-0", ReqID: 0, NewToOldThreads: map[int64]int64{1: 0}},
+		{Src: 2, Dst: 3, Name: "crash", ReqID: 1},
+	}
+	connectGraph(t, graph)
+	cases, err := extractActionCases(graph, "Worker", "Run")
+	require.NoError(t, err)
+	require.Len(t, cases, 1)
+	require.Equal(t, []Output{{
+		Roles:      []RoleState{{Name: "Worker", Params: JSONObject{}, Fields: JSONObject{"value": json.Number("1")}}},
+		SgMetadata: SgMetadata{ActionCrashed: true},
+	}}, cases[0].Outputs)
 }
 
 func TestExtractActionCasesAcrossRoleExecutionOrders(t *testing.T) {

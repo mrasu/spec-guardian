@@ -12,6 +12,7 @@ const (
 	_sgFieldDynamoDBDeliveryRecords         = "DynamoDB.delivery_records"
 	_sgFieldDynamoDBOrderIdempotencyRecords = "DynamoDB.order_idempotency_records"
 	_sgFieldMySQLOrderRecords               = "MySQL.order_records"
+	_sgFieldSgMetadataActionCrashed         = observer.ActionCrashedField
 )
 
 // DynamoDBDeliveryRecordsComparisonField is the declared shape of a model field.
@@ -78,6 +79,16 @@ type MySQLOrderRecordsObservedField struct {
 	Payload      *gcmp.ObservedField[string]
 	RequestId    *gcmp.ObservedField[string]
 	Status       *gcmp.ObservedField[string]
+}
+
+func _sgObserverActionCrashedSettings() (map[string]any, []observer.FieldRequest) {
+	return map[string]any{}, []observer.FieldRequest{
+		{
+			Field:  _sgFieldSgMetadataActionCrashed,
+			Config: map[string]any{},
+			Output: observer.ActionCrashedOutputSpec(),
+		},
+	}
 }
 
 func _sgObserverDynamodbSettings() (map[string]any, []observer.FieldRequest) {

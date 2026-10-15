@@ -12,6 +12,7 @@ import (
 	"github.com/mrasu/spec-guardian/guardian/observer"
 	dynamodbobserver "github.com/mrasu/spec-guardian/guardian/observer/dynamodb"
 	sqlobserver "github.com/mrasu/spec-guardian/guardian/observer/sql"
+	_sgActionerror "spec-guardian/examples/idempotent-request/conformance/specguardian/observer/actionerror"
 )
 
 // OrderServerActions describes the application methods exercised by this role.
@@ -24,14 +25,24 @@ type OrderServerActions interface {
 type OrderServerConformanceEnvironment struct {
 	Actions OrderServerActions
 	*OrderServerEnvironment
-	observerDynamodb *dynamodbobserver.Observer
-	observerMysql    *sqlobserver.Observer
+	observerActionCrashed *_sgActionerror.Observer
+	observerDynamodb      *dynamodbobserver.Observer
+	observerMysql         *sqlobserver.Observer
 }
 
 // NewOrderServerConformanceEnvironment builds the adapter and resources for a conformance case.
 func NewOrderServerConformanceEnvironment(t *testing.T, controller *guardian.InjectionController) *OrderServerConformanceEnvironment {
 	t.Helper()
 	actions, environment := BuildOrderServerConformanceComponents(t, controller)
+	configActionCrashed, fieldsActionCrashed := _sgObserverActionCrashedSettings()
+	observerActionCrashed, errActionCrashed := _sgActionerror.New(
+		_sgActionerror.Config{},
+		configActionCrashed,
+		fieldsActionCrashed,
+	)
+	if errActionCrashed != nil {
+		t.Fatalf("observer action_crashed New: %v", errActionCrashed)
+	}
 	configDynamodb, fieldsDynamodb := _sgObserverDynamodbSettings()
 	observerDynamodb, errDynamodb := dynamodbobserver.New(
 		dynamodbobserver.Config{},
@@ -53,6 +64,7 @@ func NewOrderServerConformanceEnvironment(t *testing.T, controller *guardian.Inj
 	return &OrderServerConformanceEnvironment{
 		Actions:                actions,
 		OrderServerEnvironment: environment,
+		observerActionCrashed:  observerActionCrashed,
 		observerDynamodb:       observerDynamodb,
 		observerMysql:          observerMysql,
 	}
@@ -69,6 +81,14 @@ func (e *OrderServerConformanceEnvironment) PrepareCreateOrderCase(t *testing.T)
 	e.SetupCreateOrderCase(t)
 	t.Cleanup(func() {
 		e.CleanupCreateOrderCase(t)
+	})
+	if err := e.observerActionCrashed.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("observer action_crashed PrepareCase: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerActionCrashed.CleanupCase(context.Background()); err != nil {
+			t.Errorf("observer action_crashed CleanupCase: %v", err)
+		}
 	})
 	if err := e.observerDynamodb.PrepareCase(t.Context()); err != nil {
 		t.Fatalf("observer dynamodb PrepareCase: %v", err)
@@ -94,6 +114,14 @@ func (e *OrderServerConformanceEnvironment) PrepareCreateOrderAttempt(t *testing
 	t.Cleanup(func() {
 		e.CleanupCreateOrderAttempt(t)
 	})
+	if err := e.observerActionCrashed.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("observer action_crashed PrepareAttempt: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := e.observerActionCrashed.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("observer action_crashed CleanupAttempt: %v", err)
+		}
+	})
 	if err := e.observerDynamodb.PrepareAttempt(t.Context()); err != nil {
 		t.Fatalf("observer dynamodb PrepareAttempt: %v", err)
 	}
@@ -118,7 +146,8 @@ func (e *OrderServerConformanceEnvironment) ExecuteCreateOrder(ctx context.Conte
 }
 
 // ObserveCreateOrderState collects the state and output visible after the action.
-func (e *OrderServerConformanceEnvironment) ObserveCreateOrderState(t *testing.T, input FizzbeeOrderServerState, output OrderServerCreateOrderOutput, actionErr error) guardian.ObservedState[*OrderServerObservedState] {
+func (e *OrderServerConformanceEnvironment) ObserveCreateOrderState(t *testing.T, input FizzbeeOrderServerState, output OrderServerCreateOrderOutput, actionErr error) *OrderServerObservedState {
+	t.Helper()
 	valueDynamoDBDeliveryRecords, err := e.observerDynamodb.Observe(t.Context(), _sgFieldDynamoDBDeliveryRecords)
 	if err != nil {
 		t.Fatalf("observer dynamodb Observe %s: %v", _sgFieldDynamoDBDeliveryRecords, err)
@@ -143,6 +172,14 @@ func (e *OrderServerConformanceEnvironment) ObserveCreateOrderState(t *testing.T
 	if convertErr != nil {
 		t.Fatalf("observer mysql Observe %s: %v", _sgFieldMySQLOrderRecords, convertErr)
 	}
+	valueSgMetadataActionCrashed, err := e.observerActionCrashed.Observe(t.Context(), _sgFieldSgMetadataActionCrashed, output, actionErr)
+	if err != nil {
+		t.Fatalf("observer action_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, err)
+	}
+	typedSgMetadataActionCrashed, convertErr := observer.Convert[bool](valueSgMetadataActionCrashed)
+	if convertErr != nil {
+		t.Fatalf("observer action_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, convertErr)
+	}
 	fetched := OrderServerFetchedObservation{
 		Fields: OrderServerFetchedField{
 			DynamoDB: OrderServerDynamoDBFetchedField{
@@ -153,26 +190,32 @@ func (e *OrderServerConformanceEnvironment) ObserveCreateOrderState(t *testing.T
 				OrderRecords: typedMySQLOrderRecords,
 			},
 		},
+		SgMetadata: guardian.SgFetchedMetadata{
+			ActionCrashed: typedSgMetadataActionCrashed,
+		},
 	}
 
 	manual := e.BuildCreateOrderManualObservation(t, fetched, input, output, actionErr)
 
-	resultState := OrderServerObservedState{Fields: OrderServerObservedField{
-		DynamoDB: OrderServerDynamoDBObservedField{
-			DeliveryRecords:         _sgToDynamoDBDeliveryRecordsObservedField(fetched.Fields.DynamoDB.DeliveryRecords),
-			OrderIdempotencyRecords: _sgToDynamoDBOrderIdempotencyRecordsObservedField(fetched.Fields.DynamoDB.OrderIdempotencyRecords),
+	return &OrderServerObservedState{
+		Fields: OrderServerObservedField{
+			DynamoDB: OrderServerDynamoDBObservedField{
+				DeliveryRecords:         _sgToDynamoDBDeliveryRecordsObservedField(fetched.Fields.DynamoDB.DeliveryRecords),
+				OrderIdempotencyRecords: _sgToDynamoDBOrderIdempotencyRecordsObservedField(fetched.Fields.DynamoDB.OrderIdempotencyRecords),
+			},
+			MySQL: OrderServerMySQLObservedField{
+				OrderRecords: _sgToMySQLOrderRecordsObservedField(fetched.Fields.MySQL.OrderRecords),
+			},
+			OrderServer: OrderServerOrderServerObservedField{
+				OrderedId:      manual.Fields.OrderServer.OrderedId,
+				RequestPayload: manual.Fields.OrderServer.RequestPayload,
+				Result:         manual.Fields.OrderServer.Result,
+			},
 		},
-		MySQL: OrderServerMySQLObservedField{
-			OrderRecords: _sgToMySQLOrderRecordsObservedField(fetched.Fields.MySQL.OrderRecords),
+		SgMetadata: guardian.SgObservedMetadata{
+			ActionCrashed: gcmp.Observed(fetched.SgMetadata.ActionCrashed),
 		},
-		OrderServer: OrderServerOrderServerObservedField{
-			OrderedId:      manual.Fields.OrderServer.OrderedId,
-			RequestPayload: manual.Fields.OrderServer.RequestPayload,
-			Result:         manual.Fields.OrderServer.Result,
-		},
-	}}
-
-	return guardian.NewObservedState(&resultState)
+	}
 }
 
 // BuildAllowedCreateOrderState maps every comparable model field to its allowed value.
@@ -193,15 +236,19 @@ func (e *OrderServerConformanceEnvironment) BuildAllowedCreateOrderState(t *test
 				Result:         gcmp.Equal(allowed.Fields.OrderServer.Result),
 			},
 		},
+		SgMetadata: guardian.SgComparisonMetadata{
+			ActionCrashed: gcmp.Equal(allowed.SgMetadata.ActionCrashed),
+		},
 	}
 }
 
 // BuildAllowedCreateOrderStates maps FizzBee outcomes to comparable states.
-func (e *OrderServerConformanceEnvironment) BuildAllowedCreateOrderStates(t *testing.T, allowed []FizzbeeOrderServerState) []guardian.ComparisonState[*OrderServerComparisonState] {
-	allowedStates := make([]guardian.ComparisonState[*OrderServerComparisonState], len(allowed))
+func (e *OrderServerConformanceEnvironment) BuildAllowedCreateOrderStates(t *testing.T, allowed []FizzbeeOrderServerState) []*OrderServerComparisonState {
+	t.Helper()
+	allowedStates := make([]*OrderServerComparisonState, len(allowed))
 	for i, allowed := range allowed {
 		allowedState := e.BuildAllowedCreateOrderState(t, allowed)
-		allowedStates[i] = guardian.NewComparisonState(&allowedState)
+		allowedStates[i] = &allowedState
 	}
 
 	return allowedStates
@@ -216,8 +263,9 @@ type OrderServerCase struct {
 
 // FizzbeeOrderServerState contains the model parameters and fields for this role.
 type FizzbeeOrderServerState struct {
-	Params OrderServerParams `json:"params"`
-	Fields OrderServerField  `json:"fields"`
+	Params     OrderServerParams          `json:"params"`
+	Fields     OrderServerField           `json:"fields"`
+	SgMetadata guardian.SgFizzbeeMetadata `json:"sg_metadata"`
 }
 
 // OrderServerParams contains each role's model parameters.
@@ -268,7 +316,8 @@ type OrderServerOrderServerField struct {
 
 // OrderServerObservedState holds values observed from the application.
 type OrderServerObservedState struct {
-	Fields OrderServerObservedField
+	Fields     OrderServerObservedField
+	SgMetadata guardian.SgObservedMetadata
 }
 
 // OrderServerObservedField contains observed fields for each role.
@@ -298,7 +347,8 @@ type OrderServerOrderServerObservedField struct {
 
 // OrderServerFetchedObservation contains fields collected by declared observers.
 type OrderServerFetchedObservation struct {
-	Fields OrderServerFetchedField
+	Fields     OrderServerFetchedField
+	SgMetadata guardian.SgFetchedMetadata
 }
 
 type OrderServerFetchedField struct {
@@ -332,7 +382,8 @@ type OrderServerOrderServerManualField struct {
 
 // OrderServerComparisonState configures checks for an allowed model state.
 type OrderServerComparisonState struct {
-	Fields OrderServerComparisonField
+	Fields     OrderServerComparisonField
+	SgMetadata guardian.SgComparisonMetadata
 }
 
 // ExpectedState identifies the FizzBee state type compared with this state.

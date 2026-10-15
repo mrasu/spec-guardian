@@ -1,17 +1,21 @@
+SpecGuardian checks whether an application conforms to a FizzBee model by generating tests that execute application actions, inject I/O faults, and compare observed outcomes with those allowed by the model.
+
 # Rules
 
 ## Agent behavior
 
-Act only on explicit user instructions. Before making a change, agree on the approach and concrete steps, then execute them.
-For example, before editing code, ask the user to decide any design choice about the implementation approach or structure.
+- Act only on explicit user instructions.
+- Before making changes, inspect the existing implementation and agree on the approach and concrete steps.
+- If the proposed approach would require awkward workarounds or structural compromises, explain the concerns and discuss alternatives, even when the approach was requested by the user.
+- After editing, check that the result serves its intended purpose and follows the applicable guidelines.
 
 ## Guidelines
 
+- [Project Architecture](docs/agents/architecture.md)
 - [Go API design](docs/agents/go.md)
 - [Tests](docs/agents/test.md)
 - [Markdown](docs/agents/markdown.md)
 - [Documentation](docs/agents/document.md)
-- [Repository architecture](docs/agents/architecture.md)
 
 <!-- CODEGRAPH_START -->
 ## CodeGraph

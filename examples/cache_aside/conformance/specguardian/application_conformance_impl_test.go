@@ -92,17 +92,10 @@ func (e *ApplicationEnvironment) BuildReadManualObservation(t *testing.T, fetche
 		resValue = output.Value
 	}
 
-	status := "DONE"
-	if actionErr != nil {
-		status = "FAILED"
-	}
-
 	return ApplicationManualObservation{
 		Fields: ApplicationManualField{
 			Application: ApplicationApplicationManualField{
 				ReadResValue: gcmp.Observed(resValue),
-				ReadStatus:   gcmp.Observed(status),
-				WriteStatus:  gcmp.Unobservable[string]("irrelevant to Read action"),
 			},
 		},
 	}
@@ -152,17 +145,10 @@ func (e *ApplicationEnvironment) BuildWriteInput(t *testing.T, input FizzbeeAppl
 func (e *ApplicationEnvironment) BuildWriteManualObservation(t *testing.T, fetched ApplicationFetchedObservation, input FizzbeeApplicationState, output ApplicationWriteOutput, actionErr error) ApplicationManualObservation {
 	t.Helper()
 
-	status := "DONE"
-	if actionErr != nil {
-		status = "FAILED"
-	}
-
 	return ApplicationManualObservation{
 		Fields: ApplicationManualField{
 			Application: ApplicationApplicationManualField{
 				ReadResValue: gcmp.Unobservable[*string]("irrelevant to Write action"),
-				ReadStatus:   gcmp.Unobservable[string]("irrelevant to Write action"),
-				WriteStatus:  gcmp.Observed(status),
 			},
 		},
 	}

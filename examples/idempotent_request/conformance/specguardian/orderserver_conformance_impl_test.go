@@ -70,7 +70,7 @@ func (e *OrderServerEnvironment) BuildCreateOrderManualObservation(t *testing.T,
 	}
 	result := "ORDERED"
 	if actionErr != nil {
-		result = "FAILED"
+		result = "PROCESSING"
 		if errors.Is(actionErr, idempotentrequest.ErrConflict) {
 			result = "CONFLICT"
 		}

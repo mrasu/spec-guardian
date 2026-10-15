@@ -11,9 +11,21 @@ observers:
       builtin: valkey
     config:
       address: localhost:16379
+  - id: error_as_crashed
+    kind: result
+    plugin:
+      builtin: error_as_crashed
 fizzbee_files:
   - output_dir: docs/spec/fizzbee_output
     roles:
+      - name: Application
+        fields:
+          - name: read_status
+            compare: false
+            reason: model execution control only
+          - name: write_status
+            compare: false
+            reason: model execution control only
       - name: DB
         fields:
           - name: records
@@ -43,4 +55,8 @@ fizzbee_files:
               kind: map
               values:
                 kind: string
+    sg_metadata:
+      action_crashed:
+        observer:
+          id: error_as_crashed
 dev: true

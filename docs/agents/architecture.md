@@ -28,6 +28,7 @@ This document records the boundaries and relationships that guide conformance te
 
 ## Observation and comparison
 
+- SpecGuardian metadata follows the same fetch, observation, and comparison stages as application fields.
 - Inject faults only during Action execution so test preparation and observation cannot become failure sources under test.
 - User setup establishes the context for plugin preparation; plugin cleanup precedes user cleanup to preserve that context.
 - Plugins isolate state between attempts.

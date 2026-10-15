@@ -1,6 +1,7 @@
 package generate
 
 import (
+	"github.com/mrasu/spec-guardian/internal/generate/renderer"
 	"os"
 	"path/filepath"
 	"testing"
@@ -39,6 +40,113 @@ func TestReadFileConfig_ValidatesAllExamples(t *testing.T) {
 			config, err := readFileConfig(filepath.Join("../../examples", tt, "specguardian.yml"))
 			require.NoError(t, err)
 			require.Equal(t, "0.1", config.Version)
+		})
+	}
+}
+
+func TestParseDeclarations_ResultObserverKind(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "specguardian.yml")
+	contents := `version: "0.1"
+observers:
+  - id: action_result
+    kind: result
+    plugin: {builtin: error_as_crashed}
+fizzbee_files:
+  - output_dir: artifacts
+    roles:
+      - name: Application
+        fields:
+          - name: failed
+            observer: {id: action_result}
+            type: {kind: bool}
+`
+	require.NoError(t, os.WriteFile(path, []byte(contents), 0600))
+	config, err := readFileConfig(path)
+	require.NoError(t, err)
+	declarations, err := parseDeclarations(config)
+	require.NoError(t, err)
+	require.Len(t, declarations.Observers, 1)
+	require.True(t, declarations.Observers[0].Result)
+	require.Equal(t, "github.com/mrasu/spec-guardian/guardian/observer/errorascrashed", declarations.Observers[0].PluginImportPath)
+}
+
+func TestParseDeclarations_ActionCrashedObserverSettings(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "specguardian.yml")
+	contents := `version: "0.1"
+observers:
+  - id: failure
+    kind: result
+    plugin: {go_package: example.test/statusobserver}
+    config: {failure_status_min: 500}
+fizzbee_files:
+  - output_dir: artifacts
+    sg_metadata:
+      action_crashed:
+        observer:
+          id: failure
+          config: {status_field: code}
+`
+	require.NoError(t, os.WriteFile(path, []byte(contents), 0600))
+	config, err := readFileConfig(path)
+	require.NoError(t, err)
+	declarations, err := parseDeclarations(config)
+	require.NoError(t, err)
+	request := declarations.ActionCrashedObserver
+	require.NotNil(t, request)
+	require.True(t, request.Metadata)
+	require.True(t, request.Result)
+	require.Equal(t, "sg_metadata.action_crashed", request.Field.String())
+	require.Equal(t, map[string]any{"failure_status_min": 500}, request.ObserverConfig)
+	require.Equal(t, map[string]any{"status_field": "code"}, request.FieldConfig)
+}
+
+func TestParseDeclarations_ActionCrashedRequiresResultObserver(t *testing.T) {
+	file := fizzbeeFileConfig{SgMetadata: sgMetadataConfig{ActionCrashed: actionCrashedConfig{Observer: &fieldObserverConfig{ID: "db"}}}}
+	observers := map[string]resolvedObserver{"db": {Config: observerConfig{ID: "db", Kind: "state"}}}
+	declarations, err := buildDeclarations(file, observers)
+	require.ErrorContains(t, err, "must have kind result")
+	require.Equal(t, renderer.Declarations{}, declarations)
+}
+
+func TestValidateObserverConfigs_RejectsIncompatibleKindAndBuiltin(t *testing.T) {
+	tests := []struct {
+		name    string
+		kind    string
+		builtin string
+	}{
+		{name: "state plugin as result", kind: "result", builtin: "sql"},
+		{name: "result plugin as state", kind: "state", builtin: "error_as_crashed"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			observers, err := validateObserverConfigs([]observerConfig{{ID: "test", Kind: tt.kind, Plugin: pluginConfig{Builtin: tt.builtin}}})
+			require.ErrorContains(t, err, "incompatible")
+			require.Nil(t, observers)
+		})
+	}
+}
+
+func TestReadFileConfig_PreservesActionCrashedComparisonOverride(t *testing.T) {
+	trueValue, falseValue := true, false
+	tests := []struct {
+		name    string
+		setting string
+		want    *bool
+	}{
+		{name: "omitted"},
+		{name: "enabled", setting: "sg_metadata: {action_crashed: {compare: true}}", want: &trueValue},
+		{name: "disabled", setting: "sg_metadata: {action_crashed: {compare: false}}", want: &falseValue},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "specguardian.yml")
+			contents := "version: '0.1'\nfizzbee_files:\n  - output_dir: artifacts\n    " + tt.setting + "\n"
+			require.NoError(t, os.WriteFile(path, []byte(contents), 0o644))
+			config, err := readFileConfig(path)
+			require.NoError(t, err)
+			declarations, err := parseDeclarations(config)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, declarations.CompareActionCrashed)
 		})
 	}
 }

@@ -126,6 +126,6 @@ func deliveryResult(err error) string {
 	case errors.Is(err, idempotentrequest.ErrAlreadyDelivered):
 		return "ALREADY_DELIVERED"
 	default:
-		return "FAILED"
+		return "PROCESSING"
 	}
 }

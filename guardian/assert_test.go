@@ -1,7 +1,7 @@
 package guardian
 
 import (
-	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -9,34 +9,68 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type testComparison struct {
-	want string
-}
-
-func NewTestComparison(want string) *testComparison {
-	return &testComparison{want: want}
-}
-
-func (c *testComparison) Validate() error {
-	if c == nil {
-		return errors.New("comparison is nil")
+func TestAssertAllowed_WholeStateIncludesMetadata(t *testing.T) {
+	type allowedState struct {
+		Fields     struct{ Value *gcmp.ComparisonField[string] }
+		SgMetadata SgComparisonMetadata
 	}
-	return nil
-}
-
-func (c *testComparison) Match(got string) []string {
-	if got != c.want {
-		return []string{"value mismatch"}
+	type observedState struct {
+		Fields     struct{ Value *gcmp.ObservedField[string] }
+		SgMetadata SgObservedMetadata
 	}
-	return nil
-}
-
-func TestExecutionComparisonMatchesOutput(t *testing.T) {
-	comparison := NewExecutionComparison(NewTestComparison("output"))
-
+	actual := &observedState{SgMetadata: SgObservedMetadata{ActionCrashed: gcmp.Observed(true)}}
+	actual.Fields.Value = gcmp.Observed("written")
+	wrongError := &allowedState{SgMetadata: SgComparisonMetadata{ActionCrashed: gcmp.Equal(false)}}
+	wrongError.Fields.Value = gcmp.Equal("written")
+	wrongState := &allowedState{SgMetadata: SgComparisonMetadata{ActionCrashed: gcmp.Equal(true)}}
+	wrongState.Fields.Value = gcmp.Equal("unchanged")
+	matching := &allowedState{SgMetadata: SgComparisonMetadata{ActionCrashed: gcmp.Equal(true)}}
+	matching.Fields.Value = gcmp.Equal("written")
+	comparison := gcmp.NewObservedStateComparator[*allowedState](actual)
 	assert.NoError(t, comparison.Validate())
-	assert.Empty(t, comparison.Match(NewComparisonState("output")))
-	assert.Equal(t, []string{"output: value mismatch"}, comparison.Match(NewComparisonState("different")))
+	assert.Contains(t, strings.Join(comparison.Match(wrongError), "\n"), "SgMetadata.ActionCrashed")
+	assert.Contains(t, strings.Join(comparison.Match(wrongState), "\n"), "Fields.Value")
+	AssertAllowed(t, []*allowedState{wrongError, wrongState, matching}, actual, nil)
+	matching.SgMetadata.ActionCrashed = gcmp.Ignore[bool]("disabled")
+	AssertAllowed(t, []*allowedState{matching}, actual, nil)
+}
+
+func TestAssertAllowed_RejectsStateAndCrashMatchingDifferentOutcomes(t *testing.T) {
+	type allowedState struct {
+		Fields     struct{ Value *gcmp.ComparisonField[string] }
+		SgMetadata SgComparisonMetadata
+	}
+	type observedState struct {
+		Fields     struct{ Value *gcmp.ObservedField[string] }
+		SgMetadata SgObservedMetadata
+	}
+	actual := &observedState{SgMetadata: SgObservedMetadata{ActionCrashed: gcmp.Observed(true)}}
+	actual.Fields.Value = gcmp.Observed("written")
+	writtenWithoutCrash := &allowedState{SgMetadata: SgComparisonMetadata{ActionCrashed: gcmp.Equal(false)}}
+	writtenWithoutCrash.Fields.Value = gcmp.Equal("written")
+	unchangedWithCrash := &allowedState{SgMetadata: SgComparisonMetadata{ActionCrashed: gcmp.Equal(true)}}
+	unchangedWithCrash.Fields.Value = gcmp.Equal("unchanged")
+	recorder := NewAssertionRecorder(t)
+
+	AssertAllowed(recorder, []*allowedState{writtenWithoutCrash, unchangedWithCrash}, actual, nil)
+
+	report := strings.Join(recorder.failures, "\n")
+	assert.Contains(t, report, "actual state does not match any allowed state")
+	assert.Contains(t, report, "SgMetadata.ActionCrashed")
+	assert.Contains(t, report, "Fields.Value")
+}
+
+type assertionRecorder struct {
+	testing.TB
+	failures []string
+}
+
+func NewAssertionRecorder(t testing.TB) *assertionRecorder {
+	return &assertionRecorder{TB: t}
+}
+
+func (r *assertionRecorder) Error(args ...any) {
+	r.failures = append(r.failures, fmt.Sprint(args...))
 }
 
 func TestFormatEventsAroundInjectedEvent(t *testing.T) {

@@ -6,7 +6,7 @@
         "Application": {
           "read_res_value": null,
           "read_status": "INIT",
-          "write_status": "FAILED"
+          "write_status": "PROCESSING"
         },
         "Cache": {
           "cached_records": {
@@ -43,7 +43,7 @@
           "Application": {
             "read_res_value": "foo",
             "read_status": "DONE",
-            "write_status": "FAILED"
+            "write_status": "PROCESSING"
           },
           "Cache": {
             "cached_records": {
@@ -72,14 +72,95 @@
             "key": "db_cache_written",
             "write_value": "written"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": false
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": "foo",
+            "read_status": "DONE",
+            "write_status": "PROCESSING"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo",
+                "written"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "written",
+              "db_written": "bar"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_cache_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": "foo",
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo",
+                "written"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "written",
+              "db_written": "bar"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_cache_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
         }
       },
       {
         "fields": {
           "Application": {
             "read_res_value": null,
-            "read_status": "FAILED",
-            "write_status": "FAILED"
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
           },
           "Cache": {
             "cached_records": {
@@ -108,6 +189,9 @@
             "key": "db_cache_written",
             "write_value": "written"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": true
         }
       }
     ]
@@ -183,13 +267,94 @@
             "key": "db_cache_written",
             "write_value": "written"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": false
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": "written",
+            "read_status": "PROCESSING",
+            "write_status": "DONE"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "written"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo",
+                "written"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "written",
+              "db_written": "bar"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_cache_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
         }
       },
       {
         "fields": {
           "Application": {
             "read_res_value": null,
-            "read_status": "FAILED",
+            "read_status": "PROCESSING",
+            "write_status": "DONE"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "written"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo",
+                "written"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "written",
+              "db_written": "bar"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_cache_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
             "write_status": "DONE"
           },
           "Cache": {
@@ -217,6 +382,9 @@
             "key": "db_cache_written",
             "write_value": "written"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": true
         }
       }
     ]
@@ -228,33 +396,31 @@
         "Application": {
           "read_res_value": null,
           "read_status": "INIT",
-          "write_status": "DONE"
+          "write_status": "PROCESSING"
         },
         "Cache": {
-          "cached_records": {
-            "db_cache_written": "foo"
-          }
+          "cached_records": {}
         },
         "DB": {
           "committed_values": {
             "db_cache_written": [
-              "foo"
+              "foo",
+              "written"
             ],
             "db_written": [
-              "bar",
-              "written"
+              "bar"
             ],
             "not_written": []
           },
           "records": {
-            "db_cache_written": "foo",
-            "db_written": "written"
+            "db_cache_written": "written",
+            "db_written": "bar"
           }
         }
       },
       "params": {
         "Application": {
-          "key": "db_written",
+          "key": "db_cache_written",
           "write_value": "written"
         }
       }
@@ -265,72 +431,153 @@
           "Application": {
             "read_res_value": "written",
             "read_status": "DONE",
-            "write_status": "DONE"
+            "write_status": "PROCESSING"
           },
           "Cache": {
             "cached_records": {
-              "db_cache_written": "foo",
-              "db_written": "written"
+              "db_cache_written": "written"
             }
           },
           "DB": {
             "committed_values": {
               "db_cache_written": [
-                "foo"
+                "foo",
+                "written"
               ],
               "db_written": [
-                "bar",
-                "written"
+                "bar"
               ],
               "not_written": []
             },
             "records": {
-              "db_cache_written": "foo",
-              "db_written": "written"
+              "db_cache_written": "written",
+              "db_written": "bar"
             }
           }
         },
         "params": {
           "Application": {
-            "key": "db_written",
+            "key": "db_cache_written",
             "write_value": "written"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": false
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": "written",
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "written"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo",
+                "written"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "written",
+              "db_written": "bar"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_cache_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
         }
       },
       {
         "fields": {
           "Application": {
             "read_res_value": null,
-            "read_status": "FAILED",
-            "write_status": "DONE"
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
           },
           "Cache": {
             "cached_records": {
-              "db_cache_written": "foo"
+              "db_cache_written": "written"
             }
           },
           "DB": {
             "committed_values": {
               "db_cache_written": [
-                "foo"
+                "foo",
+                "written"
               ],
               "db_written": [
-                "bar",
-                "written"
+                "bar"
               ],
               "not_written": []
             },
             "records": {
-              "db_cache_written": "foo",
-              "db_written": "written"
+              "db_cache_written": "written",
+              "db_written": "bar"
             }
           }
         },
         "params": {
           "Application": {
-            "key": "db_written",
+            "key": "db_cache_written",
             "write_value": "written"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
+          },
+          "Cache": {
+            "cached_records": {}
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo",
+                "written"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "written",
+              "db_written": "bar"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_cache_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
         }
       }
     ]
@@ -342,7 +589,7 @@
         "Application": {
           "read_res_value": null,
           "read_status": "INIT",
-          "write_status": "FAILED"
+          "write_status": "DONE"
         },
         "Cache": {
           "cached_records": {
@@ -379,7 +626,7 @@
           "Application": {
             "read_res_value": "written",
             "read_status": "DONE",
-            "write_status": "FAILED"
+            "write_status": "DONE"
           },
           "Cache": {
             "cached_records": {
@@ -409,14 +656,97 @@
             "key": "db_written",
             "write_value": "written"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": false
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": "written",
+            "read_status": "PROCESSING",
+            "write_status": "DONE"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo",
+              "db_written": "written"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar",
+                "written"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "written"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
         }
       },
       {
         "fields": {
           "Application": {
             "read_res_value": null,
-            "read_status": "FAILED",
-            "write_status": "FAILED"
+            "read_status": "PROCESSING",
+            "write_status": "DONE"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo",
+              "db_written": "written"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar",
+                "written"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "written"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "DONE"
           },
           "Cache": {
             "cached_records": {
@@ -445,12 +775,215 @@
             "key": "db_written",
             "write_value": "written"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": true
         }
       }
     ]
   },
   {
     "name": "case5",
+    "input": {
+      "fields": {
+        "Application": {
+          "read_res_value": null,
+          "read_status": "INIT",
+          "write_status": "PROCESSING"
+        },
+        "Cache": {
+          "cached_records": {
+            "db_cache_written": "foo"
+          }
+        },
+        "DB": {
+          "committed_values": {
+            "db_cache_written": [
+              "foo"
+            ],
+            "db_written": [
+              "bar",
+              "written"
+            ],
+            "not_written": []
+          },
+          "records": {
+            "db_cache_written": "foo",
+            "db_written": "written"
+          }
+        }
+      },
+      "params": {
+        "Application": {
+          "key": "db_written",
+          "write_value": "written"
+        }
+      }
+    },
+    "allowed": [
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": "written",
+            "read_status": "DONE",
+            "write_status": "PROCESSING"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo",
+              "db_written": "written"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar",
+                "written"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "written"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": false
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": "written",
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo",
+              "db_written": "written"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar",
+                "written"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "written"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo",
+              "db_written": "written"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar",
+                "written"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "written"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar",
+                "written"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "written"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      }
+    ]
+  },
+  {
+    "name": "case6",
     "input": {
       "fields": {
         "Application": {
@@ -527,13 +1060,100 @@
             "key": "not_written",
             "write_value": "written"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": false
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": "written",
+            "read_status": "PROCESSING",
+            "write_status": "DONE"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo",
+              "not_written": "written"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": [
+                "written"
+              ]
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "bar",
+              "not_written": "written"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "not_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
         }
       },
       {
         "fields": {
           "Application": {
             "read_res_value": null,
-            "read_status": "FAILED",
+            "read_status": "PROCESSING",
+            "write_status": "DONE"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo",
+              "not_written": "written"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": [
+                "written"
+              ]
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "bar",
+              "not_written": "written"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "not_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
             "write_status": "DONE"
           },
           "Cache": {
@@ -565,18 +1185,21 @@
             "key": "not_written",
             "write_value": "written"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": true
         }
       }
     ]
   },
   {
-    "name": "case6",
+    "name": "case7",
     "input": {
       "fields": {
         "Application": {
           "read_res_value": null,
           "read_status": "INIT",
-          "write_status": "FAILED"
+          "write_status": "PROCESSING"
         },
         "Cache": {
           "cached_records": {
@@ -615,7 +1238,7 @@
           "Application": {
             "read_res_value": "written",
             "read_status": "DONE",
-            "write_status": "FAILED"
+            "write_status": "PROCESSING"
           },
           "Cache": {
             "cached_records": {
@@ -647,14 +1270,101 @@
             "key": "not_written",
             "write_value": "written"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": false
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": "written",
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo",
+              "not_written": "written"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": [
+                "written"
+              ]
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "bar",
+              "not_written": "written"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "not_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
         }
       },
       {
         "fields": {
           "Application": {
             "read_res_value": null,
-            "read_status": "FAILED",
-            "write_status": "FAILED"
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo",
+              "not_written": "written"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": [
+                "written"
+              ]
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "bar",
+              "not_written": "written"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "not_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
           },
           "Cache": {
             "cached_records": {
@@ -685,18 +1395,21 @@
             "key": "not_written",
             "write_value": "written"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": true
         }
       }
     ]
   },
   {
-    "name": "case7",
+    "name": "case8",
     "input": {
       "fields": {
         "Application": {
           "read_res_value": null,
           "read_status": "INIT",
-          "write_status": "FAILED"
+          "write_status": "INIT"
         },
         "Cache": {
           "cached_records": {
@@ -732,7 +1445,7 @@
           "Application": {
             "read_res_value": "foo",
             "read_status": "DONE",
-            "write_status": "FAILED"
+            "write_status": "INIT"
           },
           "Cache": {
             "cached_records": {
@@ -760,14 +1473,93 @@
             "key": "db_cache_written",
             "write_value": "written"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": false
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": "foo",
+            "read_status": "DONE",
+            "write_status": "INIT"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "bar"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_cache_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": "foo",
+            "read_status": "PROCESSING",
+            "write_status": "INIT"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "bar"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_cache_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
         }
       },
       {
         "fields": {
           "Application": {
             "read_res_value": null,
-            "read_status": "FAILED",
-            "write_status": "FAILED"
+            "read_status": "PROCESSING",
+            "write_status": "INIT"
           },
           "Cache": {
             "cached_records": {
@@ -795,18 +1587,21 @@
             "key": "db_cache_written",
             "write_value": "written"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": true
         }
       }
     ]
   },
   {
-    "name": "case8",
+    "name": "case9",
     "input": {
       "fields": {
         "Application": {
           "read_res_value": null,
           "read_status": "INIT",
-          "write_status": "FAILED"
+          "write_status": "INIT"
         },
         "Cache": {
           "cached_records": {
@@ -842,7 +1637,7 @@
           "Application": {
             "read_res_value": "bar",
             "read_status": "DONE",
-            "write_status": "FAILED"
+            "write_status": "INIT"
           },
           "Cache": {
             "cached_records": {
@@ -871,14 +1666,95 @@
             "key": "db_written",
             "write_value": "written"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": false
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": "bar",
+            "read_status": "PROCESSING",
+            "write_status": "INIT"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo",
+              "db_written": "bar"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "bar"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
         }
       },
       {
         "fields": {
           "Application": {
             "read_res_value": null,
-            "read_status": "FAILED",
-            "write_status": "FAILED"
+            "read_status": "PROCESSING",
+            "write_status": "INIT"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo",
+              "db_written": "bar"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "bar"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "INIT"
           },
           "Cache": {
             "cached_records": {
@@ -906,116 +1782,9 @@
             "key": "db_written",
             "write_value": "written"
           }
-        }
-      }
-    ]
-  },
-  {
-    "name": "case9",
-    "input": {
-      "fields": {
-        "Application": {
-          "read_res_value": null,
-          "read_status": "INIT",
-          "write_status": "FAILED"
         },
-        "Cache": {
-          "cached_records": {
-            "db_cache_written": "foo"
-          }
-        },
-        "DB": {
-          "committed_values": {
-            "db_cache_written": [
-              "foo"
-            ],
-            "db_written": [
-              "bar"
-            ],
-            "not_written": []
-          },
-          "records": {
-            "db_cache_written": "foo",
-            "db_written": "bar"
-          }
-        }
-      },
-      "params": {
-        "Application": {
-          "key": "not_written",
-          "write_value": "written"
-        }
-      }
-    },
-    "allowed": [
-      {
-        "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "DONE",
-            "write_status": "FAILED"
-          },
-          "Cache": {
-            "cached_records": {
-              "db_cache_written": "foo"
-            }
-          },
-          "DB": {
-            "committed_values": {
-              "db_cache_written": [
-                "foo"
-              ],
-              "db_written": [
-                "bar"
-              ],
-              "not_written": []
-            },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar"
-            }
-          }
-        },
-        "params": {
-          "Application": {
-            "key": "not_written",
-            "write_value": "written"
-          }
-        }
-      },
-      {
-        "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "FAILED",
-            "write_status": "FAILED"
-          },
-          "Cache": {
-            "cached_records": {
-              "db_cache_written": "foo"
-            }
-          },
-          "DB": {
-            "committed_values": {
-              "db_cache_written": [
-                "foo"
-              ],
-              "db_written": [
-                "bar"
-              ],
-              "not_written": []
-            },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar"
-            }
-          }
-        },
-        "params": {
-          "Application": {
-            "key": "not_written",
-            "write_value": "written"
-          }
+        "sg_metadata": {
+          "action_crashed": true
         }
       }
     ]
@@ -1052,227 +1821,6 @@
       },
       "params": {
         "Application": {
-          "key": "db_cache_written",
-          "write_value": "written"
-        }
-      }
-    },
-    "allowed": [
-      {
-        "fields": {
-          "Application": {
-            "read_res_value": "foo",
-            "read_status": "DONE",
-            "write_status": "INIT"
-          },
-          "Cache": {
-            "cached_records": {
-              "db_cache_written": "foo"
-            }
-          },
-          "DB": {
-            "committed_values": {
-              "db_cache_written": [
-                "foo"
-              ],
-              "db_written": [
-                "bar"
-              ],
-              "not_written": []
-            },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar"
-            }
-          }
-        },
-        "params": {
-          "Application": {
-            "key": "db_cache_written",
-            "write_value": "written"
-          }
-        }
-      },
-      {
-        "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "FAILED",
-            "write_status": "INIT"
-          },
-          "Cache": {
-            "cached_records": {
-              "db_cache_written": "foo"
-            }
-          },
-          "DB": {
-            "committed_values": {
-              "db_cache_written": [
-                "foo"
-              ],
-              "db_written": [
-                "bar"
-              ],
-              "not_written": []
-            },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar"
-            }
-          }
-        },
-        "params": {
-          "Application": {
-            "key": "db_cache_written",
-            "write_value": "written"
-          }
-        }
-      }
-    ]
-  },
-  {
-    "name": "case11",
-    "input": {
-      "fields": {
-        "Application": {
-          "read_res_value": null,
-          "read_status": "INIT",
-          "write_status": "INIT"
-        },
-        "Cache": {
-          "cached_records": {
-            "db_cache_written": "foo"
-          }
-        },
-        "DB": {
-          "committed_values": {
-            "db_cache_written": [
-              "foo"
-            ],
-            "db_written": [
-              "bar"
-            ],
-            "not_written": []
-          },
-          "records": {
-            "db_cache_written": "foo",
-            "db_written": "bar"
-          }
-        }
-      },
-      "params": {
-        "Application": {
-          "key": "db_written",
-          "write_value": "written"
-        }
-      }
-    },
-    "allowed": [
-      {
-        "fields": {
-          "Application": {
-            "read_res_value": "bar",
-            "read_status": "DONE",
-            "write_status": "INIT"
-          },
-          "Cache": {
-            "cached_records": {
-              "db_cache_written": "foo",
-              "db_written": "bar"
-            }
-          },
-          "DB": {
-            "committed_values": {
-              "db_cache_written": [
-                "foo"
-              ],
-              "db_written": [
-                "bar"
-              ],
-              "not_written": []
-            },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar"
-            }
-          }
-        },
-        "params": {
-          "Application": {
-            "key": "db_written",
-            "write_value": "written"
-          }
-        }
-      },
-      {
-        "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "FAILED",
-            "write_status": "INIT"
-          },
-          "Cache": {
-            "cached_records": {
-              "db_cache_written": "foo"
-            }
-          },
-          "DB": {
-            "committed_values": {
-              "db_cache_written": [
-                "foo"
-              ],
-              "db_written": [
-                "bar"
-              ],
-              "not_written": []
-            },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar"
-            }
-          }
-        },
-        "params": {
-          "Application": {
-            "key": "db_written",
-            "write_value": "written"
-          }
-        }
-      }
-    ]
-  },
-  {
-    "name": "case12",
-    "input": {
-      "fields": {
-        "Application": {
-          "read_res_value": null,
-          "read_status": "INIT",
-          "write_status": "INIT"
-        },
-        "Cache": {
-          "cached_records": {
-            "db_cache_written": "foo"
-          }
-        },
-        "DB": {
-          "committed_values": {
-            "db_cache_written": [
-              "foo"
-            ],
-            "db_written": [
-              "bar"
-            ],
-            "not_written": []
-          },
-          "records": {
-            "db_cache_written": "foo",
-            "db_written": "bar"
-          }
-        }
-      },
-      "params": {
-        "Application": {
           "key": "not_written",
           "write_value": "written"
         }
@@ -1312,13 +1860,16 @@
             "key": "not_written",
             "write_value": "written"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": false
         }
       },
       {
         "fields": {
           "Application": {
             "read_res_value": null,
-            "read_status": "FAILED",
+            "read_status": "PROCESSING",
             "write_status": "INIT"
           },
           "Cache": {
@@ -1347,6 +1898,512 @@
             "key": "not_written",
             "write_value": "written"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      }
+    ]
+  },
+  {
+    "name": "case11",
+    "input": {
+      "fields": {
+        "Application": {
+          "read_res_value": null,
+          "read_status": "INIT",
+          "write_status": "PROCESSING"
+        },
+        "Cache": {
+          "cached_records": {
+            "db_cache_written": "foo"
+          }
+        },
+        "DB": {
+          "committed_values": {
+            "db_cache_written": [
+              "foo"
+            ],
+            "db_written": [
+              "bar"
+            ],
+            "not_written": []
+          },
+          "records": {
+            "db_cache_written": "foo",
+            "db_written": "bar"
+          }
+        }
+      },
+      "params": {
+        "Application": {
+          "key": "db_cache_written",
+          "write_value": "written"
+        }
+      }
+    },
+    "allowed": [
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": "foo",
+            "read_status": "DONE",
+            "write_status": "PROCESSING"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "bar"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_cache_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": false
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": "foo",
+            "read_status": "DONE",
+            "write_status": "PROCESSING"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "bar"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_cache_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": "foo",
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "bar"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_cache_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "bar"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_cache_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      }
+    ]
+  },
+  {
+    "name": "case12",
+    "input": {
+      "fields": {
+        "Application": {
+          "read_res_value": null,
+          "read_status": "INIT",
+          "write_status": "PROCESSING"
+        },
+        "Cache": {
+          "cached_records": {
+            "db_cache_written": "foo"
+          }
+        },
+        "DB": {
+          "committed_values": {
+            "db_cache_written": [
+              "foo"
+            ],
+            "db_written": [
+              "bar"
+            ],
+            "not_written": []
+          },
+          "records": {
+            "db_cache_written": "foo",
+            "db_written": "bar"
+          }
+        }
+      },
+      "params": {
+        "Application": {
+          "key": "db_written",
+          "write_value": "written"
+        }
+      }
+    },
+    "allowed": [
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": "bar",
+            "read_status": "DONE",
+            "write_status": "PROCESSING"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo",
+              "db_written": "bar"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "bar"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": false
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": "bar",
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo",
+              "db_written": "bar"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "bar"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo",
+              "db_written": "bar"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "bar"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "bar"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "db_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      }
+    ]
+  },
+  {
+    "name": "case13",
+    "input": {
+      "fields": {
+        "Application": {
+          "read_res_value": null,
+          "read_status": "INIT",
+          "write_status": "PROCESSING"
+        },
+        "Cache": {
+          "cached_records": {
+            "db_cache_written": "foo"
+          }
+        },
+        "DB": {
+          "committed_values": {
+            "db_cache_written": [
+              "foo"
+            ],
+            "db_written": [
+              "bar"
+            ],
+            "not_written": []
+          },
+          "records": {
+            "db_cache_written": "foo",
+            "db_written": "bar"
+          }
+        }
+      },
+      "params": {
+        "Application": {
+          "key": "not_written",
+          "write_value": "written"
+        }
+      }
+    },
+    "allowed": [
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": null,
+            "read_status": "DONE",
+            "write_status": "PROCESSING"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "bar"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "not_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": false
+        }
+      },
+      {
+        "fields": {
+          "Application": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
+          },
+          "Cache": {
+            "cached_records": {
+              "db_cache_written": "foo"
+            }
+          },
+          "DB": {
+            "committed_values": {
+              "db_cache_written": [
+                "foo"
+              ],
+              "db_written": [
+                "bar"
+              ],
+              "not_written": []
+            },
+            "records": {
+              "db_cache_written": "foo",
+              "db_written": "bar"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "not_written",
+            "write_value": "written"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
         }
       }
     ]

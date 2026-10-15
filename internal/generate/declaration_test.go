@@ -259,7 +259,7 @@ func TestGoPackageObserverGeneratesDirectConstructorCall(t *testing.T) {
 	require.NoError(t, os.WriteFile(resolved.configPath, []byte(config), 0o644))
 	loaded, err := NewConfig(Options{ConfigPath: resolved.configPath})
 	require.NoError(t, err)
-	sources, err := renderer.GenerateScaffold("example.test/project", cases, loaded.declarations)
+	sources, err := renderer.GenerateScaffold("example.test/project", fizzbee.Model{Cases: cases}, loaded.declarations)
 	require.NoError(t, err)
 	for _, source := range sources.RoleCases {
 		require.Contains(t, string(source), "_sgDatafile \"example.com/custom/datafile\"")
@@ -345,13 +345,13 @@ func TestResolveDeclarationsValidatesStringMapValues(t *testing.T) {
 func observationFixture(t *testing.T) (*Config, []fizzbee.ActionCase) {
 	t.Helper()
 	artifactDir := filepath.Join("..", "..", "examples", "cache_aside", "docs", "spec", "fizzbee_output")
-	cases, err := fizzbee.ReadActionCases(artifactDir)
+	model, err := fizzbee.ReadModel(artifactDir)
 	require.NoError(t, err)
 	configPath := filepath.Join(t.TempDir(), "specguardian.yml")
 	require.NoError(t, os.WriteFile(configPath, []byte(validObservationConfig), 0o644))
 	resolved, err := NewConfig(Options{ConfigPath: configPath})
 	require.NoError(t, err)
-	return resolved, cases
+	return resolved, model.Cases
 }
 
 const validObservationConfig = `version: "0.1"
@@ -422,7 +422,7 @@ fizzbee_files:
 		expected[name] = "internal model state"
 	}
 	require.Equal(t, expected, names)
-	sources, err := renderer.GenerateScaffold("example.test/project", cases, declarations)
+	sources, err := renderer.GenerateScaffold("example.test/project", fizzbee.Model{Cases: cases}, declarations)
 	require.NoError(t, err)
 	for _, source := range sources.RoleCases {
 		require.Contains(t, string(source), "type ApplicationDBField struct")

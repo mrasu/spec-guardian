@@ -42,6 +42,7 @@ func NewActionCase(action ActionRef, input Input, outputs []Output) (ActionCase,
 		if err != nil {
 			return ActionCase{}, err
 		}
+		validatedOutput.SgMetadata = output.SgMetadata
 		validatedOutputs = append(validatedOutputs, validatedOutput)
 	}
 	return ActionCase{Action: validatedAction, Input: validatedInput, Outputs: validatedOutputs}, nil

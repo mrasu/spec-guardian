@@ -22,6 +22,10 @@ type resolvedPlugin struct {
 }
 
 var builtinPlugins = map[string]resolvedPlugin{
+	"error_as_crashed": {
+		ImportPath: "github.com/mrasu/spec-guardian/guardian/observer/errorascrashed",
+		Alias:      "errorascrashedobserver",
+	},
 	"sql": {
 		ImportPath: "github.com/mrasu/spec-guardian/guardian/observer/sql",
 		Alias:      "sqlobserver",
@@ -45,8 +49,18 @@ type FileConfig struct {
 }
 
 type fizzbeeFileConfig struct {
-	OutputDir string       `yaml:"output_dir"`
-	Roles     []roleConfig `yaml:"roles"`
+	OutputDir  string           `yaml:"output_dir"`
+	Roles      []roleConfig     `yaml:"roles"`
+	SgMetadata sgMetadataConfig `yaml:"sg_metadata"`
+}
+
+type sgMetadataConfig struct {
+	ActionCrashed actionCrashedConfig `yaml:"action_crashed"`
+}
+
+type actionCrashedConfig struct {
+	Compare  *bool                `yaml:"compare"`
+	Observer *fieldObserverConfig `yaml:"observer"`
 }
 
 type roleConfig struct {
@@ -155,6 +169,7 @@ type fieldObserverConfig struct {
 
 type observerConfig struct {
 	ID     string         `yaml:"id"`
+	Kind   string         `yaml:"kind"`
 	Plugin pluginConfig   `yaml:"plugin"`
 	Config map[string]any `yaml:"config"`
 }
@@ -260,6 +275,12 @@ func validateObserverConfigs(configs []observerConfig) (map[string]resolvedObser
 		usedAliases[alias] = true
 	}
 	for _, config := range configs {
+		if config.Kind == "" {
+			config.Kind = "state"
+		}
+		if config.Plugin.Builtin != "" && (config.Plugin.Builtin == "error_as_crashed") != (config.Kind == "result") {
+			return nil, fmt.Errorf("observer %q: plugin %s is incompatible with kind %s", config.ID, config.Plugin.Builtin, config.Kind)
+		}
 		if _, exists := observers[config.ID]; exists {
 			return nil, fmt.Errorf("duplicate observer %q", config.ID)
 		}
@@ -301,6 +322,12 @@ func toPluginAlias(importPath string) string {
 
 func buildDeclarations(file fizzbeeFileConfig, observers map[string]resolvedObserver) (renderer.Declarations, error) {
 	var result renderer.Declarations
+	result.CompareActionCrashed = file.SgMetadata.ActionCrashed.Compare
+	metadataObserver, err := buildActionCrashedObserver(file.SgMetadata.ActionCrashed, observers)
+	if err != nil {
+		return renderer.Declarations{}, err
+	}
+	result.ActionCrashedObserver = metadataObserver
 	roles := make(map[string]bool)
 	seen := make(map[string]bool)
 	for _, role := range file.Roles {
@@ -325,6 +352,29 @@ func buildDeclarations(file fizzbeeFileConfig, observers map[string]resolvedObse
 		}
 	}
 	return result, nil
+}
+
+func buildActionCrashedObserver(config actionCrashedConfig, observers map[string]resolvedObserver) (*renderer.Observer, error) {
+	if config.Observer == nil || config.Compare != nil && !*config.Compare {
+		return nil, nil
+	}
+	declared, ok := observers[config.Observer.ID]
+	if !ok {
+		return nil, fmt.Errorf("sg_metadata.action_crashed: unknown observer %q", config.Observer.ID)
+	}
+	if declared.Config.Kind != "result" {
+		return nil, fmt.Errorf("sg_metadata.action_crashed: observer %q must have kind result", config.Observer.ID)
+	}
+	field, err := renderer.NewRoleField("sg_metadata", "action_crashed")
+	if err != nil {
+		return nil, err
+	}
+	declaration, err := buildObserverDeclaration(field, fieldConfig{Observer: config.Observer}, renderer.Type{Kind: renderer.KindBool}, observers)
+	if err != nil {
+		return nil, err
+	}
+	declaration.Metadata = true
+	return &declaration, nil
 }
 
 func addFieldDeclaration(result *renderer.Declarations, role string, entry fieldConfig, excludedRole bool, observers map[string]resolvedObserver, seen map[string]bool) error {
@@ -369,15 +419,17 @@ func buildObserverDeclaration(field *renderer.Field, entry fieldConfig, spec ren
 	if !ok {
 		return renderer.Observer{}, fmt.Errorf("field %s: unknown observer %q", field, request.ID)
 	}
-	return renderer.Observer{
+	declaration := renderer.Observer{
 		Field:            field,
+		Result:           resolvedObserver.Config.Kind == "result",
 		ObserverID:       resolvedObserver.Config.ID,
 		PluginImportPath: resolvedObserver.Plugin.ImportPath,
 		PluginAlias:      resolvedObserver.Plugin.Alias,
 		Type:             spec,
 		ObserverConfig:   resolvedObserver.Config.Config,
 		FieldConfig:      request.Config,
-	}, nil
+	}
+	return declaration, nil
 }
 
 func toType(config typeConfig) (*renderer.Type, error) {

@@ -11,100 +11,39 @@ import (
 	"github.com/mrasu/spec-guardian/guardian/gcmp"
 )
 
-// Comparison validates an observed state and matches it against an expected state.
-type Comparison[Expected any] interface {
-	Validate() error
-	Match(Expected) []string
+// SgFizzbeeMetadata contains metadata read from generated FizzBee case JSON.
+type SgFizzbeeMetadata struct {
+	ActionCrashed bool `json:"action_crashed"`
 }
 
-// ObservedState contains the externally observed state for one execution.
-type ObservedState[Output any] struct {
-	Output Output
+// SgFetchedMetadata contains raw metadata values returned by result observers.
+type SgFetchedMetadata struct {
+	ActionCrashed bool
 }
 
-func NewObservedState[Output any](output Output) ObservedState[Output] {
-	return ObservedState[Output]{
-		Output: output,
-	}
+// SgObservedMetadata contains metadata observed through result observers.
+type SgObservedMetadata struct {
+	ActionCrashed *gcmp.ObservedField[bool]
 }
 
-// ComparisonState contains the comparable states.
-type ComparisonState[Output any] struct {
-	Output Output
+// SgComparisonMetadata configures metadata comparisons using the standard field mechanism.
+type SgComparisonMetadata struct {
+	ActionCrashed *gcmp.ComparisonField[bool]
 }
 
-func NewComparisonState[Output any](output Output) ComparisonState[Output] {
-	return ComparisonState[Output]{
-		Output: output,
-	}
-}
-
-// ExecutionComparison compares the Action output of one execution.
-type ExecutionComparison[ExpectedOutput any] struct {
-	output Comparison[ExpectedOutput]
-}
-
-// NewExecutionComparison constructs a comparison for one execution.
-func NewExecutionComparison[ExpectedOutput any](output Comparison[ExpectedOutput]) *ExecutionComparison[ExpectedOutput] {
-	return &ExecutionComparison[ExpectedOutput]{
-		output: output,
-	}
-}
-
-// Validate reports whether the execution comparison is completely configured.
-func (c *ExecutionComparison[ExpectedOutput]) Validate() error {
-	if c == nil {
-		return fmt.Errorf("execution comparison is nil")
-	}
-	if c.output == nil {
-		return fmt.Errorf("output comparison is nil")
-	}
-	if err := c.output.Validate(); err != nil {
-		return fmt.Errorf("output: %w", err)
-	}
-	return nil
-}
-
-// Match returns differences from the expected execution output.
-func (c *ExecutionComparison[ExpectedOutput]) Match(want ComparisonState[ExpectedOutput]) []string {
-	var diffs []string
-	diffs = appendPrefixedDiffs(diffs, "output", c.output.Match(want.Output))
-	return diffs
-}
-
-func appendPrefixedDiffs(destination []string, prefix string, diffs []string) []string {
-	for _, diff := range diffs {
-		destination = append(destination, prefix+": "+diff)
-	}
-	return destination
-}
-
-// DiagnosticValue returns the execution comparison for failure diagnostics.
-func (c *ExecutionComparison[ExpectedOutput]) DiagnosticValue() any {
-	if c == nil {
-		return nil
-	}
-	return map[string]any{
-		"Output": diagnosticValue(c.output),
-	}
-}
-
-// AssertAllowed reports a test failure unless the comparisons match one allowed comparison pair.
+// AssertAllowed reports a failure unless the complete observed state matches one allowed state.
+// Allowed and Observed must be pointers to structs containing comparison and observed fields.
 func AssertAllowed[Allowed, Observed any](
 	t testing.TB,
-	allowed []ComparisonState[Allowed],
-	observed ObservedState[Observed],
+	allowed []Allowed,
+	observed Observed,
 	events []IOEvent,
 ) {
 	t.Helper()
-
-	observedOutput := gcmp.NewObservedStateComparator[Allowed](observed.Output)
-
-	actual := NewExecutionComparison[Allowed](observedOutput)
+	actual := gcmp.NewObservedStateComparator[Allowed](observed)
 	if err := actual.Validate(); err != nil {
 		t.Fatal("incomplete execution comparison:", err)
 	}
-
 	var allowedDiffs []string
 	for _, candidate := range allowed {
 		candidateDiffs := actual.Match(candidate)
@@ -113,7 +52,6 @@ func AssertAllowed[Allowed, Observed any](
 		}
 		allowedDiffs = append(allowedDiffs, strings.Join(candidateDiffs, "\n"))
 	}
-
 	t.Error(formatComparisonMismatch(uniqueStrings(allowedDiffs), actual, events))
 }
 

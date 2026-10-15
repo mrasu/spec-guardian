@@ -24,6 +24,9 @@
           "Reader": {
             "key": 1
           }
+        },
+        "sg_metadata": {
+          "action_crashed": false
         }
       }
     ]

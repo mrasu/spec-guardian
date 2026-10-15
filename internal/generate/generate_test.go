@@ -289,9 +289,9 @@ func TestExampleFixturesSmoke(t *testing.T) {
 			artifacts, err := artifact.ReadArtifacts(fixture)
 			require.NoError(t, err)
 			assert.NotEmpty(t, artifacts.Graph.Nodes)
-			cases, err := fizzbee.ReadActionCases(fixture)
+			model, err := fizzbee.ReadModel(fixture)
 			require.NoError(t, err)
-			assert.NotEmpty(t, cases)
+			assert.NotEmpty(t, model.Cases)
 			project := t.TempDir()
 			require.NoError(t, os.WriteFile(filepath.Join(project, "go.mod"), []byte("module "+test.modulePath+"\n"), 0o644))
 

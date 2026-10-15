@@ -1,6 +1,6 @@
 # Cache-Aside Example
 
-This example tests `Read` and `Write` against a FizzBee cache-aside spec. `Write` stores a value in PostgreSQL and invalidates its Valkey cache entry; `Read` uses the cache or loads the value from PostgreSQL. The conformance tests compare the resulting database, cache, and request state with states allowed by the FizzBee spec, including injected I/O failures.
+This example checks whether cache-aside reads and writes, including injected I/O failures, produce states and errors allowed by a FizzBee model.
 
 ## Run the tests
 

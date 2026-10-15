@@ -19,15 +19,15 @@ func Run(ctx context.Context, options Options) error {
 	if err != nil {
 		return err
 	}
-	cases, err := fizzbee.ReadActionCases(config.fizzbeeOutputDir)
+	model, err := fizzbee.ReadModel(config.fizzbeeOutputDir)
 	if err != nil {
 		return err
 	}
-	declarations, err := resolveDeclarations(config, cases)
+	declarations, err := resolveDeclarations(config, model.Cases)
 	if err != nil {
 		return err
 	}
-	scaffolds, err := renderer.GenerateScaffold(project.modulePath, cases, declarations)
+	scaffolds, err := renderer.GenerateScaffold(project.modulePath, model, declarations)
 	if err != nil {
 		return err
 	}

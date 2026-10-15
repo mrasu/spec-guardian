@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	_sgFieldCacheCachedRecords = "Cache.cached_records"
-	_sgFieldDBRecords          = "DB.records"
+	_sgFieldCacheCachedRecords      = "Cache.cached_records"
+	_sgFieldDBRecords               = "DB.records"
+	_sgFieldSgMetadataActionCrashed = observer.ActionCrashedField
 )
 
 func _sgObserverCacheSettings() (map[string]any, []observer.FieldRequest) {
@@ -56,6 +57,16 @@ func _sgObserverDbSettings() (map[string]any, []observer.FieldRequest) {
 					},
 				},
 			},
+		},
+	}
+}
+
+func _sgObserverErrorAsCrashedSettings() (map[string]any, []observer.FieldRequest) {
+	return map[string]any{}, []observer.FieldRequest{
+		{
+			Field:  _sgFieldSgMetadataActionCrashed,
+			Config: map[string]any{},
+			Output: observer.ActionCrashedOutputSpec(),
 		},
 	}
 }

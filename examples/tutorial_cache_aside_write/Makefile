@@ -1,0 +1,14 @@
+OUTPUT := docs/spec/fizzbee_output
+
+test-conformance:
+	go test -tags=specguardian ./conformance/...
+
+generate: generate-fizz-output generate-conformance-spec
+
+generate-fizz-output:
+	rm -rf $(OUTPUT)
+	fizz --output-dir $(OUTPUT) docs/spec/CacheAside.fizz
+	rm -f docs/spec/CacheAside.json $(OUTPUT)/communication.dot $(OUTPUT)/graph.dot
+
+generate-conformance-spec:
+	go generate ./conformance

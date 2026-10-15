@@ -3,9 +3,253 @@
     "name": "case1",
     "input": {
       "fields": {
-        "Application": {
-          "write_status": "INIT"
+        "Application": {},
+        "Cache": {
+          "cached_records": {
+            "cached": "old"
+          }
         },
+        "DB": {
+          "records": {
+            "cached": "new",
+            "uncached": "old"
+          }
+        }
+      },
+      "params": {
+        "Application": {
+          "key": "cached",
+          "write_value": "new"
+        }
+      }
+    },
+    "allowed": [
+      {
+        "fields": {
+          "Application": {},
+          "Cache": {
+            "cached_records": {
+              "cached": "old"
+            }
+          },
+          "DB": {
+            "records": {
+              "cached": "new",
+              "uncached": "old"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "cached",
+            "write_value": "new"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      },
+      {
+        "fields": {
+          "Application": {},
+          "Cache": {
+            "cached_records": {}
+          },
+          "DB": {
+            "records": {
+              "cached": "new",
+              "uncached": "old"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "cached",
+            "write_value": "new"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": false
+        }
+      },
+      {
+        "fields": {
+          "Application": {},
+          "Cache": {
+            "cached_records": {}
+          },
+          "DB": {
+            "records": {
+              "cached": "new",
+              "uncached": "old"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "cached",
+            "write_value": "new"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      }
+    ]
+  },
+  {
+    "name": "case2",
+    "input": {
+      "fields": {
+        "Application": {},
+        "Cache": {
+          "cached_records": {}
+        },
+        "DB": {
+          "records": {
+            "cached": "new",
+            "uncached": "old"
+          }
+        }
+      },
+      "params": {
+        "Application": {
+          "key": "cached",
+          "write_value": "new"
+        }
+      }
+    },
+    "allowed": [
+      {
+        "fields": {
+          "Application": {},
+          "Cache": {
+            "cached_records": {}
+          },
+          "DB": {
+            "records": {
+              "cached": "new",
+              "uncached": "old"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "cached",
+            "write_value": "new"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": false
+        }
+      },
+      {
+        "fields": {
+          "Application": {},
+          "Cache": {
+            "cached_records": {}
+          },
+          "DB": {
+            "records": {
+              "cached": "new",
+              "uncached": "old"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "cached",
+            "write_value": "new"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      }
+    ]
+  },
+  {
+    "name": "case3",
+    "input": {
+      "fields": {
+        "Application": {},
+        "Cache": {
+          "cached_records": {
+            "cached": "old"
+          }
+        },
+        "DB": {
+          "records": {
+            "cached": "old",
+            "uncached": "new"
+          }
+        }
+      },
+      "params": {
+        "Application": {
+          "key": "uncached",
+          "write_value": "new"
+        }
+      }
+    },
+    "allowed": [
+      {
+        "fields": {
+          "Application": {},
+          "Cache": {
+            "cached_records": {
+              "cached": "old"
+            }
+          },
+          "DB": {
+            "records": {
+              "cached": "old",
+              "uncached": "new"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "uncached",
+            "write_value": "new"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": false
+        }
+      },
+      {
+        "fields": {
+          "Application": {},
+          "Cache": {
+            "cached_records": {
+              "cached": "old"
+            }
+          },
+          "DB": {
+            "records": {
+              "cached": "old",
+              "uncached": "new"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "uncached",
+            "write_value": "new"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      }
+    ]
+  },
+  {
+    "name": "case4",
+    "input": {
+      "fields": {
+        "Application": {},
         "Cache": {
           "cached_records": {
             "cached": "old"
@@ -28,9 +272,7 @@
     "allowed": [
       {
         "fields": {
-          "Application": {
-            "write_status": "FAILED"
-          },
+          "Application": {},
           "Cache": {
             "cached_records": {
               "cached": "old"
@@ -48,13 +290,14 @@
             "key": "cached",
             "write_value": "new"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": true
         }
       },
       {
         "fields": {
-          "Application": {
-            "write_status": "DONE"
-          },
+          "Application": {},
           "Cache": {
             "cached_records": {}
           },
@@ -70,13 +313,37 @@
             "key": "cached",
             "write_value": "new"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": false
         }
       },
       {
         "fields": {
-          "Application": {
-            "write_status": "FAILED"
+          "Application": {},
+          "Cache": {
+            "cached_records": {}
           },
+          "DB": {
+            "records": {
+              "cached": "new",
+              "uncached": "old"
+            }
+          }
+        },
+        "params": {
+          "Application": {
+            "key": "cached",
+            "write_value": "new"
+          }
+        },
+        "sg_metadata": {
+          "action_crashed": true
+        }
+      },
+      {
+        "fields": {
+          "Application": {},
           "Cache": {
             "cached_records": {
               "cached": "old"
@@ -94,17 +361,18 @@
             "key": "cached",
             "write_value": "new"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": true
         }
       }
     ]
   },
   {
-    "name": "case2",
+    "name": "case5",
     "input": {
       "fields": {
-        "Application": {
-          "write_status": "INIT"
-        },
+        "Application": {},
         "Cache": {
           "cached_records": {
             "cached": "old"
@@ -127,9 +395,7 @@
     "allowed": [
       {
         "fields": {
-          "Application": {
-            "write_status": "DONE"
-          },
+          "Application": {},
           "Cache": {
             "cached_records": {
               "cached": "old"
@@ -147,13 +413,14 @@
             "key": "uncached",
             "write_value": "new"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": false
         }
       },
       {
         "fields": {
-          "Application": {
-            "write_status": "FAILED"
-          },
+          "Application": {},
           "Cache": {
             "cached_records": {
               "cached": "old"
@@ -171,13 +438,14 @@
             "key": "uncached",
             "write_value": "new"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": true
         }
       },
       {
         "fields": {
-          "Application": {
-            "write_status": "FAILED"
-          },
+          "Application": {},
           "Cache": {
             "cached_records": {
               "cached": "old"
@@ -195,6 +463,9 @@
             "key": "uncached",
             "write_value": "new"
           }
+        },
+        "sg_metadata": {
+          "action_crashed": true
         }
       }
     ]
