@@ -10,7 +10,7 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-//go:embed spec-guardian.schema.yaml
+//go:embed specguardian.schema.yaml
 var specGuardianSchema []byte
 
 var compiledSpecGuardianSchema = sync.OnceValues(compileSpecGuardianSchema)

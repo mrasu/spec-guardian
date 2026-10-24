@@ -145,4 +145,4 @@ go generate ./conformance
 
 If you only change `specguardian.yml`, run `go generate ./conformance`. Your application connection code is preserved when you regenerate.
 
-See the [configuration schema](spec-guardian.schema.yaml) for available settings in `specguardian.yml`.
+See the [configuration schema](specguardian.schema.yaml) for available settings in `specguardian.yml`.

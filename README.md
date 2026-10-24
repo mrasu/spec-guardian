@@ -79,7 +79,7 @@ Here's how SpecGuardian works:
 3. Either AI or you write the setup and Action execution code, configure observers in `specguardian.yml`, and write any remaining state observation code.
 4. The tests run a function normally and with an error injected immediately before a supported I/O call, then compare the observed state with states allowed by the spec.
 
-`specguardian.yml` configures state observation and comparison. See the [configuration schema](docs/spec-guardian.schema.yaml) for available settings and the [example configuration](examples/tutorial_cache_aside_write/specguardian.yml) for an example.
+`specguardian.yml` configures state observation and comparison. See the [configuration schema](docs/specguardian.schema.yaml) for available settings and the [example configuration](examples/tutorial_cache_aside_write/specguardian.yml) for an example.
 
 ## When to Use
 

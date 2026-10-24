@@ -5,7 +5,7 @@ This document records design constraints for conformance test generation.
 ## Implementation
 
 - Use [Architecture](architecture.md) for component boundaries and execution contracts.
-- Keep structural configuration rules in [the schema](../../internal/configschema/spec-guardian.schema.yaml); Go owns semantic resolution and generation support checks.
+- Keep structural configuration rules in [the schema](../../internal/configschema/specguardian.schema.yaml); Go owns semantic resolution and generation support checks.
 
 ## Case extraction
 
