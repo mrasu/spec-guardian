@@ -29,27 +29,27 @@ func NewCacheAside(database *sql.DB, cache valkey.Client) *CacheAside {
 	}
 }
 
-// WriteAndInvalidateInput identifies the record and value to write.
-type WriteAndInvalidateInput struct {
+// Input identifies the record and value to write.
+type Input struct {
 	Key   string
 	Value string
 }
 
-// WriteAndInvalidateOutput contains the record written by WriteAndInvalidate.
-type WriteAndInvalidateOutput struct {
+// Output contains the record written by WriteAndInvalidate.
+type Output struct {
 	Key   string
 	Value string
 }
 
 // WriteAndInvalidate stores the value in the database and invalidates its cached entry.
-func (a *CacheAside) WriteAndInvalidate(ctx context.Context, input *WriteAndInvalidateInput) (*WriteAndInvalidateOutput, error) {
-	if err := a.db.Write(ctx, input.Key, input.Value); err != nil {
+func (ca *CacheAside) WriteAndInvalidate(ctx context.Context, input *Input) (*Output, error) {
+	if err := ca.db.Write(ctx, input.Key, input.Value); err != nil {
 		return nil, err
 	}
 
-	if err := a.cache.Delete(ctx, input.Key); err != nil {
+	if err := ca.cache.Delete(ctx, input.Key); err != nil {
 		return nil, err
 	}
 
-	return &WriteAndInvalidateOutput{Key: input.Key, Value: input.Value}, nil
+	return &Output{Key: input.Key, Value: input.Value}, nil
 }

@@ -52,10 +52,10 @@ func BuildCacheAsideConformanceComponents(t *testing.T, controller *guardian.Inj
 }
 
 // CacheAsideWriteAndInvalidateInput is the concrete input for CacheAside.WriteAndInvalidate.
-type CacheAsideWriteAndInvalidateInput = *cacheaside.WriteAndInvalidateInput
+type CacheAsideWriteAndInvalidateInput = *cacheaside.Input
 
 // CacheAsideWriteAndInvalidateOutput is the concrete output from CacheAside.WriteAndInvalidate.
-type CacheAsideWriteAndInvalidateOutput = *cacheaside.WriteAndInvalidateOutput
+type CacheAsideWriteAndInvalidateOutput = *cacheaside.Output
 
 // CleanupWriteAndInvalidateCase releases the clients after all attempts.
 func (e *CacheAsideEnvironment) CleanupWriteAndInvalidateCase(t *testing.T) {
@@ -67,7 +67,7 @@ func (e *CacheAsideEnvironment) CleanupWriteAndInvalidateCase(t *testing.T) {
 // BuildWriteAndInvalidateInput maps the model's arguments to the real application.
 func (e *CacheAsideEnvironment) BuildWriteAndInvalidateInput(t *testing.T, input FizzbeeCacheAsideState) CacheAsideWriteAndInvalidateInput {
 	t.Helper()
-	return &cacheaside.WriteAndInvalidateInput{Key: input.Params.CacheAside.Key, Value: input.Params.CacheAside.WriteValue}
+	return &cacheaside.Input{Key: input.Params.CacheAside.Key, Value: input.Params.CacheAside.WriteValue}
 }
 
 // BuildWriteAndInvalidateManualObservation supplies fields not fetched by providers.
