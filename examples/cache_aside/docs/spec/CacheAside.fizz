@@ -5,21 +5,21 @@ deadlock_detection: false
 RequestStatus = enum("INIT", "DONE", "PROCESSING")
 
 eventually always assertion GetCorrectResponse:
-  if application.read_status == RequestStatus.DONE:
-    if application.key == "db_cache_written":
-      return application.read_res_value == "foo" or application.read_res_value == "written"
-    elif application.key == "db_written":
-      return application.read_res_value == "bar" or application.read_res_value == "written"
-    elif application.key == "not_written":
-      return application.read_res_value == None or application.read_res_value == "written"
+  if cache_aside.read_status == RequestStatus.DONE:
+    if cache_aside.key == "db_cache_written":
+      return cache_aside.read_res_value == "foo" or cache_aside.read_res_value == "written"
+    elif cache_aside.key == "db_written":
+      return cache_aside.read_res_value == "bar" or cache_aside.read_res_value == "written"
+    elif cache_aside.key == "not_written":
+      return cache_aside.read_res_value == None or cache_aside.read_res_value == "written"
     else:
       return False
   else:
     return True
 
 always assertion CachedValueIsSameWithDbOrOlder:
-  if application.key in cache.cached_records:
-    return cache.cached_records[application.key] in db.committed_values[application.key]
+  if cache_aside.key in cache.cached_records:
+    return cache.cached_records[cache_aside.key] in db.committed_values[cache_aside.key]
   else:
     return True
 
@@ -62,7 +62,7 @@ role Cache:
       self.cached_records.pop(key)
 
 @conformance
-role Application:
+role CacheAside:
   action Init:
     self.read_status = RequestStatus.INIT
     self.write_status = RequestStatus.INIT
@@ -90,7 +90,7 @@ role Application:
     self.read_res_value = db_value
     self.read_status = RequestStatus.DONE
 
-  fair action Write:
+  fair action WriteAndInvalidate:
     require self.write_status == RequestStatus.INIT
     self.write_status = RequestStatus.PROCESSING
 
@@ -108,4 +108,4 @@ action Init:
   cache = Cache()
 
   key = oneof ["db_cache_written", "db_written", "not_written"]
-  application = Application(key=key, write_value="written")
+  cache_aside = CacheAside(key=key, write_value="written")

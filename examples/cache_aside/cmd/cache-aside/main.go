@@ -41,8 +41,8 @@ func run(ctx context.Context) error {
 	defer cache.Close()
 
 	key := fmt.Sprintf("cache-aside-demo:%d", time.Now().UnixNano())
-	application := cacheaside.NewApplication(database, cache)
-	return demonstrateCacheAside(ctx, application, database, cache, key)
+	cacheAside := cacheaside.NewCacheAside(database, cache)
+	return demonstrateCacheAside(ctx, cacheAside, database, cache, key)
 }
 
 func openDatabase(ctx context.Context) (*sql.DB, error) {
@@ -65,16 +65,16 @@ func openCache() (valkey.Client, error) {
 	return cache, nil
 }
 
-func demonstrateCacheAside(ctx context.Context, application *cacheaside.Application, database *sql.DB, cache valkey.Client, key string) error {
+func demonstrateCacheAside(ctx context.Context, cacheAside *cacheaside.CacheAside, database *sql.DB, cache valkey.Client, key string) error {
 	fmt.Printf("Cache-aside demo for key %q\n", key)
 
-	if err := readWithoutValues(ctx, application, key); err != nil {
+	if err := readWithoutValues(ctx, cacheAside, key); err != nil {
 		return err
 	}
-	if err := write(ctx, application, database, cache, key); err != nil {
+	if err := write(ctx, cacheAside, database, cache, key); err != nil {
 		return err
 	}
-	if err := readAfterWrite(ctx, application, cache, key); err != nil {
+	if err := readAfterWriteAndInvalidate(ctx, cacheAside, cache, key); err != nil {
 		return err
 	}
 
@@ -82,26 +82,26 @@ func demonstrateCacheAside(ctx context.Context, application *cacheaside.Applicat
 	return nil
 }
 
-func readWithoutValues(ctx context.Context, application *cacheaside.Application, key string) error {
-	output, err := application.Read(ctx, &cacheaside.ReadInput{Key: key})
+func readWithoutValues(ctx context.Context, cacheAside *cacheaside.CacheAside, key string) error {
+	output, err := cacheAside.Read(ctx, &cacheaside.ReadInput{Key: key})
 	if err != nil {
-		return fmt.Errorf("Application.Read on missing key: %w", err)
+		return fmt.Errorf("CacheAside.Read on missing key: %w", err)
 	}
 	if output == nil || output.Key != key || output.Value != nil {
-		return fmt.Errorf("Application.Read on missing key: got %+v, want no value for %q", output, key)
+		return fmt.Errorf("CacheAside.Read on missing key: got %+v, want no value for %q", output, key)
 	}
 
-	fmt.Println("1. Application.Read: no value for the key")
+	fmt.Println("1. CacheAside.Read: no value for the key")
 	return nil
 }
 
-func write(ctx context.Context, application *cacheaside.Application, database *sql.DB, cache valkey.Client, key string) error {
-	output, err := application.Write(ctx, &cacheaside.WriteInput{Key: key, Value: demoValue})
+func write(ctx context.Context, cacheAside *cacheaside.CacheAside, database *sql.DB, cache valkey.Client, key string) error {
+	output, err := cacheAside.WriteAndInvalidate(ctx, &cacheaside.WriteAndInvalidateInput{Key: key, Value: demoValue})
 	if err != nil {
-		return fmt.Errorf("Application.Write: %w", err)
+		return fmt.Errorf("CacheAside.WriteAndInvalidate: %w", err)
 	}
 	if output == nil || output.Key != key || output.Value != demoValue {
-		return fmt.Errorf("Application.Write: got %+v, want %q for %q", output, demoValue, key)
+		return fmt.Errorf("CacheAside.WriteAndInvalidate: got %+v, want %q for %q", output, demoValue, key)
 	}
 
 	if err := verifyDatabaseValue(ctx, database, key, demoValue); err != nil {
@@ -111,34 +111,34 @@ func write(ctx context.Context, application *cacheaside.Application, database *s
 		return err
 	}
 
-	fmt.Printf("2. Application.Write(%q): DB contains %q; cache entry is absent\n", demoValue, demoValue)
+	fmt.Printf("2. CacheAside.WriteAndInvalidate(%q): DB contains %q; cache entry is absent\n", demoValue, demoValue)
 	return nil
 }
 
-func readAfterWrite(ctx context.Context, application *cacheaside.Application, cache valkey.Client, key string) error {
-	output, err := application.Read(ctx, &cacheaside.ReadInput{Key: key})
+func readAfterWriteAndInvalidate(ctx context.Context, cacheAside *cacheaside.CacheAside, cache valkey.Client, key string) error {
+	output, err := cacheAside.Read(ctx, &cacheaside.ReadInput{Key: key})
 	if err != nil {
-		return fmt.Errorf("Application.Read after write: %w", err)
+		return fmt.Errorf("CacheAside.Read after write: %w", err)
 	}
 	if output == nil || output.Key != key || output.Value == nil || *output.Value != demoValue {
-		return fmt.Errorf("Application.Read after write: got %+v, want %q for %q", output, demoValue, key)
+		return fmt.Errorf("CacheAside.Read after write: got %+v, want %q for %q", output, demoValue, key)
 	}
 
 	if err := verifyCacheValue(ctx, cache, key, demoValue); err != nil {
 		return err
 	}
 
-	fmt.Printf("3. Application.Read: returned %q and populated the cache with %q\n", *output.Value, demoValue)
+	fmt.Printf("3. CacheAside.Read: returned %q and populated the cache with %q\n", *output.Value, demoValue)
 	return nil
 }
 
 func verifyDatabaseValue(ctx context.Context, database *sql.DB, key, want string) error {
 	var got string
 	if err := database.QueryRowContext(ctx, "SELECT value FROM records WHERE KEY = $1", key).Scan(&got); err != nil {
-		return fmt.Errorf("read database after Application.Write: %w", err)
+		return fmt.Errorf("read database after CacheAside.WriteAndInvalidate: %w", err)
 	}
 	if got != want {
-		return fmt.Errorf("database value after Application.Write: got %q, want %q", got, want)
+		return fmt.Errorf("database value after CacheAside.WriteAndInvalidate: got %q, want %q", got, want)
 	}
 	return nil
 }
@@ -149,7 +149,7 @@ func verifyCacheMiss(ctx context.Context, cache valkey.Client, key string) error
 		return err
 	}
 	if found {
-		return errors.New("cache entry exists after Application.Write")
+		return errors.New("cache entry exists after CacheAside.WriteAndInvalidate")
 	}
 	return nil
 }
@@ -160,7 +160,7 @@ func verifyCacheValue(ctx context.Context, cache valkey.Client, key, want string
 		return err
 	}
 	if !found || got != want {
-		return fmt.Errorf("cache value after Application.Read: got %q (found=%t), want %q", got, found, want)
+		return fmt.Errorf("cache value after CacheAside.Read: got %q (found=%t), want %q", got, found, want)
 	}
 	return nil
 }

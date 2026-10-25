@@ -12,12 +12,12 @@ SpecGuardian lets you verify that an AI-generated implementation actually confor
 
 ## From Spec to Test: Cache-Aside
 
-In this cache-aside example, a `Write` action stores a new value in the database, then invalidates the corresponding cache entry. The [tutorial spec](examples/tutorial_cache_aside_write/docs/spec/CacheAside.fizz) models each operation as atomic and allows a crash before or between them:
+In this cache-aside example, a `WriteAndInvalidate` action stores a new value in the database, then invalidates the corresponding cache entry. The [tutorial spec](examples/tutorial_cache_aside_write/docs/spec/CacheAside.fizz) models each operation as atomic and allows a crash before or between them:
 
 ```python
 @conformance
-role Application:
-  fair action Write:
+role CacheAside:
+  fair action WriteAndInvalidate:
     # Yield to allow a crash before the first I/O.
     atomic:
       pass
@@ -28,29 +28,29 @@ role Application:
 SpecGuardian generates Go tests from FizzBee's results. They compare the observed state after the action with states allowed by the spec, including states reached when an I/O operation fails:
 
 ```go
-func TestApplication_Write_Conformance(t *testing.T) {
-  cases := LoadApplicationCases(t, "testdata/application_write_cases_generated.json")
+func TestCacheAside_WriteAndInvalidate_Conformance(t *testing.T) {
+  cases := LoadCacheAsideCases(t, "testdata/cacheaside_writeandinvalidate_cases_generated.json")
 
   for _, testCase := range cases {
     t.Run(testCase.Name, func(t *testing.T) {
-      controller := guardian.NewInjectionController("Application.Write")
-      environment := NewApplicationConformanceEnvironment(t, controller)
-      environment.PrepareWriteCase(t)
+      controller := guardian.NewInjectionController("CacheAside.WriteAndInvalidate")
+      environment := NewCacheAsideConformanceEnvironment(t, controller)
+      environment.PrepareWriteAndInvalidateCase(t)
 
-      input := environment.BuildWriteInput(t, testCase.Input)
+      input := environment.BuildWriteAndInvalidateInput(t, testCase.Input)
       for faultNumber := range controller.Attempts() {
         t.Run(fmt.Sprintf("fault:%d", faultNumber), func(t *testing.T) {
-          environment.PrepareWriteAttempt(t, testCase.Input)
+          environment.PrepareWriteAndInvalidateAttempt(t, testCase.Input)
 
-          var actionOutput ApplicationWriteOutput
+          var actionOutput CacheAsideWriteAndInvalidateOutput
           var actionErr error
           func() {
             defer controller.InjectFaultAt(faultNumber)()
-            actionOutput, actionErr = environment.ExecuteWrite(t.Context(), input)
+            actionOutput, actionErr = environment.ExecuteWriteAndInvalidate(t.Context(), input)
           }()
 
-          observedState := environment.ObserveWriteState(t, testCase.Input, actionOutput, actionErr)
-          allowedStates := environment.BuildAllowedWriteStates(t, testCase.Allowed)
+          observedState := environment.ObserveWriteAndInvalidateState(t, testCase.Input, actionOutput, actionErr)
+          allowedStates := environment.BuildAllowedWriteAndInvalidateStates(t, testCase.Allowed)
 
           guardian.AssertAllowed(t, allowedStates, observedState, controller.Events())
         })

@@ -1,6 +1,6 @@
-# Cache-Aside Write Tutorial
+# Cache-Aside WriteAndInvalidate Tutorial
 
-This is the completed project built in the [SpecGuardian user guide](../../docs/user-guide.md). It models and tests `Application.Write` only. For `Read` and `Write` together, see the [full cache-aside example](../cache_aside/).
+This is the completed project built in the [SpecGuardian user guide](../../docs/user-guide.md). It models and tests `CacheAside.WriteAndInvalidate` only. For `Read` and `WriteAndInvalidate` together, see the [full cache-aside example](../cache_aside/).
 
 [`specguardian.yml`](specguardian.yml) configures SQL and Valkey providers for the database and cache fields.
 

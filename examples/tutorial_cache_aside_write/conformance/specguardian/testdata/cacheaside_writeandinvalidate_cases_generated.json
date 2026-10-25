@@ -3,12 +3,12 @@
     "name": "case1",
     "input": {
       "fields": {
-        "Application": {},
         "Cache": {
           "cached_records": {
             "cached": "old"
           }
         },
+        "CacheAside": {},
         "DB": {
           "records": [
             {
@@ -23,7 +23,7 @@
         }
       },
       "params": {
-        "Application": {
+        "CacheAside": {
           "key": "cached",
           "write_value": "new"
         }
@@ -32,12 +32,12 @@
     "allowed": [
       {
         "fields": {
-          "Application": {},
           "Cache": {
             "cached_records": {
               "cached": "old"
             }
           },
+          "CacheAside": {},
           "DB": {
             "records": [
               {
@@ -52,7 +52,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "cached",
             "write_value": "new"
           }
@@ -63,10 +63,10 @@
       },
       {
         "fields": {
-          "Application": {},
           "Cache": {
             "cached_records": {}
           },
+          "CacheAside": {},
           "DB": {
             "records": [
               {
@@ -81,7 +81,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "cached",
             "write_value": "new"
           }
@@ -92,10 +92,10 @@
       },
       {
         "fields": {
-          "Application": {},
           "Cache": {
             "cached_records": {}
           },
+          "CacheAside": {},
           "DB": {
             "records": [
               {
@@ -110,7 +110,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "cached",
             "write_value": "new"
           }
@@ -125,10 +125,10 @@
     "name": "case2",
     "input": {
       "fields": {
-        "Application": {},
         "Cache": {
           "cached_records": {}
         },
+        "CacheAside": {},
         "DB": {
           "records": [
             {
@@ -143,7 +143,7 @@
         }
       },
       "params": {
-        "Application": {
+        "CacheAside": {
           "key": "cached",
           "write_value": "new"
         }
@@ -152,10 +152,10 @@
     "allowed": [
       {
         "fields": {
-          "Application": {},
           "Cache": {
             "cached_records": {}
           },
+          "CacheAside": {},
           "DB": {
             "records": [
               {
@@ -170,7 +170,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "cached",
             "write_value": "new"
           }
@@ -181,10 +181,10 @@
       },
       {
         "fields": {
-          "Application": {},
           "Cache": {
             "cached_records": {}
           },
+          "CacheAside": {},
           "DB": {
             "records": [
               {
@@ -199,7 +199,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "cached",
             "write_value": "new"
           }
@@ -214,12 +214,12 @@
     "name": "case3",
     "input": {
       "fields": {
-        "Application": {},
         "Cache": {
           "cached_records": {
             "cached": "old"
           }
         },
+        "CacheAside": {},
         "DB": {
           "records": [
             {
@@ -234,7 +234,7 @@
         }
       },
       "params": {
-        "Application": {
+        "CacheAside": {
           "key": "uncached",
           "write_value": "new"
         }
@@ -243,12 +243,12 @@
     "allowed": [
       {
         "fields": {
-          "Application": {},
           "Cache": {
             "cached_records": {
               "cached": "old"
             }
           },
+          "CacheAside": {},
           "DB": {
             "records": [
               {
@@ -263,7 +263,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "uncached",
             "write_value": "new"
           }
@@ -274,12 +274,12 @@
       },
       {
         "fields": {
-          "Application": {},
           "Cache": {
             "cached_records": {
               "cached": "old"
             }
           },
+          "CacheAside": {},
           "DB": {
             "records": [
               {
@@ -294,7 +294,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "uncached",
             "write_value": "new"
           }
@@ -309,12 +309,12 @@
     "name": "case4",
     "input": {
       "fields": {
-        "Application": {},
         "Cache": {
           "cached_records": {
             "cached": "old"
           }
         },
+        "CacheAside": {},
         "DB": {
           "records": [
             {
@@ -329,7 +329,7 @@
         }
       },
       "params": {
-        "Application": {
+        "CacheAside": {
           "key": "cached",
           "write_value": "new"
         }
@@ -338,12 +338,12 @@
     "allowed": [
       {
         "fields": {
-          "Application": {},
           "Cache": {
             "cached_records": {
               "cached": "old"
             }
           },
+          "CacheAside": {},
           "DB": {
             "records": [
               {
@@ -358,7 +358,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "cached",
             "write_value": "new"
           }
@@ -369,10 +369,10 @@
       },
       {
         "fields": {
-          "Application": {},
           "Cache": {
             "cached_records": {}
           },
+          "CacheAside": {},
           "DB": {
             "records": [
               {
@@ -387,7 +387,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "cached",
             "write_value": "new"
           }
@@ -398,10 +398,10 @@
       },
       {
         "fields": {
-          "Application": {},
           "Cache": {
             "cached_records": {}
           },
+          "CacheAside": {},
           "DB": {
             "records": [
               {
@@ -416,7 +416,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "cached",
             "write_value": "new"
           }
@@ -427,12 +427,12 @@
       },
       {
         "fields": {
-          "Application": {},
           "Cache": {
             "cached_records": {
               "cached": "old"
             }
           },
+          "CacheAside": {},
           "DB": {
             "records": [
               {
@@ -447,7 +447,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "cached",
             "write_value": "new"
           }
@@ -462,12 +462,12 @@
     "name": "case5",
     "input": {
       "fields": {
-        "Application": {},
         "Cache": {
           "cached_records": {
             "cached": "old"
           }
         },
+        "CacheAside": {},
         "DB": {
           "records": [
             {
@@ -482,7 +482,7 @@
         }
       },
       "params": {
-        "Application": {
+        "CacheAside": {
           "key": "uncached",
           "write_value": "new"
         }
@@ -491,12 +491,12 @@
     "allowed": [
       {
         "fields": {
-          "Application": {},
           "Cache": {
             "cached_records": {
               "cached": "old"
             }
           },
+          "CacheAside": {},
           "DB": {
             "records": [
               {
@@ -511,7 +511,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "uncached",
             "write_value": "new"
           }
@@ -522,12 +522,12 @@
       },
       {
         "fields": {
-          "Application": {},
           "Cache": {
             "cached_records": {
               "cached": "old"
             }
           },
+          "CacheAside": {},
           "DB": {
             "records": [
               {
@@ -542,7 +542,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "uncached",
             "write_value": "new"
           }
@@ -553,12 +553,12 @@
       },
       {
         "fields": {
-          "Application": {},
           "Cache": {
             "cached_records": {
               "cached": "old"
             }
           },
+          "CacheAside": {},
           "DB": {
             "records": [
               {
@@ -573,7 +573,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "uncached",
             "write_value": "new"
           }

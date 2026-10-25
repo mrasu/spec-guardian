@@ -152,23 +152,23 @@
                 },
                 "end": {
                   "line": 35,
-                  "column": 55
+                  "column": 54
                 }
               },
               "vars": [
-                "application"
+                "cache_aside"
               ],
-              "name": "Application",
+              "name": "CacheAside",
               "args": [
                 {
                   "sourceInfo": {
                     "start": {
                       "line": 35,
-                      "column": 29
+                      "column": 28
                     },
                     "end": {
                       "line": 35,
-                      "column": 35
+                      "column": 34
                     }
                   },
                   "pyExpr": "key=key",
@@ -176,11 +176,11 @@
                     "sourceInfo": {
                       "start": {
                         "line": 35,
-                        "column": 29
+                        "column": 28
                       },
                       "end": {
                         "line": 35,
-                        "column": 35
+                        "column": 34
                       }
                     },
                     "pyExpr": "key=key"
@@ -190,11 +190,11 @@
                   "sourceInfo": {
                     "start": {
                       "line": 35,
-                      "column": 38
+                      "column": 37
                     },
                     "end": {
                       "line": 35,
-                      "column": 54
+                      "column": 53
                     }
                   },
                   "pyExpr": "write_value=\"new\"",
@@ -202,11 +202,11 @@
                     "sourceInfo": {
                       "start": {
                         "line": 35,
-                        "column": 38
+                        "column": 37
                       },
                       "end": {
                         "line": 35,
-                        "column": 54
+                        "column": 53
                       }
                     },
                     "pyExpr": "write_value=\"new\""
@@ -697,7 +697,7 @@
           "line": 31
         }
       },
-      "name": "Application",
+      "name": "CacheAside",
       "actions": [
         {
           "sourceInfo": {
@@ -709,7 +709,7 @@
               "line": 31
             }
           },
-          "name": "Write",
+          "name": "WriteAndInvalidate",
           "flow": "FLOW_SERIAL",
           "fairness": {
             "sourceInfo": {

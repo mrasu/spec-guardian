@@ -8,14 +8,14 @@ import (
 	"github.com/valkey-io/valkey-go"
 )
 
-// Application implements the cache-aside read and write actions.
-type Application struct {
+// CacheAside implements the cache-aside read and write actions.
+type CacheAside struct {
 	db    *postgresDB
 	cache *valkeyCache
 }
 
-// NewApplication creates an application backed by the database and cache.
-func NewApplication(database *sql.DB, cache valkey.Client) *Application {
+// NewCacheAside creates an application backed by the database and cache.
+func NewCacheAside(database *sql.DB, cache valkey.Client) *CacheAside {
 	if database == nil {
 		panic("cacheaside: nil database")
 	}
@@ -23,7 +23,7 @@ func NewApplication(database *sql.DB, cache valkey.Client) *Application {
 		panic("cacheaside: nil cache")
 	}
 
-	return &Application{
+	return &CacheAside{
 		db:    &postgresDB{database: database},
 		cache: &valkeyCache{client: cache},
 	}
@@ -40,20 +40,20 @@ type ReadOutput struct {
 	Value *string
 }
 
-// WriteInput identifies the record and value to write.
-type WriteInput struct {
+// WriteAndInvalidateInput identifies the record and value to write.
+type WriteAndInvalidateInput struct {
 	Key   string
 	Value string
 }
 
-// WriteOutput contains the record written by Write.
-type WriteOutput struct {
+// WriteAndInvalidateOutput contains the record written by WriteAndInvalidate.
+type WriteAndInvalidateOutput struct {
 	Key   string
 	Value string
 }
 
 // Read returns a cached value or loads it from the database.
-func (a *Application) Read(ctx context.Context, input *ReadInput) (*ReadOutput, error) {
+func (a *CacheAside) Read(ctx context.Context, input *ReadInput) (*ReadOutput, error) {
 	value, found, err := a.cache.Get(ctx, input.Key)
 	if err != nil {
 		return nil, err
@@ -76,8 +76,8 @@ func (a *Application) Read(ctx context.Context, input *ReadInput) (*ReadOutput, 
 	return &ReadOutput{Key: input.Key, Value: &value}, nil
 }
 
-// Write stores the value in the database and invalidates its cached entry.
-func (a *Application) Write(ctx context.Context, input *WriteInput) (*WriteOutput, error) {
+// WriteAndInvalidate stores the value in the database and invalidates its cached entry.
+func (a *CacheAside) WriteAndInvalidate(ctx context.Context, input *WriteAndInvalidateInput) (*WriteAndInvalidateOutput, error) {
 	if err := a.db.Write(ctx, input.Key, input.Value); err != nil {
 		return nil, err
 	}
@@ -86,5 +86,5 @@ func (a *Application) Write(ctx context.Context, input *WriteInput) (*WriteOutpu
 		return nil, err
 	}
 
-	return &WriteOutput{Key: input.Key, Value: input.Value}, nil
+	return &WriteAndInvalidateOutput{Key: input.Key, Value: input.Value}, nil
 }

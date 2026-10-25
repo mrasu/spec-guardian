@@ -10,13 +10,13 @@ import (
 	"github.com/mrasu/spec-guardian/guardian"
 )
 
-func TestApplication_Read_Conformance(t *testing.T) {
-	cases := LoadApplicationCases(t, "testdata/application_read_cases_generated.json")
+func TestCacheAside_Read_Conformance(t *testing.T) {
+	cases := LoadCacheAsideCases(t, "testdata/cacheaside_read_cases_generated.json")
 
 	for _, testCase := range cases {
 		t.Run(testCase.Name, func(t *testing.T) {
-			controller := guardian.NewInjectionController("Application.Read")
-			environment := NewApplicationConformanceEnvironment(t, controller)
+			controller := guardian.NewInjectionController("CacheAside.Read")
+			environment := NewCacheAsideConformanceEnvironment(t, controller)
 			environment.PrepareReadCase(t)
 
 			input := environment.BuildReadInput(t, testCase.Input)
@@ -24,7 +24,7 @@ func TestApplication_Read_Conformance(t *testing.T) {
 				t.Run(fmt.Sprintf("fault:%d", faultNumber), func(t *testing.T) {
 					environment.PrepareReadAttempt(t, testCase.Input)
 
-					var actionOutput ApplicationReadOutput
+					var actionOutput CacheAsideReadOutput
 					var actionErr error
 					func() {
 						defer controller.InjectFaultAt(faultNumber)()
@@ -41,29 +41,29 @@ func TestApplication_Read_Conformance(t *testing.T) {
 	}
 }
 
-func TestApplication_Write_Conformance(t *testing.T) {
-	cases := LoadApplicationCases(t, "testdata/application_write_cases_generated.json")
+func TestCacheAside_WriteAndInvalidate_Conformance(t *testing.T) {
+	cases := LoadCacheAsideCases(t, "testdata/cacheaside_writeandinvalidate_cases_generated.json")
 
 	for _, testCase := range cases {
 		t.Run(testCase.Name, func(t *testing.T) {
-			controller := guardian.NewInjectionController("Application.Write")
-			environment := NewApplicationConformanceEnvironment(t, controller)
-			environment.PrepareWriteCase(t)
+			controller := guardian.NewInjectionController("CacheAside.WriteAndInvalidate")
+			environment := NewCacheAsideConformanceEnvironment(t, controller)
+			environment.PrepareWriteAndInvalidateCase(t)
 
-			input := environment.BuildWriteInput(t, testCase.Input)
+			input := environment.BuildWriteAndInvalidateInput(t, testCase.Input)
 			for faultNumber := range controller.Attempts() {
 				t.Run(fmt.Sprintf("fault:%d", faultNumber), func(t *testing.T) {
-					environment.PrepareWriteAttempt(t, testCase.Input)
+					environment.PrepareWriteAndInvalidateAttempt(t, testCase.Input)
 
-					var actionOutput ApplicationWriteOutput
+					var actionOutput CacheAsideWriteAndInvalidateOutput
 					var actionErr error
 					func() {
 						defer controller.InjectFaultAt(faultNumber)()
-						actionOutput, actionErr = environment.ExecuteWrite(t.Context(), input)
+						actionOutput, actionErr = environment.ExecuteWriteAndInvalidate(t.Context(), input)
 					}()
 
-					observedState := environment.ObserveWriteState(t, testCase.Input, actionOutput, actionErr)
-					allowedStates := environment.BuildAllowedWriteStates(t, testCase.Allowed)
+					observedState := environment.ObserveWriteAndInvalidateState(t, testCase.Input, actionOutput, actionErr)
+					allowedStates := environment.BuildAllowedWriteAndInvalidateStates(t, testCase.Allowed)
 
 					guardian.AssertAllowed(t, allowedStates, observedState, controller.Events())
 				})

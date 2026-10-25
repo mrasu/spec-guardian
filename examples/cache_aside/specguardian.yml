@@ -29,7 +29,7 @@ fizzbee_files:
   - output_dir: docs/spec/fizzbee_output
     hooks: [cleanup_case]
     roles:
-      - name: Application
+      - name: CacheAside
         fields:
           - name: read_status
             compare: false

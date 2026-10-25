@@ -3,16 +3,16 @@
     "name": "case1",
     "input": {
       "fields": {
-        "Application": {
-          "read_res_value": "bar",
-          "read_status": "DONE",
-          "write_status": "INIT"
-        },
         "Cache": {
           "cached_records": {
             "db_cache_written": "foo",
             "db_written": "bar"
           }
+        },
+        "CacheAside": {
+          "read_res_value": "bar",
+          "read_status": "DONE",
+          "write_status": "INIT"
         },
         "DB": {
           "committed_values": {
@@ -37,7 +37,7 @@
         }
       },
       "params": {
-        "Application": {
+        "CacheAside": {
           "key": "db_written",
           "write_value": "written"
         }
@@ -46,16 +46,16 @@
     "allowed": [
       {
         "fields": {
-          "Application": {
-            "read_res_value": "bar",
-            "read_status": "DONE",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo",
               "db_written": "bar"
             }
+          },
+          "CacheAside": {
+            "read_res_value": "bar",
+            "read_status": "DONE",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -81,7 +81,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_written",
             "write_value": "written"
           }
@@ -92,15 +92,15 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": "bar",
-            "read_status": "DONE",
-            "write_status": "DONE"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": "bar",
+            "read_status": "DONE",
+            "write_status": "DONE"
           },
           "DB": {
             "committed_values": {
@@ -126,7 +126,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_written",
             "write_value": "written"
           }
@@ -137,15 +137,15 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": "bar",
-            "read_status": "DONE",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": "bar",
+            "read_status": "DONE",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -171,7 +171,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_written",
             "write_value": "written"
           }
@@ -182,16 +182,16 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": "bar",
-            "read_status": "DONE",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo",
               "db_written": "bar"
             }
+          },
+          "CacheAside": {
+            "read_res_value": "bar",
+            "read_status": "DONE",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -216,7 +216,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_written",
             "write_value": "written"
           }
@@ -231,16 +231,16 @@
     "name": "case2",
     "input": {
       "fields": {
-        "Application": {
-          "read_res_value": "bar",
-          "read_status": "PROCESSING",
-          "write_status": "INIT"
-        },
         "Cache": {
           "cached_records": {
             "db_cache_written": "foo",
             "db_written": "bar"
           }
+        },
+        "CacheAside": {
+          "read_res_value": "bar",
+          "read_status": "PROCESSING",
+          "write_status": "INIT"
         },
         "DB": {
           "committed_values": {
@@ -265,7 +265,7 @@
         }
       },
       "params": {
-        "Application": {
+        "CacheAside": {
           "key": "db_written",
           "write_value": "written"
         }
@@ -274,16 +274,16 @@
     "allowed": [
       {
         "fields": {
-          "Application": {
-            "read_res_value": "bar",
-            "read_status": "PROCESSING",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo",
               "db_written": "bar"
             }
+          },
+          "CacheAside": {
+            "read_res_value": "bar",
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -309,7 +309,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_written",
             "write_value": "written"
           }
@@ -320,15 +320,15 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": "bar",
-            "read_status": "PROCESSING",
-            "write_status": "DONE"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": "bar",
+            "read_status": "PROCESSING",
+            "write_status": "DONE"
           },
           "DB": {
             "committed_values": {
@@ -354,7 +354,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_written",
             "write_value": "written"
           }
@@ -365,15 +365,15 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": "bar",
-            "read_status": "PROCESSING",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": "bar",
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -399,7 +399,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_written",
             "write_value": "written"
           }
@@ -410,16 +410,16 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": "bar",
-            "read_status": "PROCESSING",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo",
               "db_written": "bar"
             }
+          },
+          "CacheAside": {
+            "read_res_value": "bar",
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -444,7 +444,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_written",
             "write_value": "written"
           }
@@ -459,16 +459,16 @@
     "name": "case3",
     "input": {
       "fields": {
-        "Application": {
-          "read_res_value": null,
-          "read_status": "PROCESSING",
-          "write_status": "INIT"
-        },
         "Cache": {
           "cached_records": {
             "db_cache_written": "foo",
             "db_written": "bar"
           }
+        },
+        "CacheAside": {
+          "read_res_value": null,
+          "read_status": "PROCESSING",
+          "write_status": "INIT"
         },
         "DB": {
           "committed_values": {
@@ -493,7 +493,7 @@
         }
       },
       "params": {
-        "Application": {
+        "CacheAside": {
           "key": "db_written",
           "write_value": "written"
         }
@@ -502,16 +502,16 @@
     "allowed": [
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "PROCESSING",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo",
               "db_written": "bar"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -537,7 +537,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_written",
             "write_value": "written"
           }
@@ -548,15 +548,15 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "PROCESSING",
-            "write_status": "DONE"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "DONE"
           },
           "DB": {
             "committed_values": {
@@ -582,7 +582,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_written",
             "write_value": "written"
           }
@@ -593,15 +593,15 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "PROCESSING",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -627,7 +627,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_written",
             "write_value": "written"
           }
@@ -638,16 +638,16 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "PROCESSING",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo",
               "db_written": "bar"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -672,7 +672,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_written",
             "write_value": "written"
           }
@@ -687,15 +687,15 @@
     "name": "case4",
     "input": {
       "fields": {
-        "Application": {
-          "read_res_value": "foo",
-          "read_status": "DONE",
-          "write_status": "INIT"
-        },
         "Cache": {
           "cached_records": {
             "db_cache_written": "foo"
           }
+        },
+        "CacheAside": {
+          "read_res_value": "foo",
+          "read_status": "DONE",
+          "write_status": "INIT"
         },
         "DB": {
           "committed_values": {
@@ -720,7 +720,7 @@
         }
       },
       "params": {
-        "Application": {
+        "CacheAside": {
           "key": "db_cache_written",
           "write_value": "written"
         }
@@ -729,15 +729,15 @@
     "allowed": [
       {
         "fields": {
-          "Application": {
-            "read_res_value": "foo",
-            "read_status": "DONE",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": "foo",
+            "read_status": "DONE",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -763,7 +763,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_cache_written",
             "write_value": "written"
           }
@@ -774,13 +774,13 @@
       },
       {
         "fields": {
-          "Application": {
+          "Cache": {
+            "cached_records": {}
+          },
+          "CacheAside": {
             "read_res_value": "foo",
             "read_status": "DONE",
             "write_status": "DONE"
-          },
-          "Cache": {
-            "cached_records": {}
           },
           "DB": {
             "committed_values": {
@@ -806,7 +806,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_cache_written",
             "write_value": "written"
           }
@@ -817,13 +817,13 @@
       },
       {
         "fields": {
-          "Application": {
+          "Cache": {
+            "cached_records": {}
+          },
+          "CacheAside": {
             "read_res_value": "foo",
             "read_status": "DONE",
             "write_status": "PROCESSING"
-          },
-          "Cache": {
-            "cached_records": {}
           },
           "DB": {
             "committed_values": {
@@ -849,7 +849,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_cache_written",
             "write_value": "written"
           }
@@ -860,15 +860,15 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": "foo",
-            "read_status": "DONE",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": "foo",
+            "read_status": "DONE",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -893,7 +893,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_cache_written",
             "write_value": "written"
           }
@@ -908,15 +908,15 @@
     "name": "case5",
     "input": {
       "fields": {
-        "Application": {
-          "read_res_value": "foo",
-          "read_status": "PROCESSING",
-          "write_status": "INIT"
-        },
         "Cache": {
           "cached_records": {
             "db_cache_written": "foo"
           }
+        },
+        "CacheAside": {
+          "read_res_value": "foo",
+          "read_status": "PROCESSING",
+          "write_status": "INIT"
         },
         "DB": {
           "committed_values": {
@@ -941,7 +941,7 @@
         }
       },
       "params": {
-        "Application": {
+        "CacheAside": {
           "key": "db_cache_written",
           "write_value": "written"
         }
@@ -950,15 +950,15 @@
     "allowed": [
       {
         "fields": {
-          "Application": {
-            "read_res_value": "foo",
-            "read_status": "PROCESSING",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": "foo",
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -984,7 +984,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_cache_written",
             "write_value": "written"
           }
@@ -995,13 +995,13 @@
       },
       {
         "fields": {
-          "Application": {
+          "Cache": {
+            "cached_records": {}
+          },
+          "CacheAside": {
             "read_res_value": "foo",
             "read_status": "PROCESSING",
             "write_status": "DONE"
-          },
-          "Cache": {
-            "cached_records": {}
           },
           "DB": {
             "committed_values": {
@@ -1027,7 +1027,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_cache_written",
             "write_value": "written"
           }
@@ -1038,13 +1038,13 @@
       },
       {
         "fields": {
-          "Application": {
+          "Cache": {
+            "cached_records": {}
+          },
+          "CacheAside": {
             "read_res_value": "foo",
             "read_status": "PROCESSING",
             "write_status": "PROCESSING"
-          },
-          "Cache": {
-            "cached_records": {}
           },
           "DB": {
             "committed_values": {
@@ -1070,7 +1070,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_cache_written",
             "write_value": "written"
           }
@@ -1081,15 +1081,15 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": "foo",
-            "read_status": "PROCESSING",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": "foo",
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -1114,7 +1114,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_cache_written",
             "write_value": "written"
           }
@@ -1129,15 +1129,15 @@
     "name": "case6",
     "input": {
       "fields": {
-        "Application": {
-          "read_res_value": null,
-          "read_status": "DONE",
-          "write_status": "INIT"
-        },
         "Cache": {
           "cached_records": {
             "db_cache_written": "foo"
           }
+        },
+        "CacheAside": {
+          "read_res_value": null,
+          "read_status": "DONE",
+          "write_status": "INIT"
         },
         "DB": {
           "committed_values": {
@@ -1162,7 +1162,7 @@
         }
       },
       "params": {
-        "Application": {
+        "CacheAside": {
           "key": "not_written",
           "write_value": "written"
         }
@@ -1171,15 +1171,15 @@
     "allowed": [
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "DONE",
-            "write_status": "DONE"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "DONE",
+            "write_status": "DONE"
           },
           "DB": {
             "committed_values": {
@@ -1210,7 +1210,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "not_written",
             "write_value": "written"
           }
@@ -1221,15 +1221,15 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "DONE",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "DONE",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -1260,7 +1260,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "not_written",
             "write_value": "written"
           }
@@ -1271,15 +1271,15 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "DONE",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "DONE",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -1304,7 +1304,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "not_written",
             "write_value": "written"
           }
@@ -1319,15 +1319,15 @@
     "name": "case7",
     "input": {
       "fields": {
-        "Application": {
-          "read_res_value": null,
-          "read_status": "INIT",
-          "write_status": "INIT"
-        },
         "Cache": {
           "cached_records": {
             "db_cache_written": "foo"
           }
+        },
+        "CacheAside": {
+          "read_res_value": null,
+          "read_status": "INIT",
+          "write_status": "INIT"
         },
         "DB": {
           "committed_values": {
@@ -1352,7 +1352,7 @@
         }
       },
       "params": {
-        "Application": {
+        "CacheAside": {
           "key": "db_cache_written",
           "write_value": "written"
         }
@@ -1361,15 +1361,15 @@
     "allowed": [
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "INIT",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "INIT",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -1395,7 +1395,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_cache_written",
             "write_value": "written"
           }
@@ -1406,13 +1406,13 @@
       },
       {
         "fields": {
-          "Application": {
+          "Cache": {
+            "cached_records": {}
+          },
+          "CacheAside": {
             "read_res_value": null,
             "read_status": "INIT",
             "write_status": "DONE"
-          },
-          "Cache": {
-            "cached_records": {}
           },
           "DB": {
             "committed_values": {
@@ -1438,7 +1438,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_cache_written",
             "write_value": "written"
           }
@@ -1449,13 +1449,13 @@
       },
       {
         "fields": {
-          "Application": {
+          "Cache": {
+            "cached_records": {}
+          },
+          "CacheAside": {
             "read_res_value": null,
             "read_status": "INIT",
             "write_status": "PROCESSING"
-          },
-          "Cache": {
-            "cached_records": {}
           },
           "DB": {
             "committed_values": {
@@ -1481,7 +1481,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_cache_written",
             "write_value": "written"
           }
@@ -1492,15 +1492,15 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "INIT",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "INIT",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -1525,7 +1525,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_cache_written",
             "write_value": "written"
           }
@@ -1540,15 +1540,15 @@
     "name": "case8",
     "input": {
       "fields": {
-        "Application": {
-          "read_res_value": null,
-          "read_status": "INIT",
-          "write_status": "INIT"
-        },
         "Cache": {
           "cached_records": {
             "db_cache_written": "foo"
           }
+        },
+        "CacheAside": {
+          "read_res_value": null,
+          "read_status": "INIT",
+          "write_status": "INIT"
         },
         "DB": {
           "committed_values": {
@@ -1573,7 +1573,7 @@
         }
       },
       "params": {
-        "Application": {
+        "CacheAside": {
           "key": "db_written",
           "write_value": "written"
         }
@@ -1582,15 +1582,15 @@
     "allowed": [
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "INIT",
-            "write_status": "DONE"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "INIT",
+            "write_status": "DONE"
           },
           "DB": {
             "committed_values": {
@@ -1616,7 +1616,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_written",
             "write_value": "written"
           }
@@ -1627,15 +1627,15 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "INIT",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "INIT",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -1661,7 +1661,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_written",
             "write_value": "written"
           }
@@ -1672,15 +1672,15 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "INIT",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "INIT",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -1705,7 +1705,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_written",
             "write_value": "written"
           }
@@ -1720,15 +1720,15 @@
     "name": "case9",
     "input": {
       "fields": {
-        "Application": {
-          "read_res_value": null,
-          "read_status": "INIT",
-          "write_status": "INIT"
-        },
         "Cache": {
           "cached_records": {
             "db_cache_written": "foo"
           }
+        },
+        "CacheAside": {
+          "read_res_value": null,
+          "read_status": "INIT",
+          "write_status": "INIT"
         },
         "DB": {
           "committed_values": {
@@ -1753,7 +1753,7 @@
         }
       },
       "params": {
-        "Application": {
+        "CacheAside": {
           "key": "not_written",
           "write_value": "written"
         }
@@ -1762,15 +1762,15 @@
     "allowed": [
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "INIT",
-            "write_status": "DONE"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "INIT",
+            "write_status": "DONE"
           },
           "DB": {
             "committed_values": {
@@ -1801,7 +1801,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "not_written",
             "write_value": "written"
           }
@@ -1812,15 +1812,15 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "INIT",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "INIT",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -1851,7 +1851,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "not_written",
             "write_value": "written"
           }
@@ -1862,15 +1862,15 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "INIT",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "INIT",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -1895,7 +1895,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "not_written",
             "write_value": "written"
           }
@@ -1910,15 +1910,15 @@
     "name": "case10",
     "input": {
       "fields": {
-        "Application": {
-          "read_res_value": null,
-          "read_status": "PROCESSING",
-          "write_status": "INIT"
-        },
         "Cache": {
           "cached_records": {
             "db_cache_written": "foo"
           }
+        },
+        "CacheAside": {
+          "read_res_value": null,
+          "read_status": "PROCESSING",
+          "write_status": "INIT"
         },
         "DB": {
           "committed_values": {
@@ -1943,7 +1943,7 @@
         }
       },
       "params": {
-        "Application": {
+        "CacheAside": {
           "key": "db_cache_written",
           "write_value": "written"
         }
@@ -1952,15 +1952,15 @@
     "allowed": [
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "PROCESSING",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -1986,7 +1986,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_cache_written",
             "write_value": "written"
           }
@@ -1997,13 +1997,13 @@
       },
       {
         "fields": {
-          "Application": {
+          "Cache": {
+            "cached_records": {}
+          },
+          "CacheAside": {
             "read_res_value": null,
             "read_status": "PROCESSING",
             "write_status": "DONE"
-          },
-          "Cache": {
-            "cached_records": {}
           },
           "DB": {
             "committed_values": {
@@ -2029,7 +2029,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_cache_written",
             "write_value": "written"
           }
@@ -2040,13 +2040,13 @@
       },
       {
         "fields": {
-          "Application": {
+          "Cache": {
+            "cached_records": {}
+          },
+          "CacheAside": {
             "read_res_value": null,
             "read_status": "PROCESSING",
             "write_status": "PROCESSING"
-          },
-          "Cache": {
-            "cached_records": {}
           },
           "DB": {
             "committed_values": {
@@ -2072,7 +2072,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_cache_written",
             "write_value": "written"
           }
@@ -2083,15 +2083,15 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "PROCESSING",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -2116,7 +2116,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_cache_written",
             "write_value": "written"
           }
@@ -2131,15 +2131,15 @@
     "name": "case11",
     "input": {
       "fields": {
-        "Application": {
-          "read_res_value": null,
-          "read_status": "PROCESSING",
-          "write_status": "INIT"
-        },
         "Cache": {
           "cached_records": {
             "db_cache_written": "foo"
           }
+        },
+        "CacheAside": {
+          "read_res_value": null,
+          "read_status": "PROCESSING",
+          "write_status": "INIT"
         },
         "DB": {
           "committed_values": {
@@ -2164,7 +2164,7 @@
         }
       },
       "params": {
-        "Application": {
+        "CacheAside": {
           "key": "db_written",
           "write_value": "written"
         }
@@ -2173,15 +2173,15 @@
     "allowed": [
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "PROCESSING",
-            "write_status": "DONE"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "DONE"
           },
           "DB": {
             "committed_values": {
@@ -2207,7 +2207,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_written",
             "write_value": "written"
           }
@@ -2218,15 +2218,15 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "PROCESSING",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -2252,7 +2252,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_written",
             "write_value": "written"
           }
@@ -2263,15 +2263,15 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "PROCESSING",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -2296,7 +2296,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "db_written",
             "write_value": "written"
           }
@@ -2311,15 +2311,15 @@
     "name": "case12",
     "input": {
       "fields": {
-        "Application": {
-          "read_res_value": null,
-          "read_status": "PROCESSING",
-          "write_status": "INIT"
-        },
         "Cache": {
           "cached_records": {
             "db_cache_written": "foo"
           }
+        },
+        "CacheAside": {
+          "read_res_value": null,
+          "read_status": "PROCESSING",
+          "write_status": "INIT"
         },
         "DB": {
           "committed_values": {
@@ -2344,7 +2344,7 @@
         }
       },
       "params": {
-        "Application": {
+        "CacheAside": {
           "key": "not_written",
           "write_value": "written"
         }
@@ -2353,15 +2353,15 @@
     "allowed": [
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "PROCESSING",
-            "write_status": "DONE"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "DONE"
           },
           "DB": {
             "committed_values": {
@@ -2392,7 +2392,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "not_written",
             "write_value": "written"
           }
@@ -2403,15 +2403,15 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "PROCESSING",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -2442,7 +2442,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "not_written",
             "write_value": "written"
           }
@@ -2453,15 +2453,15 @@
       },
       {
         "fields": {
-          "Application": {
-            "read_res_value": null,
-            "read_status": "PROCESSING",
-            "write_status": "PROCESSING"
-          },
           "Cache": {
             "cached_records": {
               "db_cache_written": "foo"
             }
+          },
+          "CacheAside": {
+            "read_res_value": null,
+            "read_status": "PROCESSING",
+            "write_status": "PROCESSING"
           },
           "DB": {
             "committed_values": {
@@ -2486,7 +2486,7 @@
           }
         },
         "params": {
-          "Application": {
+          "CacheAside": {
             "key": "not_written",
             "write_value": "written"
           }

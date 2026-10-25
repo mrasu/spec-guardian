@@ -20,8 +20,8 @@ role Cache:
       self.cached_records.pop(key)
 
 @conformance
-role Application:
-  fair action Write:
+role CacheAside:
+  fair action WriteAndInvalidate:
     # Yield to allow a crash before the first I/O.
     atomic:
       pass
@@ -32,4 +32,4 @@ action Init:
   db = DB()
   cache = Cache()
   key = oneof ["cached", "uncached"]
-  application = Application(key=key, write_value="new")
+  cache_aside = CacheAside(key=key, write_value="new")

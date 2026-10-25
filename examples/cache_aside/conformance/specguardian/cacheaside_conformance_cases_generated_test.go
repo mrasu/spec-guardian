@@ -26,26 +26,26 @@ var _ provider.Observer = (*sqlprovider.Provider)(nil)
 var _ provider.Lifecycle = (*errorascrashedprovider.Provider)(nil)
 var _ provider.ResultObserver = (*errorascrashedprovider.Provider)(nil)
 
-// ApplicationActions describes the application methods exercised by this role.
+// CacheAsideActions describes the application methods exercised by this role.
 // This generated interface is the contract implemented by the application adapter.
-type ApplicationActions interface {
-	Read(context.Context, ApplicationReadInput) (ApplicationReadOutput, error)
-	Write(context.Context, ApplicationWriteInput) (ApplicationWriteOutput, error)
+type CacheAsideActions interface {
+	Read(context.Context, CacheAsideReadInput) (CacheAsideReadOutput, error)
+	WriteAndInvalidate(context.Context, CacheAsideWriteAndInvalidateInput) (CacheAsideWriteAndInvalidateOutput, error)
 }
 
-// ApplicationConformanceEnvironment joins the application action adapter with its test resources.
-type ApplicationConformanceEnvironment struct {
-	Actions ApplicationActions
-	*ApplicationEnvironment
+// CacheAsideConformanceEnvironment joins the application action adapter with its test resources.
+type CacheAsideConformanceEnvironment struct {
+	Actions CacheAsideActions
+	*CacheAsideEnvironment
 	providerCache          *valkeyprovider.Provider
 	providerDb             *sqlprovider.Provider
 	providerErrorAsCrashed *errorascrashedprovider.Provider
 }
 
-// NewApplicationConformanceEnvironment builds the adapter and resources for a conformance case.
-func NewApplicationConformanceEnvironment(t *testing.T, controller *guardian.InjectionController) *ApplicationConformanceEnvironment {
+// NewCacheAsideConformanceEnvironment builds the adapter and resources for a conformance case.
+func NewCacheAsideConformanceEnvironment(t *testing.T, controller *guardian.InjectionController) *CacheAsideConformanceEnvironment {
 	t.Helper()
-	actions, environment := BuildApplicationConformanceComponents(t, controller)
+	actions, environment := BuildCacheAsideConformanceComponents(t, controller)
 	configCache, fieldsCache := _sgProviderCacheSettings()
 	providerCache, errCache := valkeyprovider.New(
 		valkeyprovider.Config{},
@@ -73,23 +73,23 @@ func NewApplicationConformanceEnvironment(t *testing.T, controller *guardian.Inj
 	if errErrorAsCrashed != nil {
 		t.Fatalf("provider error_as_crashed New: %v", errErrorAsCrashed)
 	}
-	return &ApplicationConformanceEnvironment{
+	return &CacheAsideConformanceEnvironment{
 		Actions:                actions,
-		ApplicationEnvironment: environment,
+		CacheAsideEnvironment:  environment,
 		providerCache:          providerCache,
 		providerDb:             providerDb,
 		providerErrorAsCrashed: providerErrorAsCrashed,
 	}
 }
 
-// LoadApplicationCases reads generated cases from filepath.
-func LoadApplicationCases(t *testing.T, filepath string) []ApplicationCase {
+// LoadCacheAsideCases reads generated cases from filepath.
+func LoadCacheAsideCases(t *testing.T, filepath string) []CacheAsideCase {
 	t.Helper()
-	return guardian.LoadCases[ApplicationCase](t, filepath)
+	return guardian.LoadCases[CacheAsideCase](t, filepath)
 }
 
 // PrepareReadCase sets up one case and registers its cleanup.
-func (e *ApplicationConformanceEnvironment) PrepareReadCase(t *testing.T) {
+func (e *CacheAsideConformanceEnvironment) PrepareReadCase(t *testing.T) {
 	t.Cleanup(func() {
 		e.CleanupReadCase(t)
 	})
@@ -120,7 +120,7 @@ func (e *ApplicationConformanceEnvironment) PrepareReadCase(t *testing.T) {
 }
 
 // PrepareReadAttempt sets up one fault attempt and registers its cleanup.
-func (e *ApplicationConformanceEnvironment) PrepareReadAttempt(t *testing.T, input FizzbeeApplicationState) {
+func (e *CacheAsideConformanceEnvironment) PrepareReadAttempt(t *testing.T, input FizzbeeCacheAsideState) {
 	t.Cleanup(func() {
 		if err := e.providerCache.CleanupAttempt(context.Background()); err != nil {
 			t.Errorf("provider cache CleanupAttempt: %v", err)
@@ -174,12 +174,12 @@ func (e *ApplicationConformanceEnvironment) PrepareReadAttempt(t *testing.T, inp
 }
 
 // ExecuteRead invokes the application action.
-func (e *ApplicationConformanceEnvironment) ExecuteRead(ctx context.Context, input ApplicationReadInput) (ApplicationReadOutput, error) {
+func (e *CacheAsideConformanceEnvironment) ExecuteRead(ctx context.Context, input CacheAsideReadInput) (CacheAsideReadOutput, error) {
 	return e.Actions.Read(ctx, input)
 }
 
 // ObserveReadState collects the state and output visible after the action.
-func (e *ApplicationConformanceEnvironment) ObserveReadState(t *testing.T, input FizzbeeApplicationState, output ApplicationReadOutput, actionErr error) *ApplicationObservedState {
+func (e *CacheAsideConformanceEnvironment) ObserveReadState(t *testing.T, input FizzbeeCacheAsideState, output CacheAsideReadOutput, actionErr error) *CacheAsideObservedState {
 	t.Helper()
 	valueCacheCachedRecords, err := e.providerCache.Observe(t.Context(), _sgFieldCacheCachedRecords)
 	if err != nil {
@@ -205,12 +205,12 @@ func (e *ApplicationConformanceEnvironment) ObserveReadState(t *testing.T, input
 	if convertErr != nil {
 		t.Fatalf("provider error_as_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, convertErr)
 	}
-	fetched := ApplicationFetchedObservation{
-		Fields: ApplicationFetchedField{
-			DB: ApplicationDBFetchedField{
+	fetched := CacheAsideFetchedObservation{
+		Fields: CacheAsideFetchedField{
+			DB: CacheAsideDBFetchedField{
 				Records: typedDBRecords,
 			},
-			Cache: ApplicationCacheFetchedField{
+			Cache: CacheAsideCacheFetchedField{
 				CachedRecords: typedCacheCachedRecords,
 			},
 		},
@@ -221,16 +221,16 @@ func (e *ApplicationConformanceEnvironment) ObserveReadState(t *testing.T, input
 
 	manual := e.BuildReadManualObservation(t, fetched, input, output, actionErr)
 
-	return &ApplicationObservedState{
-		Fields: ApplicationObservedField{
-			DB: ApplicationDBObservedField{
+	return &CacheAsideObservedState{
+		Fields: CacheAsideObservedField{
+			DB: CacheAsideDBObservedField{
 				Records: _sgToDBRecordsObservedList(fetched.Fields.DB.Records),
 			},
-			Cache: ApplicationCacheObservedField{
+			Cache: CacheAsideCacheObservedField{
 				CachedRecords: gcmp.Observed(fetched.Fields.Cache.CachedRecords),
 			},
-			Application: ApplicationApplicationObservedField{
-				ReadResValue: manual.Fields.Application.ReadResValue,
+			CacheAside: CacheAsideCacheAsideObservedField{
+				ReadResValue: manual.Fields.CacheAside.ReadResValue,
 			},
 		},
 		SgMetadata: guardian.SgObservedMetadata{
@@ -240,18 +240,18 @@ func (e *ApplicationConformanceEnvironment) ObserveReadState(t *testing.T, input
 }
 
 // BuildAllowedReadState maps every comparable model field to its allowed value.
-func (e *ApplicationConformanceEnvironment) BuildAllowedReadState(t *testing.T, allowed FizzbeeApplicationState) ApplicationComparisonState {
+func (e *CacheAsideConformanceEnvironment) BuildAllowedReadState(t *testing.T, allowed FizzbeeCacheAsideState) CacheAsideComparisonState {
 	t.Helper()
-	return ApplicationComparisonState{
-		Fields: ApplicationComparisonField{
-			DB: ApplicationDBComparisonField{
+	return CacheAsideComparisonState{
+		Fields: CacheAsideComparisonField{
+			DB: CacheAsideDBComparisonField{
 				Records: _sgToDBRecordsComparisonList(allowed.Fields.DB.Records),
 			},
-			Cache: ApplicationCacheComparisonField{
+			Cache: CacheAsideCacheComparisonField{
 				CachedRecords: gcmp.Equal(allowed.Fields.Cache.CachedRecords),
 			},
-			Application: ApplicationApplicationComparisonField{
-				ReadResValue: gcmp.Equal(allowed.Fields.Application.ReadResValue),
+			CacheAside: CacheAsideCacheAsideComparisonField{
+				ReadResValue: gcmp.Equal(allowed.Fields.CacheAside.ReadResValue),
 			},
 		},
 		SgMetadata: guardian.SgComparisonMetadata{
@@ -261,9 +261,9 @@ func (e *ApplicationConformanceEnvironment) BuildAllowedReadState(t *testing.T, 
 }
 
 // BuildAllowedReadStates maps FizzBee outcomes to comparable states.
-func (e *ApplicationConformanceEnvironment) BuildAllowedReadStates(t *testing.T, allowed []FizzbeeApplicationState) []*ApplicationComparisonState {
+func (e *CacheAsideConformanceEnvironment) BuildAllowedReadStates(t *testing.T, allowed []FizzbeeCacheAsideState) []*CacheAsideComparisonState {
 	t.Helper()
-	allowedStates := make([]*ApplicationComparisonState, len(allowed))
+	allowedStates := make([]*CacheAsideComparisonState, len(allowed))
 	for i, allowed := range allowed {
 		allowedState := e.BuildAllowedReadState(t, allowed)
 		allowedStates[i] = &allowedState
@@ -272,10 +272,10 @@ func (e *ApplicationConformanceEnvironment) BuildAllowedReadStates(t *testing.T,
 	return allowedStates
 }
 
-// PrepareWriteCase sets up one case and registers its cleanup.
-func (e *ApplicationConformanceEnvironment) PrepareWriteCase(t *testing.T) {
+// PrepareWriteAndInvalidateCase sets up one case and registers its cleanup.
+func (e *CacheAsideConformanceEnvironment) PrepareWriteAndInvalidateCase(t *testing.T) {
 	t.Cleanup(func() {
-		e.CleanupWriteCase(t)
+		e.CleanupWriteAndInvalidateCase(t)
 	})
 	if err := e.providerCache.PrepareCase(t.Context()); err != nil {
 		t.Fatalf("provider cache PrepareCase: %v", err)
@@ -303,8 +303,8 @@ func (e *ApplicationConformanceEnvironment) PrepareWriteCase(t *testing.T) {
 	})
 }
 
-// PrepareWriteAttempt sets up one fault attempt and registers its cleanup.
-func (e *ApplicationConformanceEnvironment) PrepareWriteAttempt(t *testing.T, input FizzbeeApplicationState) {
+// PrepareWriteAndInvalidateAttempt sets up one fault attempt and registers its cleanup.
+func (e *CacheAsideConformanceEnvironment) PrepareWriteAndInvalidateAttempt(t *testing.T, input FizzbeeCacheAsideState) {
 	t.Cleanup(func() {
 		if err := e.providerCache.CleanupAttempt(context.Background()); err != nil {
 			t.Errorf("provider cache CleanupAttempt: %v", err)
@@ -357,13 +357,13 @@ func (e *ApplicationConformanceEnvironment) PrepareWriteAttempt(t *testing.T, in
 	}
 }
 
-// ExecuteWrite invokes the application action.
-func (e *ApplicationConformanceEnvironment) ExecuteWrite(ctx context.Context, input ApplicationWriteInput) (ApplicationWriteOutput, error) {
-	return e.Actions.Write(ctx, input)
+// ExecuteWriteAndInvalidate invokes the application action.
+func (e *CacheAsideConformanceEnvironment) ExecuteWriteAndInvalidate(ctx context.Context, input CacheAsideWriteAndInvalidateInput) (CacheAsideWriteAndInvalidateOutput, error) {
+	return e.Actions.WriteAndInvalidate(ctx, input)
 }
 
-// ObserveWriteState collects the state and output visible after the action.
-func (e *ApplicationConformanceEnvironment) ObserveWriteState(t *testing.T, input FizzbeeApplicationState, output ApplicationWriteOutput, actionErr error) *ApplicationObservedState {
+// ObserveWriteAndInvalidateState collects the state and output visible after the action.
+func (e *CacheAsideConformanceEnvironment) ObserveWriteAndInvalidateState(t *testing.T, input FizzbeeCacheAsideState, output CacheAsideWriteAndInvalidateOutput, actionErr error) *CacheAsideObservedState {
 	t.Helper()
 	valueCacheCachedRecords, err := e.providerCache.Observe(t.Context(), _sgFieldCacheCachedRecords)
 	if err != nil {
@@ -389,12 +389,12 @@ func (e *ApplicationConformanceEnvironment) ObserveWriteState(t *testing.T, inpu
 	if convertErr != nil {
 		t.Fatalf("provider error_as_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, convertErr)
 	}
-	fetched := ApplicationFetchedObservation{
-		Fields: ApplicationFetchedField{
-			DB: ApplicationDBFetchedField{
+	fetched := CacheAsideFetchedObservation{
+		Fields: CacheAsideFetchedField{
+			DB: CacheAsideDBFetchedField{
 				Records: typedDBRecords,
 			},
-			Cache: ApplicationCacheFetchedField{
+			Cache: CacheAsideCacheFetchedField{
 				CachedRecords: typedCacheCachedRecords,
 			},
 		},
@@ -403,18 +403,18 @@ func (e *ApplicationConformanceEnvironment) ObserveWriteState(t *testing.T, inpu
 		},
 	}
 
-	manual := e.BuildWriteManualObservation(t, fetched, input, output, actionErr)
+	manual := e.BuildWriteAndInvalidateManualObservation(t, fetched, input, output, actionErr)
 
-	return &ApplicationObservedState{
-		Fields: ApplicationObservedField{
-			DB: ApplicationDBObservedField{
+	return &CacheAsideObservedState{
+		Fields: CacheAsideObservedField{
+			DB: CacheAsideDBObservedField{
 				Records: _sgToDBRecordsObservedList(fetched.Fields.DB.Records),
 			},
-			Cache: ApplicationCacheObservedField{
+			Cache: CacheAsideCacheObservedField{
 				CachedRecords: gcmp.Observed(fetched.Fields.Cache.CachedRecords),
 			},
-			Application: ApplicationApplicationObservedField{
-				ReadResValue: manual.Fields.Application.ReadResValue,
+			CacheAside: CacheAsideCacheAsideObservedField{
+				ReadResValue: manual.Fields.CacheAside.ReadResValue,
 			},
 		},
 		SgMetadata: guardian.SgObservedMetadata{
@@ -423,19 +423,19 @@ func (e *ApplicationConformanceEnvironment) ObserveWriteState(t *testing.T, inpu
 	}
 }
 
-// BuildAllowedWriteState maps every comparable model field to its allowed value.
-func (e *ApplicationConformanceEnvironment) BuildAllowedWriteState(t *testing.T, allowed FizzbeeApplicationState) ApplicationComparisonState {
+// BuildAllowedWriteAndInvalidateState maps every comparable model field to its allowed value.
+func (e *CacheAsideConformanceEnvironment) BuildAllowedWriteAndInvalidateState(t *testing.T, allowed FizzbeeCacheAsideState) CacheAsideComparisonState {
 	t.Helper()
-	return ApplicationComparisonState{
-		Fields: ApplicationComparisonField{
-			DB: ApplicationDBComparisonField{
+	return CacheAsideComparisonState{
+		Fields: CacheAsideComparisonField{
+			DB: CacheAsideDBComparisonField{
 				Records: _sgToDBRecordsComparisonList(allowed.Fields.DB.Records),
 			},
-			Cache: ApplicationCacheComparisonField{
+			Cache: CacheAsideCacheComparisonField{
 				CachedRecords: gcmp.Equal(allowed.Fields.Cache.CachedRecords),
 			},
-			Application: ApplicationApplicationComparisonField{
-				ReadResValue: gcmp.Equal(allowed.Fields.Application.ReadResValue),
+			CacheAside: CacheAsideCacheAsideComparisonField{
+				ReadResValue: gcmp.Equal(allowed.Fields.CacheAside.ReadResValue),
 			},
 		},
 		SgMetadata: guardian.SgComparisonMetadata{
@@ -444,157 +444,157 @@ func (e *ApplicationConformanceEnvironment) BuildAllowedWriteState(t *testing.T,
 	}
 }
 
-// BuildAllowedWriteStates maps FizzBee outcomes to comparable states.
-func (e *ApplicationConformanceEnvironment) BuildAllowedWriteStates(t *testing.T, allowed []FizzbeeApplicationState) []*ApplicationComparisonState {
+// BuildAllowedWriteAndInvalidateStates maps FizzBee outcomes to comparable states.
+func (e *CacheAsideConformanceEnvironment) BuildAllowedWriteAndInvalidateStates(t *testing.T, allowed []FizzbeeCacheAsideState) []*CacheAsideComparisonState {
 	t.Helper()
-	allowedStates := make([]*ApplicationComparisonState, len(allowed))
+	allowedStates := make([]*CacheAsideComparisonState, len(allowed))
 	for i, allowed := range allowed {
-		allowedState := e.BuildAllowedWriteState(t, allowed)
+		allowedState := e.BuildAllowedWriteAndInvalidateState(t, allowed)
 		allowedStates[i] = &allowedState
 	}
 
 	return allowedStates
 }
 
-// ApplicationCase is one generated input with its allowed outcomes.
-type ApplicationCase struct {
-	Name    string                    `json:"name"`
-	Input   FizzbeeApplicationState   `json:"input"`
-	Allowed []FizzbeeApplicationState `json:"allowed"`
+// CacheAsideCase is one generated input with its allowed outcomes.
+type CacheAsideCase struct {
+	Name    string                   `json:"name"`
+	Input   FizzbeeCacheAsideState   `json:"input"`
+	Allowed []FizzbeeCacheAsideState `json:"allowed"`
 }
 
-// FizzbeeApplicationState contains the model parameters and fields for this role.
-type FizzbeeApplicationState struct {
-	Params     ApplicationParams          `json:"params"`
-	Fields     ApplicationField           `json:"fields"`
+// FizzbeeCacheAsideState contains the model parameters and fields for this role.
+type FizzbeeCacheAsideState struct {
+	Params     CacheAsideParams           `json:"params"`
+	Fields     CacheAsideField            `json:"fields"`
 	SgMetadata guardian.SgFizzbeeMetadata `json:"sg_metadata"`
 }
 
-// ApplicationParams contains each role's model parameters.
-type ApplicationParams struct {
-	Application ApplicationApplicationParams `json:"Application"`
+// CacheAsideParams contains each role's model parameters.
+type CacheAsideParams struct {
+	CacheAside CacheAsideCacheAsideParams `json:"CacheAside"`
 }
 
-// ApplicationApplicationParams contains model parameters for Application.
-type ApplicationApplicationParams struct {
+// CacheAsideCacheAsideParams contains model parameters for CacheAside.
+type CacheAsideCacheAsideParams struct {
 	Key        string `json:"key"`
 	WriteValue string `json:"write_value"`
 }
 
-// ApplicationField contains each role's model fields.
-type ApplicationField struct {
-	DB          ApplicationDBField          `json:"DB"`
-	Cache       ApplicationCacheField       `json:"Cache"`
-	Application ApplicationApplicationField `json:"Application"`
+// CacheAsideField contains each role's model fields.
+type CacheAsideField struct {
+	DB         CacheAsideDBField         `json:"DB"`
+	Cache      CacheAsideCacheField      `json:"Cache"`
+	CacheAside CacheAsideCacheAsideField `json:"CacheAside"`
 }
 
-// ApplicationDBField contains model fields for DB.
-type ApplicationDBField struct {
+// CacheAsideDBField contains model fields for DB.
+type CacheAsideDBField struct {
 	CommittedValues map[string]any `json:"committed_values"`
 	Records         DBRecordsValue `json:"records"`
 }
 
-// ApplicationCacheField contains model fields for Cache.
-type ApplicationCacheField struct {
+// CacheAsideCacheField contains model fields for Cache.
+type CacheAsideCacheField struct {
 	CachedRecords map[string]string `json:"cached_records"`
 }
 
-// ApplicationApplicationField contains model fields for Application.
-type ApplicationApplicationField struct {
+// CacheAsideCacheAsideField contains model fields for CacheAside.
+type CacheAsideCacheAsideField struct {
 	ReadResValue *string `json:"read_res_value"`
 	ReadStatus   string  `json:"read_status"`
 	WriteStatus  string  `json:"write_status"`
 }
 
-// ApplicationObservedState holds values observed from the application.
-type ApplicationObservedState struct {
-	Fields     ApplicationObservedField
+// CacheAsideObservedState holds values observed from the application.
+type CacheAsideObservedState struct {
+	Fields     CacheAsideObservedField
 	SgMetadata guardian.SgObservedMetadata
 }
 
-// ApplicationObservedField contains observed fields for each role.
-type ApplicationObservedField struct {
-	DB          ApplicationDBObservedField
-	Cache       ApplicationCacheObservedField
-	Application ApplicationApplicationObservedField
+// CacheAsideObservedField contains observed fields for each role.
+type CacheAsideObservedField struct {
+	DB         CacheAsideDBObservedField
+	Cache      CacheAsideCacheObservedField
+	CacheAside CacheAsideCacheAsideObservedField
 }
 
-// ApplicationDBObservedField contains observed fields for DB.
-type ApplicationDBObservedField struct {
+// CacheAsideDBObservedField contains observed fields for DB.
+type CacheAsideDBObservedField struct {
 	Records *gcmp.ObservedList[*gcmp.ObservedMessage[DBRecordsObservedField]]
 }
 
-// ApplicationCacheObservedField contains observed fields for Cache.
-type ApplicationCacheObservedField struct {
+// CacheAsideCacheObservedField contains observed fields for Cache.
+type CacheAsideCacheObservedField struct {
 	CachedRecords *gcmp.ObservedField[map[string]string]
 }
 
-// ApplicationApplicationObservedField contains observed fields for Application.
-type ApplicationApplicationObservedField struct {
+// CacheAsideCacheAsideObservedField contains observed fields for CacheAside.
+type CacheAsideCacheAsideObservedField struct {
 	ReadResValue *gcmp.ObservedField[*string]
 }
 
-// ApplicationFetchedObservation contains fields collected by declared providers.
-type ApplicationFetchedObservation struct {
-	Fields     ApplicationFetchedField
+// CacheAsideFetchedObservation contains fields collected by declared providers.
+type CacheAsideFetchedObservation struct {
+	Fields     CacheAsideFetchedField
 	SgMetadata guardian.SgFetchedMetadata
 }
 
-type ApplicationFetchedField struct {
-	DB    ApplicationDBFetchedField
-	Cache ApplicationCacheFetchedField
+type CacheAsideFetchedField struct {
+	DB    CacheAsideDBFetchedField
+	Cache CacheAsideCacheFetchedField
 }
 
-type ApplicationDBFetchedField struct {
+type CacheAsideDBFetchedField struct {
 	Records DBRecordsValue
 }
 
-type ApplicationCacheFetchedField struct {
+type CacheAsideCacheFetchedField struct {
 	CachedRecords map[string]string
 }
 
-// ApplicationManualObservation contains fields supplied by the application.
-type ApplicationManualObservation struct {
-	Fields ApplicationManualField
+// CacheAsideManualObservation contains fields supplied by the application.
+type CacheAsideManualObservation struct {
+	Fields CacheAsideManualField
 }
 
-type ApplicationManualField struct {
-	Application ApplicationApplicationManualField
+type CacheAsideManualField struct {
+	CacheAside CacheAsideCacheAsideManualField
 }
 
-type ApplicationApplicationManualField struct {
+type CacheAsideCacheAsideManualField struct {
 	ReadResValue *gcmp.ObservedField[*string]
 }
 
-// ApplicationComparisonState configures checks for an allowed model state.
-type ApplicationComparisonState struct {
-	Fields     ApplicationComparisonField
+// CacheAsideComparisonState configures checks for an allowed model state.
+type CacheAsideComparisonState struct {
+	Fields     CacheAsideComparisonField
 	SgMetadata guardian.SgComparisonMetadata
 }
 
 // ExpectedState identifies the FizzBee state type compared with this state.
-func (actual *ApplicationComparisonState) ExpectedState() FizzbeeApplicationState {
-	return FizzbeeApplicationState{}
+func (actual *CacheAsideComparisonState) ExpectedState() FizzbeeCacheAsideState {
+	return FizzbeeCacheAsideState{}
 }
 
-// ApplicationComparisonField contains field comparisons for each role.
-type ApplicationComparisonField struct {
-	DB          ApplicationDBComparisonField
-	Cache       ApplicationCacheComparisonField
-	Application ApplicationApplicationComparisonField
+// CacheAsideComparisonField contains field comparisons for each role.
+type CacheAsideComparisonField struct {
+	DB         CacheAsideDBComparisonField
+	Cache      CacheAsideCacheComparisonField
+	CacheAside CacheAsideCacheAsideComparisonField
 }
 
-// ApplicationDBComparisonField contains field comparisons for DB.
-type ApplicationDBComparisonField struct {
+// CacheAsideDBComparisonField contains field comparisons for DB.
+type CacheAsideDBComparisonField struct {
 	Records *gcmp.ComparisonList[*gcmp.ComparisonMessage[DBRecordsComparisonField]]
 }
 
-// ApplicationCacheComparisonField contains field comparisons for Cache.
-type ApplicationCacheComparisonField struct {
+// CacheAsideCacheComparisonField contains field comparisons for Cache.
+type CacheAsideCacheComparisonField struct {
 	CachedRecords *gcmp.ComparisonField[map[string]string]
 }
 
-// ApplicationApplicationComparisonField contains field comparisons for Application.
-type ApplicationApplicationComparisonField struct {
+// CacheAsideCacheAsideComparisonField contains field comparisons for CacheAside.
+type CacheAsideCacheAsideComparisonField struct {
 	ReadResValue *gcmp.ComparisonField[*string]
 }

@@ -17,7 +17,7 @@ The example already includes the FizzBee exploration results and generated tests
 
 ## Build and Connect the Tests
 
-You have run the finished example. Now follow the steps for connecting SpecGuardian to a project, using the [tutorial application](../examples/tutorial_cache_aside_write/) to build a `Write` conformance test.
+You have run the finished example. Now follow the steps for connecting SpecGuardian to a project, using the [tutorial application](../examples/tutorial_cache_aside_write/) to build a `WriteAndInvalidate` conformance test.
 
 ### 1. Prepare an independent project
 
@@ -44,12 +44,12 @@ mkdir -p docs/spec
 cp "$TUTORIAL_ROOT/docs/spec/CacheAside.fizz" docs/spec/
 ```
 
-The spec models each database and cache operation as atomic and allows a crash before or between them. The `@conformance` marker identifies the role to check against the application. Its actions usually represent functions or endpoints; here, SpecGuardian tests `Write`.
+The spec models each database and cache operation as atomic and allows a crash before or between them. The `@conformance` marker identifies the role to check against the application. Its actions usually represent functions or endpoints; here, SpecGuardian tests `WriteAndInvalidate`.
 
 ```fizzbee
 @conformance
-role Application:
-  fair action Write:
+role CacheAside:
+  fair action WriteAndInvalidate:
     # Yield to allow a crash before the first I/O.
     atomic:
       pass
@@ -60,7 +60,7 @@ action Init:
   db = DB()
   cache = Cache()
   key = oneof ["cached", "uncached"]
-  application = Application(key=key, write_value="new")
+  cache_aside = CacheAside(key=key, write_value="new")
 ```
 
 Run FizzBee from your project directory:
@@ -121,10 +121,10 @@ Connect the generated tests to the application. Copy the completed conformance c
 
 ```bash
 cd "$NEW_TUTORIAL_DIR"
-cp "$TUTORIAL_ROOT"/conformance/specguardian/application_conformance_impl_test.go conformance/specguardian/
+cp "$TUTORIAL_ROOT"/conformance/specguardian/cacheaside_conformance_impl_test.go conformance/specguardian/
 ```
 
-The copied code opens database and cache connections, wires fault injection for `Write`, and maps the model's arguments to the application call.
+The copied code opens database and cache connections, wires fault injection for `WriteAndInvalidate`, and maps the model's arguments to the application call.
 
 The configuration's `hooks: [cleanup_case]` enables the hook that closes these connections after each case.
 
@@ -143,7 +143,7 @@ The test checks whether the application's state and failure outcome are allowed 
 
 ### 6. Complete the tutorial
 
-You now have a working `Write` conformance test that checks the application's state against the FizzBee spec. To test `Read`, see the [full cache-aside example](../examples/cache_aside/).
+You now have a working `WriteAndInvalidate` conformance test that checks the application's state against the FizzBee spec. To test `Read`, see the [full cache-aside example](../examples/cache_aside/).
 
 Follow the same flow in your own project: explore your FizzBee spec, initialize SpecGuardian, configure data preparation and observation, connect the generated tests to your application, and run them. Use your project's spec, `specguardian.yml`, and application connection code in place of the tutorial files.
 

@@ -69,7 +69,7 @@
                       "column": 2
                     }
                   },
-                  "condition": "application.read_status == RequestStatus.DONE",
+                  "condition": "cache_aside.read_status == RequestStatus.DONE",
                   "block": {
                     "sourceInfo": {
                       "start": {
@@ -116,7 +116,7 @@
                                   "column": 4
                                 }
                               },
-                              "condition": "application.key == \"db_cache_written\"",
+                              "condition": "cache_aside.key == \"db_cache_written\"",
                               "block": {
                                 "sourceInfo": {
                                   "start": {
@@ -151,7 +151,7 @@
                                           "column": 91
                                         }
                                       },
-                                      "pyExpr": "application.read_res_value == \"foo\" or application.read_res_value == \"written\"",
+                                      "pyExpr": "cache_aside.read_res_value == \"foo\" or cache_aside.read_res_value == \"written\"",
                                       "expr": {
                                         "sourceInfo": {
                                           "start": {
@@ -163,7 +163,7 @@
                                             "column": 91
                                           }
                                         },
-                                        "pyExpr": "application.read_res_value == \"foo\" or application.read_res_value == \"written\""
+                                        "pyExpr": "cache_aside.read_res_value == \"foo\" or cache_aside.read_res_value == \"written\""
                                       }
                                     }
                                   }
@@ -180,7 +180,7 @@
                                     "column": 44
                                   }
                                 },
-                                "pyExpr": "application.key == \"db_cache_written\""
+                                "pyExpr": "cache_aside.key == \"db_cache_written\""
                               }
                             },
                             {
@@ -194,7 +194,7 @@
                                   "column": 4
                                 }
                               },
-                              "condition": "application.key == \"db_written\"",
+                              "condition": "cache_aside.key == \"db_written\"",
                               "block": {
                                 "sourceInfo": {
                                   "start": {
@@ -229,7 +229,7 @@
                                           "column": 91
                                         }
                                       },
-                                      "pyExpr": "application.read_res_value == \"bar\" or application.read_res_value == \"written\"",
+                                      "pyExpr": "cache_aside.read_res_value == \"bar\" or cache_aside.read_res_value == \"written\"",
                                       "expr": {
                                         "sourceInfo": {
                                           "start": {
@@ -241,7 +241,7 @@
                                             "column": 91
                                           }
                                         },
-                                        "pyExpr": "application.read_res_value == \"bar\" or application.read_res_value == \"written\""
+                                        "pyExpr": "cache_aside.read_res_value == \"bar\" or cache_aside.read_res_value == \"written\""
                                       }
                                     }
                                   }
@@ -258,7 +258,7 @@
                                     "column": 40
                                   }
                                 },
-                                "pyExpr": "application.key == \"db_written\""
+                                "pyExpr": "cache_aside.key == \"db_written\""
                               }
                             },
                             {
@@ -272,7 +272,7 @@
                                   "column": 4
                                 }
                               },
-                              "condition": "application.key == \"not_written\"",
+                              "condition": "cache_aside.key == \"not_written\"",
                               "block": {
                                 "sourceInfo": {
                                   "start": {
@@ -307,7 +307,7 @@
                                           "column": 90
                                         }
                                       },
-                                      "pyExpr": "application.read_res_value == None or application.read_res_value == \"written\"",
+                                      "pyExpr": "cache_aside.read_res_value == None or cache_aside.read_res_value == \"written\"",
                                       "expr": {
                                         "sourceInfo": {
                                           "start": {
@@ -319,7 +319,7 @@
                                             "column": 90
                                           }
                                         },
-                                        "pyExpr": "application.read_res_value == None or application.read_res_value == \"written\""
+                                        "pyExpr": "cache_aside.read_res_value == None or cache_aside.read_res_value == \"written\""
                                       }
                                     }
                                   }
@@ -336,7 +336,7 @@
                                     "column": 41
                                   }
                                 },
-                                "pyExpr": "application.key == \"not_written\""
+                                "pyExpr": "cache_aside.key == \"not_written\""
                               }
                             },
                             {
@@ -423,7 +423,7 @@
                         "column": 50
                       }
                     },
-                    "pyExpr": "application.read_status == RequestStatus.DONE"
+                    "pyExpr": "cache_aside.read_status == RequestStatus.DONE"
                   }
                 },
                 {
@@ -496,7 +496,7 @@
           }
         ]
       },
-      "pyCode": "def GetCorrectResponse():\n  if application.read_status == RequestStatus.DONE:\n    if application.key == \"db_cache_written\":\n      return application.read_res_value == \"foo\" or application.read_res_value == \"written\"\n    elif application.key == \"db_written\":\n      return application.read_res_value == \"bar\" or application.read_res_value == \"written\"\n    elif application.key == \"not_written\":\n      return application.read_res_value == None or application.read_res_value == \"written\"\n    else:\n      return False\n  else:\n    return True\n\n"
+      "pyCode": "def GetCorrectResponse():\n  if cache_aside.read_status == RequestStatus.DONE:\n    if cache_aside.key == \"db_cache_written\":\n      return cache_aside.read_res_value == \"foo\" or cache_aside.read_res_value == \"written\"\n    elif cache_aside.key == \"db_written\":\n      return cache_aside.read_res_value == \"bar\" or cache_aside.read_res_value == \"written\"\n    elif cache_aside.key == \"not_written\":\n      return cache_aside.read_res_value == None or cache_aside.read_res_value == \"written\"\n    else:\n      return False\n  else:\n    return True\n\n"
     },
     {
       "sourceInfo": {
@@ -556,7 +556,7 @@
                       "column": 2
                     }
                   },
-                  "condition": "application.key in cache.cached_records",
+                  "condition": "cache_aside.key in cache.cached_records",
                   "block": {
                     "sourceInfo": {
                       "start": {
@@ -591,7 +591,7 @@
                               "column": 88
                             }
                           },
-                          "pyExpr": "cache.cached_records[application.key] in db.committed_values[application.key]",
+                          "pyExpr": "cache.cached_records[cache_aside.key] in db.committed_values[cache_aside.key]",
                           "expr": {
                             "sourceInfo": {
                               "start": {
@@ -603,7 +603,7 @@
                                 "column": 88
                               }
                             },
-                            "pyExpr": "cache.cached_records[application.key] in db.committed_values[application.key]"
+                            "pyExpr": "cache.cached_records[cache_aside.key] in db.committed_values[cache_aside.key]"
                           }
                         }
                       }
@@ -620,7 +620,7 @@
                         "column": 44
                       }
                     },
-                    "pyExpr": "application.key in cache.cached_records"
+                    "pyExpr": "cache_aside.key in cache.cached_records"
                   }
                 },
                 {
@@ -693,7 +693,7 @@
           }
         ]
       },
-      "pyCode": "def CachedValueIsSameWithDbOrOlder():\n  if application.key in cache.cached_records:\n    return cache.cached_records[application.key] in db.committed_values[application.key]\n  else:\n    return True\n\n"
+      "pyCode": "def CachedValueIsSameWithDbOrOlder():\n  if cache_aside.key in cache.cached_records:\n    return cache.cached_records[cache_aside.key] in db.committed_values[cache_aside.key]\n  else:\n    return True\n\n"
     }
   ],
   "actions": [
@@ -839,23 +839,23 @@
                 },
                 "end": {
                   "line": 111,
-                  "column": 59
+                  "column": 58
                 }
               },
               "vars": [
-                "application"
+                "cache_aside"
               ],
-              "name": "Application",
+              "name": "CacheAside",
               "args": [
                 {
                   "sourceInfo": {
                     "start": {
                       "line": 111,
-                      "column": 29
+                      "column": 28
                     },
                     "end": {
                       "line": 111,
-                      "column": 35
+                      "column": 34
                     }
                   },
                   "pyExpr": "key=key",
@@ -863,11 +863,11 @@
                     "sourceInfo": {
                       "start": {
                         "line": 111,
-                        "column": 29
+                        "column": 28
                       },
                       "end": {
                         "line": 111,
-                        "column": 35
+                        "column": 34
                       }
                     },
                     "pyExpr": "key=key"
@@ -877,11 +877,11 @@
                   "sourceInfo": {
                     "start": {
                       "line": 111,
-                      "column": 38
+                      "column": 37
                     },
                     "end": {
                       "line": 111,
-                      "column": 58
+                      "column": 57
                     }
                   },
                   "pyExpr": "write_value=\"written\"",
@@ -889,11 +889,11 @@
                     "sourceInfo": {
                       "start": {
                         "line": 111,
-                        "column": 38
+                        "column": 37
                       },
                       "end": {
                         "line": 111,
-                        "column": 58
+                        "column": 57
                       }
                     },
                     "pyExpr": "write_value=\"written\""
@@ -2230,7 +2230,7 @@
           "line": 106
         }
       },
-      "name": "Application",
+      "name": "CacheAside",
       "actions": [
         {
           "sourceInfo": {
@@ -2956,7 +2956,7 @@
               "line": 106
             }
           },
-          "name": "Write",
+          "name": "WriteAndInvalidate",
           "flow": "FLOW_SERIAL",
           "fairness": {
             "sourceInfo": {
