@@ -75,9 +75,10 @@ func (s *OrderServer) beginOrderIdempotentRequest(ctx context.Context, requestID
 	_, err := s.dynamo.PutItem(ctx, &dynamodb.PutItemInput{
 		TableName: aws.String(orderIdempotencyTable),
 		Item: map[string]types.AttributeValue{
-			"id":      stringAttribute(requestID),
-			"payload": stringAttribute(payload),
-			"status":  stringAttribute(string(IdempotencyStatusProcessing)),
+			"id":       stringAttribute(requestID),
+			"payload":  stringAttribute(payload),
+			"order_id": &types.AttributeValueMemberNULL{Value: true},
+			"status":   stringAttribute(string(IdempotencyStatusProcessing)),
 		},
 		ConditionExpression: aws.String("attribute_not_exists(id)"),
 	})

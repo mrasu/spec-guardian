@@ -1,0 +1,97 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+description: >-
+  Seed and observe items in existing tables with a single string partition key.
+title: dynamodb provider configuration
+$defs:
+  nonemptyString:
+    type: string
+    minLength: 1
+  providerConfig:
+    type: object
+    description: >-
+      Connection settings are required unless Config.Client is supplied, which overrides them. Table declarations do not create tables.
+    additionalProperties: false
+    properties:
+      endpoint:
+        $ref: '#/$defs/nonemptyString'
+        description: >-
+          DynamoDB endpoint URL.
+      region:
+        $ref: '#/$defs/nonemptyString'
+        description: >-
+          AWS region.
+      access_key_id:
+        $ref: '#/$defs/nonemptyString'
+        description: >-
+          Static credential access key ID.
+      secret_access_key:
+        $ref: '#/$defs/nonemptyString'
+        description: >-
+          Static credential secret access key.
+      tables:
+        type: array
+        description: >-
+          Existing tables available to field config.table.
+        items:
+          type: object
+          additionalProperties: false
+          required: [name, attribute_definitions, key_schema]
+          properties:
+            name:
+              $ref: '#/$defs/nonemptyString'
+              description: >-
+                DynamoDB table name.
+            attribute_definitions:
+              type: array
+              description: >-
+                Partition key definition. Model message fields define non-key attributes.
+              minItems: 1
+              maxItems: 1
+              items:
+                type: object
+                additionalProperties: false
+                required: [attribute_name, attribute_type]
+                properties:
+                  attribute_name:
+                    $ref: '#/$defs/nonemptyString'
+                    description: >-
+                      Must match attribute_name in key_schema.
+                  attribute_type:
+                    const: S
+                    description: >-
+                      String partition key.
+            key_schema:
+              type: array
+              minItems: 1
+              maxItems: 1
+              items:
+                type: object
+                additionalProperties: false
+                required: [attribute_name, key_type]
+                properties:
+                  attribute_name:
+                    $ref: '#/$defs/nonemptyString'
+                    description: >-
+                      Partition key attribute declared in attribute_definitions.
+                  key_type:
+                    const: HASH
+  fieldConfig:
+    type: object
+    description: >-
+      Seed and observe all table items; delete them only in CleanupAttempt after each attempt. Non-key fields support string, int64, and bool; nullable values use explicit DynamoDB NULL.
+    additionalProperties: false
+    required: [table, result]
+    properties:
+      table:
+        $ref: '#/$defs/nonemptyString'
+        description: >-
+          Name in provider config.tables. Each table may serve only one field.
+      result:
+        type: object
+        additionalProperties: false
+        required: [type]
+        properties:
+          type:
+            description: >-
+              item_map uses partition keys as map keys and excludes them from messages. item_list includes the partition key in each message as a non-nullable string field.
+            enum: [item_map, item_list]

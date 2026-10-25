@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGenerateScalarObserver_ObservesAndComparesDeclaredTypes(t *testing.T) {
+func TestGenerateScalarProvider_ObservesAndComparesDeclaredTypes(t *testing.T) {
 	messageFields := map[string]Type{"cnt": {Kind: KindInt64}, "source": {Kind: KindString, SkipComparison: true}}
 	tests := []struct {
 		name   string
@@ -44,7 +44,7 @@ func TestGenerateScalarObserver_ObservesAndComparesDeclaredTypes(t *testing.T) {
 	var declarations Declarations
 	for _, tt := range tests {
 		fields[tt.name] = tt.value
-		declarations.Observers = append(declarations.Observers, Observer{Field: mustField(t, "Reader."+tt.name), ObserverID: "custom", PluginImportPath: "example.test/generated/custom", PluginAlias: "custom", Type: tt.spec})
+		declarations.Providers = append(declarations.Providers, Provider{Field: mustField(t, "Reader."+tt.name), ProviderID: "custom", SourceImportPath: "example.test/generated/custom", SourceAlias: "custom", Type: tt.spec})
 	}
 	role := fizzbee.RoleState{Name: "Reader", Fields: fields}
 	cases := []fizzbee.ActionCase{{Action: fizzbee.ActionRef{Role: "Reader", Action: "Read"}, Input: fizzbee.Input{Roles: []fizzbee.RoleState{role}}, Outputs: []fizzbee.Output{{Roles: []fizzbee.RoleState{role}}}}}
@@ -70,16 +70,16 @@ func TestGenerateScalarObserver_ObservesAndComparesDeclaredTypes(t *testing.T) {
 		"common_test.go": sources.Common,
 		"cases_test.go":  sources.RoleCases["Reader"],
 		"impl_test.go":   []byte(scaffold),
-		"custom/observer.go": []byte(`package custom
-import ("context"; "github.com/mrasu/spec-guardian/guardian/observer")
+		"custom/provider.go": []byte(`package custom
+import ("context"; "github.com/mrasu/spec-guardian/guardian/provider")
 type Config struct{}
-type Observer struct { Values map[string]any }
-func New(Config, map[string]any, []observer.FieldRequest) (*Observer, error) { return &Observer{}, nil }
-func (o *Observer) Observe(ctx context.Context, field string) (any, error) { return o.Values[field], nil }
-func (*Observer) PrepareCase(context.Context) error { return nil }
-func (*Observer) PrepareAttempt(context.Context) error { return nil }
-func (*Observer) CleanupCase(context.Context) error { return nil }
-func (*Observer) CleanupAttempt(context.Context) error { return nil }
+type Provider struct { Values map[string]any }
+func New(Config, map[string]any, []provider.FieldRequest) (*Provider, error) { return &Provider{}, nil }
+func (o *Provider) Observe(ctx context.Context, field string) (any, error) { return o.Values[field], nil }
+func (*Provider) PrepareCase(context.Context) error { return nil }
+func (*Provider) PrepareAttempt(context.Context) error { return nil }
+func (*Provider) CleanupCase(context.Context) error { return nil }
+func (*Provider) CleanupAttempt(context.Context) error { return nil }
 `),
 		"runtime_test.go": []byte(`package specguardian_test
 import (
@@ -88,7 +88,7 @@ import (
  "testing"
  "example.test/generated/custom"
  "github.com/mrasu/spec-guardian/guardian/gcmp"
- "github.com/mrasu/spec-guardian/guardian/observer"
+ "github.com/mrasu/spec-guardian/guardian/provider"
 )
 func TestObserveScalarAndMessageFields(t *testing.T) {
  tests := []struct { name string; nullable bool }{{"null", false}, {"non-null", true}, {"empty", false}}
@@ -129,7 +129,7 @@ func TestObserveScalarAndMessageFields(t *testing.T) {
    if err != nil { t.Fatal(err) }
    var allowed FizzbeeReaderState
    if err := json.Unmarshal(data, &allowed); err != nil { t.Fatal(err) }
-   e := &ReaderConformanceEnvironment{ReaderEnvironment: &ReaderEnvironment{}, observerCustom: &custom.Observer{Values: values}}
+   e := &ReaderConformanceEnvironment{ReaderEnvironment: &ReaderEnvironment{}, providerCustom: &custom.Provider{Values: values}}
    observed := e.ObserveReadState(t, FizzbeeReaderState{}, ReaderReadOutput{}, nil)
    comparison := e.BuildAllowedReadState(t, allowed)
    comparator := gcmp.NewObservedStateComparator[*ReaderComparisonState](observed)
@@ -161,12 +161,12 @@ func TestObserveScalarAndMessageFields(t *testing.T) {
  }
 }
 func TestConversionRejectsInvalidDeclaredValues(t *testing.T) {
- if got, err := observer.Convert[int64](float64(1)); err == nil || got != 0 { t.Fatalf("got %v, error %v", got, err) }
- if got, err := observer.Convert[string](nil); err == nil || got != "" { t.Fatalf("got %v, error %v", got, err) }
- if got, err := observer.Convert[*int64]("1"); err == nil || got != nil { t.Fatalf("got %v, error %v", got, err) }
+ if got, err := provider.Convert[int64](float64(1)); err == nil || got != 0 { t.Fatalf("got %v, error %v", got, err) }
+ if got, err := provider.Convert[string](nil); err == nil || got != "" { t.Fatalf("got %v, error %v", got, err) }
+ if got, err := provider.Convert[*int64]("1"); err == nil || got != nil { t.Fatalf("got %v, error %v", got, err) }
  tests := []any{nil, map[string]any{"cnt": int64(1)}, map[string]any{"cnt": int64(1), "source": "x", "extra": "x"}, map[string]any{"cnt": float64(1), "source": "x"}}
  for _, value := range tests {
-  got, err := observer.Convert[ReaderMessageValue](value)
+  got, err := provider.Convert[ReaderMessageValue](value)
   if err == nil || got != (ReaderMessageValue{}) { t.Fatalf("got %v, error %v", got, err) }
  }
 }

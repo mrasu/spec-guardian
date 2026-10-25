@@ -23,7 +23,7 @@ func resolveDeclarations(config *Config, cases []fizzbee.ActionCase) (renderer.D
 			return renderer.Declarations{}, err
 		}
 	}
-	for _, field := range config.declarations.Observers {
+	for _, field := range config.declarations.Providers {
 		if err := validateFieldInCases(field.Field, cases); err != nil {
 			return renderer.Declarations{}, err
 		}

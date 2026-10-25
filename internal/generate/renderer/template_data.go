@@ -14,6 +14,7 @@ import (
 
 // TemplateData contains the values and presentation helpers consumed by source templates.
 type TemplateData struct {
+	Hooks                Hooks
 	FetchedActionCrashed bool
 	ManualActionCrashed  bool
 	Module               string
@@ -21,9 +22,9 @@ type TemplateData struct {
 	Actions              []*action
 	Roles                []roleSchema
 	DeclaredTypes        []DeclaredType
-	Observers            []Observer
-	ObserverGroups       []ObserverGroup
-	PluginImports        []PluginImport
+	Providers            []Provider
+	ProviderGroups       []ProviderGroup
+	SourceImports        []SourceImport
 	ShapeFunctions       []string
 }
 
@@ -57,9 +58,10 @@ type DeclaredType struct {
 
 // Declarations contains validated field settings used during generation.
 type Declarations struct {
+	Hooks                 Hooks
 	CompareActionCrashed  *bool
-	ActionCrashedObserver *Observer
-	Observers             []Observer
+	ActionCrashedProvider *Provider
+	Providers             []Provider
 	TypedFields           []TypedField
 	Unobservable          []UnobservableField
 	ExcludedRoles         []ExcludedRole
@@ -83,33 +85,36 @@ type UnobservableField struct {
 	Reason string
 }
 
-// Observer is a validated field request for a declared observer.
-type Observer struct {
-	ObserverField                                           string
+// Provider is a validated field request for a declared provider.
+type Provider struct {
+	ProviderField                                           string
 	Metadata                                                bool
 	Result                                                  bool
 	Field                                                   *Field
-	ObserverID, RoleName, FieldName, GoName, ObserverGoName string
-	PluginImportPath, PluginAlias                           string
+	ProviderID, RoleName, FieldName, GoName, ProviderGoName string
+	SourceImportPath, SourceAlias                           string
+	Capabilities                                            []string
 	Kind, ValueKind                                         string
 	ConvertType                                             string
 	Type                                                    Type
 	TypeLiteral                                             string
-	ObserverConfig, FieldConfig                             map[string]any
+	ProviderConfig, FieldConfig                             map[string]any
 }
 
-// ObserverGroup contains all fields served by one named observer.
-type ObserverGroup struct {
+// ProviderGroup contains all fields served by one named provider.
+type ProviderGroup struct {
+	Seed        bool
 	GoField     string
 	ID          string
 	GoName      string
-	PluginAlias string
+	SourceAlias string
 	Config      map[string]any
-	Fields      []Observer
+	Fields      []Provider
+	Interfaces  []string
 }
 
-// PluginImport is one observer plugin package used by a generated role.
-type PluginImport struct {
+// SourceImport is one provider source package used by a generated role.
+type SourceImport struct {
 	Alias string
 	Path  string
 }
@@ -176,25 +181,26 @@ func BuildTemplateData(modulePath, role string, model fizzbee.Model, declaration
 		return nil, err
 	}
 	data := newTemplateData(modulePath, role, actions)
+	data.Hooks = declarations.Hooks
 	for _, action := range actions {
 		action.CompareActionCrashed = model.Options.CrashOnYield
 		if declarations.CompareActionCrashed != nil {
 			action.CompareActionCrashed = *declarations.CompareActionCrashed
 		}
 		if action.CompareActionCrashed {
-			if declarations.ActionCrashedObserver != nil {
+			if declarations.ActionCrashedProvider != nil {
 				data.FetchedActionCrashed = true
 			} else {
 				data.ManualActionCrashed = true
 			}
 		}
 	}
-	observers := append([]Observer(nil), declarations.Observers...)
+	providers := append([]Provider(nil), declarations.Providers...)
 	if data.FetchedActionCrashed {
-		observers = append(observers, *declarations.ActionCrashedObserver)
+		providers = append(providers, *declarations.ActionCrashedProvider)
 	}
-	if len(observers) > 0 {
-		applyObservers(data, observers)
+	if len(providers) > 0 {
+		applyProviders(data, providers)
 	}
 	if len(declarations.TypedFields) > 0 {
 		applyTypedFields(data, declarations.TypedFields)
@@ -277,65 +283,65 @@ func markUnobservableField(roles []roleSchema, roleName, fieldName string) {
 	}
 }
 
-func applyObservers(data *TemplateData, observers []Observer) {
-	for _, observer := range observers {
-		observer.RoleName = observer.Field.RoleName()
-		observer.FieldName = observer.Field.FieldName()
-		observer.GoName = goName(observer.FieldName)
-		observer.ObserverGoName = goName(observer.ObserverID)
-		if observer.ObserverConfig == nil {
-			observer.ObserverConfig = map[string]any{}
+func applyProviders(data *TemplateData, providers []Provider) {
+	for _, provider := range providers {
+		provider.RoleName = provider.Field.RoleName()
+		provider.FieldName = provider.Field.FieldName()
+		provider.GoName = goName(provider.FieldName)
+		provider.ProviderGoName = goName(provider.ProviderID)
+		if provider.ProviderConfig == nil {
+			provider.ProviderConfig = map[string]any{}
 		}
-		if observer.FieldConfig == nil {
-			observer.FieldConfig = map[string]any{}
+		if provider.FieldConfig == nil {
+			provider.FieldConfig = map[string]any{}
 		}
-		if observer.Metadata {
-			observer.RoleName = "SgMetadata"
+		if provider.Metadata {
+			provider.RoleName = "SgMetadata"
 		}
-		observer.ConvertType = "map[string]" + observer.ValueKind
-		if observer.Type.Kind != "" {
-			observer.ConvertType = observer.Type.GoType()
-			observer.TypeLiteral = typeLiteral(observer.Type)
-			if needsDeclaredShape(observer.Type) {
-				observer.ConvertType = toDeclaredShape(observer.Type, observer.RoleName+observer.GoName, true).RawType
+		provider.ConvertType = "map[string]" + provider.ValueKind
+		if provider.Type.Kind != "" {
+			provider.ConvertType = provider.Type.GoType()
+			provider.TypeLiteral = typeLiteral(provider.Type)
+			if needsDeclaredShape(provider.Type) {
+				provider.ConvertType = toDeclaredShape(provider.Type, provider.RoleName+provider.GoName, true).RawType
 			}
 		}
-		data.Observers = append(data.Observers, observer)
+		data.Providers = append(data.Providers, provider)
 		for _, action := range data.Actions {
-			if observer.Metadata {
+			if provider.Metadata {
 				continue
 			}
-			applyObserverType(action, observer)
+			applyProviderType(action, provider)
 		}
 	}
-	sort.Slice(data.Observers, func(i, j int) bool {
-		return data.Observers[i].Field.String() < data.Observers[j].Field.String()
+	sort.Slice(data.Providers, func(i, j int) bool {
+		return data.Providers[i].Field.String() < data.Providers[j].Field.String()
 	})
-	data.ObserverGroups = groupObservers(data.Observers)
-	for i := range data.Observers {
-		for _, group := range data.ObserverGroups {
-			if data.Observers[i].ObserverID == group.ID {
-				data.Observers[i].ObserverField = group.GoField
+	data.ProviderGroups = groupProviders(data.Providers)
+	for i := range data.Providers {
+		for _, group := range data.ProviderGroups {
+			if data.Providers[i].ProviderID == group.ID {
+				data.Providers[i].ProviderField = group.GoField
 			}
 		}
 	}
-	data.PluginImports = pluginImports(data.ObserverGroups)
+	data.SourceImports = sourceImports(data.ProviderGroups)
 }
 
-func applyObserverType(action *action, observer Observer) {
+func applyProviderType(action *action, provider Provider) {
 	for roleIndex := range action.Roles {
 		role := &action.Roles[roleIndex]
-		if !role.matchesSource(observer.Field.RoleName()) {
+		if !role.matchesSource(provider.Field.RoleName()) {
 			continue
 		}
 		for fieldIndex := range role.Fields {
 			field := &role.Fields[fieldIndex]
-			if field.JSONName != observer.FieldName {
+			if field.JSONName != provider.FieldName {
 				continue
 			}
-			field.GoType = observer.ConvertType
-			if needsDeclaredShape(observer.Type) {
-				applyDeclaredShape(field, toDeclaredShape(observer.Type, observer.RoleName+observer.GoName, true))
+			field.GoType = provider.ConvertType
+			if needsDeclaredShape(provider.Type) {
+				applyDeclaredShape(field, toDeclaredShape(provider.Type, provider.RoleName+provider.GoName, true))
 			} else {
 				field.ComparisonType = field.GoType
 			}
@@ -345,7 +351,7 @@ func applyObserverType(action *action, observer Observer) {
 }
 
 func typeLiteral(spec Type) string {
-	parts := []string{"Kind: observer.Kind" + goName(string(spec.Kind))}
+	parts := []string{"Kind: provider.Kind" + goName(string(spec.Kind))}
 	if spec.Nullable {
 		parts = append(parts, "Nullable: true")
 	}
@@ -360,30 +366,32 @@ func typeLiteral(spec Type) string {
 		sort.Strings(keys)
 		fields := make([]string, 0, len(keys))
 		for _, key := range keys {
-			fields = append(fields, strconv.Quote(key)+": "+strings.TrimPrefix(typeLiteral(spec.Fields[key]), "observer.Type"))
+			fields = append(fields, strconv.Quote(key)+": "+strings.TrimPrefix(typeLiteral(spec.Fields[key]), "provider.Type"))
 		}
-		parts = append(parts, "Fields: "+compositeLiteral("map[string]observer.Type", fields))
+		parts = append(parts, "Fields: "+compositeLiteral("map[string]provider.Type", fields))
 	}
-	return compositeLiteral("observer.Type", parts)
+	return compositeLiteral("provider.Type", parts)
 }
 
-func groupObservers(observers []Observer) []ObserverGroup {
-	byID := make(map[string]*ObserverGroup)
-	for _, observer := range observers {
-		group := byID[observer.ObserverID]
+func groupProviders(providers []Provider) []ProviderGroup {
+	byID := make(map[string]*ProviderGroup)
+	for _, provider := range providers {
+		group := byID[provider.ProviderID]
 		if group == nil {
-			group = &ObserverGroup{
-				GoField:     "observer" + observer.ObserverGoName,
-				ID:          observer.ObserverID,
-				GoName:      observer.ObserverGoName,
-				PluginAlias: observer.PluginAlias,
-				Config:      observer.ObserverConfig,
+			group = &ProviderGroup{
+				Seed:        slices.Contains(provider.Capabilities, "seed"),
+				GoField:     "provider" + provider.ProviderGoName,
+				ID:          provider.ProviderID,
+				GoName:      provider.ProviderGoName,
+				SourceAlias: provider.SourceAlias,
+				Config:      provider.ProviderConfig,
+				Interfaces:  providerInterfaces(provider.Capabilities),
 			}
-			byID[observer.ObserverID] = group
+			byID[provider.ProviderID] = group
 		}
-		group.Fields = append(group.Fields, observer)
+		group.Fields = append(group.Fields, provider)
 	}
-	groups := make([]ObserverGroup, 0, len(byID))
+	groups := make([]ProviderGroup, 0, len(byID))
 	for _, group := range byID {
 		groups = append(groups, *group)
 	}
@@ -393,15 +401,33 @@ func groupObservers(observers []Observer) []ObserverGroup {
 	return groups
 }
 
-func pluginImports(groups []ObserverGroup) []PluginImport {
-	byPath := make(map[string]PluginImport)
+func providerInterfaces(capabilities []string) []string {
+	contracts := []struct {
+		capability  string
+		goInterface string
+	}{
+		{capability: "seed", goInterface: "Seeder"},
+		{capability: "observe", goInterface: "Observer"},
+		{capability: "observe_result", goInterface: "ResultObserver"},
+	}
+	interfaces := []string{"Lifecycle"}
+	for _, contract := range contracts {
+		if slices.Contains(capabilities, contract.capability) {
+			interfaces = append(interfaces, contract.goInterface)
+		}
+	}
+	return interfaces
+}
+
+func sourceImports(groups []ProviderGroup) []SourceImport {
+	byPath := make(map[string]SourceImport)
 	for _, group := range groups {
 		field := group.Fields[0]
-		byPath[field.PluginImportPath] = PluginImport{Alias: field.PluginAlias, Path: field.PluginImportPath}
+		byPath[field.SourceImportPath] = SourceImport{Alias: field.SourceAlias, Path: field.SourceImportPath}
 	}
-	imports := make([]PluginImport, 0, len(byPath))
-	for _, plugin := range byPath {
-		imports = append(imports, plugin)
+	imports := make([]SourceImport, 0, len(byPath))
+	for _, source := range byPath {
+		imports = append(imports, source)
 	}
 	sort.Slice(imports, func(i, j int) bool {
 		return imports[i].Path < imports[j].Path

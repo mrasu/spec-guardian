@@ -41,18 +41,10 @@ func LoadReaderCases(t *testing.T, filepath string) []ReaderCase {
 
 // PrepareReadCase sets up one case and registers its cleanup.
 func (e *ReaderConformanceEnvironment) PrepareReadCase(t *testing.T) {
-	e.SetupReadCase(t)
-	t.Cleanup(func() {
-		e.CleanupReadCase(t)
-	})
 }
 
 // PrepareReadAttempt sets up one fault attempt and registers its cleanup.
 func (e *ReaderConformanceEnvironment) PrepareReadAttempt(t *testing.T, input FizzbeeReaderState) {
-	e.SetupReadAttempt(t, input)
-	t.Cleanup(func() {
-		e.CleanupReadAttempt(t)
-	})
 }
 
 // ExecuteRead invokes the application action.
@@ -156,7 +148,7 @@ type ReaderReaderObservedField struct {
 	Status *gcmp.ObservedField[string]
 }
 
-// ReaderFetchedObservation contains fields collected by declared observers.
+// ReaderFetchedObservation contains fields collected by declared providers.
 type ReaderFetchedObservation struct {
 }
 

@@ -1,0 +1,15 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+description: >-
+  Report any non-nil action error as a crash.
+title: errorascrashed provider configuration
+$defs:
+  providerConfig:
+    type: object
+    description: >-
+      No settings. Omit config or use an empty object.
+    additionalProperties: false
+  fieldConfig:
+    type: object
+    description: >-
+      No settings. Requires a non-nullable bool; true means the action returned an error.
+    additionalProperties: false

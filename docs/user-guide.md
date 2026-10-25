@@ -44,16 +44,13 @@ mkdir -p docs/spec
 cp "$TUTORIAL_ROOT/docs/spec/CacheAside.fizz" docs/spec/
 ```
 
-The spec enables `crash_on_yield` to model interrupted writes. The `@conformance` marker identifies the role to check against the application. Its actions usually represent functions or endpoints; here, SpecGuardian tests `Write`.
+The spec models each database and cache operation as atomic and allows a crash before or between them. The `@conformance` marker identifies the role to check against the application. Its actions usually represent functions or endpoints; here, SpecGuardian tests `Write`.
 
 ```fizzbee
 @conformance
 role Application:
-  action Init:
-    pass
-
   fair action Write:
-    # Yield before the first I/O without changing the observed state.
+    # Yield to allow a crash before the first I/O.
     atomic:
       pass
     db.write(self.key, self.write_value)
@@ -87,10 +84,22 @@ go tool spec-guardian init --fizzbee-output-dir docs/spec/fizzbee_output
 
 `init` creates the initial configuration and a `go generate` entry point.
 
-For this tutorial, use the [completed configuration](../examples/tutorial_cache_aside_write/specguardian.yml), which declares SQL and Valkey observers. Omit its `dev` setting, which is used for developing SpecGuardian:
+For this tutorial, use the [completed configuration](../examples/tutorial_cache_aside_write/specguardian.yml), which declares SQL and Valkey providers. Omit its `dev` setting, which is used for developing SpecGuardian:
 
 ```bash
 sed '/^dev:/d' "$TUTORIAL_ROOT/specguardian.yml" > specguardian.yml
+```
+
+The configuration maps model fields to stored data:
+
+- `DB.records` maps to rows in the SQL `records` table, compared without regard to order.
+- `Cache.cached_records` maps to Valkey string keys stored with the `records:` prefix.
+
+These providers seed each attempt from the model's input state, observe the result, and clean up afterward.
+
+Generate the tests:
+
+```bash
 go generate ./conformance
 go mod tidy
 ```
@@ -115,7 +124,9 @@ cd "$NEW_TUTORIAL_DIR"
 cp "$TUTORIAL_ROOT"/conformance/specguardian/application_conformance_impl_test.go conformance/specguardian/
 ```
 
-The copied code sets up the database and cache, runs `Write`, and supplies its result. The observers in `specguardian.yml` read the database and cache state for comparison with the spec.
+The copied code opens database and cache connections, wires fault injection for `Write`, and maps the model's arguments to the application call.
+
+The configuration's `hooks: [cleanup_case]` enables the hook that closes these connections after each case.
 
 ### 5. Run the connected test
 
@@ -134,7 +145,7 @@ The test checks whether the application's state and failure outcome are allowed 
 
 You now have a working `Write` conformance test that checks the application's state against the FizzBee spec. To test `Read`, see the [full cache-aside example](../examples/cache_aside/).
 
-Follow the same flow in your own project: explore your FizzBee spec, initialize SpecGuardian, configure observation, connect the generated tests to your application, and run them. Use your project's spec, `specguardian.yml`, and application connection code in place of the tutorial files.
+Follow the same flow in your own project: explore your FizzBee spec, initialize SpecGuardian, configure data preparation and observation, connect the generated tests to your application, and run them. Use your project's spec, `specguardian.yml`, and application connection code in place of the tutorial files.
 
 When you change the spec, rerun FizzBee and regenerate the tests:
 

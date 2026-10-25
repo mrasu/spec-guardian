@@ -22,6 +22,25 @@ import (
 
 var updateGolden = flag.Bool("update-golden", false, "update renderer golden files")
 
+func TestGenerateProviderContracts_ChecksDeclaredCapabilitiesOncePerProvider(t *testing.T) {
+	role := fizzbee.RoleState{Name: "Reader", Fields: fizzbee.JSONObject{"ready": true, "cached": false}}
+	cases := []fizzbee.ActionCase{{
+		Action:  fizzbee.ActionRef{Role: "Reader", Action: "Read"},
+		Input:   fizzbee.Input{Roles: []fizzbee.RoleState{role}},
+		Outputs: []fizzbee.Output{{Roles: []fizzbee.RoleState{role}}},
+	}}
+	declarations := Declarations{Providers: []Provider{
+		{Field: mustField(t, "Reader.ready"), ProviderID: "custom", SourceImportPath: "example.test/custom", SourceAlias: "custom", Capabilities: []string{"observe_result"}, Result: true, Type: Type{Kind: KindBool}},
+		{Field: mustField(t, "Reader.cached"), ProviderID: "custom", SourceImportPath: "example.test/custom", SourceAlias: "custom", Capabilities: []string{"observe_result"}, Result: true, Type: Type{Kind: KindBool}},
+	}}
+	sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: cases}, declarations)
+	require.NoError(t, err)
+	source := string(sources.RoleCases["Reader"])
+	for _, contract := range []string{"Lifecycle", "ResultObserver"} {
+		assert.Equal(t, 1, strings.Count(source, "var _ provider."+contract+" = (*custom.Provider)(nil)"), contract)
+	}
+}
+
 func mustField(t *testing.T, value string) *Field {
 	t.Helper()
 	field, err := NewField(value)
@@ -181,33 +200,33 @@ func TestGenerateSharesStateTypesAcrossActions(t *testing.T) {
 	assert.NotContains(t, roleSource, "BuildAllowedRefreshState")
 }
 
-func TestGeneratedObserverFieldUsesOneConstant(t *testing.T) {
+func TestGeneratedProviderFieldUsesOneConstant(t *testing.T) {
 	cases := []fizzbee.ActionCase{
 		newRendererActionCase("Reader", "Read"),
 		newRendererActionCase("Reader", "Refresh"),
 	}
-	observers := []Observer{
+	providers := []Provider{
 		{
 			Field:            mustField(t, "Reader.status"),
-			ObserverID:       "state",
-			PluginImportPath: "example.test/observer",
-			PluginAlias:      "stateobserver",
+			ProviderID:       "state",
+			SourceImportPath: "example.test/provider",
+			SourceAlias:      "stateprovider",
 			ValueKind:        "string",
 		},
 	}
-	sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: cases}, Declarations{Observers: observers})
+	sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: cases}, Declarations{Providers: providers})
 	require.NoError(t, err)
 	source := string(sources.RoleCases["Reader"])
 	common := string(sources.Common)
 	require.Equal(t, 1, strings.Count(common, "_sgFieldReaderStatus = \"Reader.status\""))
-	require.Equal(t, 1, strings.Count(common, "func _sgObserverStateSettings()"))
+	require.Equal(t, 1, strings.Count(common, "func _sgProviderStateSettings()"))
 	require.NotContains(t, source, "\"Reader.status\"")
-	require.Contains(t, source, "_sgObserverStateSettings()")
+	require.Contains(t, source, "_sgProviderStateSettings()")
 	parseSource(t, "reader_conformance_cases_generated_test.go", sources.RoleCases["Reader"])
 	parseSource(t, "conformance_common_generated_test.go", sources.Common)
 }
 
-func TestGenerateSharedObserverFieldAcrossRoles(t *testing.T) {
+func TestGenerateSharedProviderFieldAcrossRoles(t *testing.T) {
 	cases := []fizzbee.ActionCase{
 		newRendererActionCase("Reader", "Read"),
 		newRendererActionCase("Writer", "Write"),
@@ -217,9 +236,9 @@ func TestGenerateSharedObserverFieldAcrossRoles(t *testing.T) {
 		cases[index].Input.Roles = append(cases[index].Input.Roles, database)
 		cases[index].Outputs[0].Roles = append(cases[index].Outputs[0].Roles, database)
 	}
-	declarations := Declarations{Observers: []Observer{{
-		Field: mustField(t, "DB.records"), ObserverID: "db", PluginImportPath: "example.test/observer", PluginAlias: "dbobserver", ValueKind: "message",
-		ObserverConfig: map[string]any{"endpoint": "example"}, FieldConfig: map[string]any{"query": "SELECT records"},
+	declarations := Declarations{Providers: []Provider{{
+		Field: mustField(t, "DB.records"), ProviderID: "db", SourceImportPath: "example.test/provider", SourceAlias: "dbprovider", ValueKind: "message",
+		ProviderConfig: map[string]any{"endpoint": "example"}, FieldConfig: map[string]any{"query": "SELECT records"},
 		Type: Type{Kind: KindMap, Values: &Type{Kind: KindMessage, Fields: map[string]Type{
 			"name": {Kind: KindString},
 		}}},
@@ -228,13 +247,13 @@ func TestGenerateSharedObserverFieldAcrossRoles(t *testing.T) {
 	require.NoError(t, err)
 	common := string(sources.Common)
 	require.Equal(t, 1, strings.Count(common, "_sgFieldDBRecords = \"DB.records\""))
-	require.Equal(t, 1, strings.Count(common, "func _sgObserverDbSettings()"))
+	require.Equal(t, 1, strings.Count(common, "func _sgProviderDbSettings()"))
 	require.Equal(t, 1, strings.Count(common, "\"endpoint\": \"example\""))
 	require.Equal(t, 1, strings.Count(common, "\"query\": \"SELECT records\""))
 	require.Contains(t, common, "type DBRecordsField struct")
 	require.Contains(t, common, "Name string `json:\"name\"`")
 	for role, source := range sources.RoleCases {
-		require.Contains(t, string(source), "_sgObserverDbSettings()")
+		require.Contains(t, string(source), "_sgProviderDbSettings()")
 		require.NotContains(t, string(source), "\"endpoint\": \"example\"")
 		require.NotContains(t, string(source), "\"query\": \"SELECT records\"")
 		require.Contains(t, string(source), "Convert[map[string]DBRecordsField](valueDBRecords)")
@@ -247,13 +266,13 @@ func TestGenerateSharedObserverFieldAcrossRoles(t *testing.T) {
 	}
 }
 
-func TestGenerateListObserverUsesDeclaredFieldType(t *testing.T) {
+func TestGenerateListProviderUsesDeclaredFieldType(t *testing.T) {
 	caseData := newRendererActionCase("Reader", "Read")
 	files := []any{map[string]any{"file_path": "first", "rows": []any{[]any{"a", "b"}}}}
 	caseData.Input.Roles = append(caseData.Input.Roles, fizzbee.RoleState{Name: "ObjectStore", Fields: fizzbee.JSONObject{"data_files": files}})
 	caseData.Outputs[0].Roles = append(caseData.Outputs[0].Roles, fizzbee.RoleState{Name: "ObjectStore", Fields: fizzbee.JSONObject{"data_files": files}})
-	declarations := Declarations{Observers: []Observer{{
-		Field: mustField(t, "ObjectStore.data_files"), ObserverID: "files", PluginImportPath: "example.test/files", PluginAlias: "filesobserver",
+	declarations := Declarations{Providers: []Provider{{
+		Field: mustField(t, "ObjectStore.data_files"), ProviderID: "files", SourceImportPath: "example.test/files", SourceAlias: "filesprovider",
 		Type: Type{Kind: KindList, Values: &Type{Kind: KindMessage, Fields: map[string]Type{
 			"file_path": {Kind: KindString, SkipComparison: true},
 			"rows":      {Kind: KindList, Values: &Type{Kind: KindList, Values: &Type{Kind: KindString}}},
@@ -273,13 +292,13 @@ func TestGenerateListObserverUsesDeclaredFieldType(t *testing.T) {
 	parseSource(t, "conformance_common_generated_test.go", sources.Common)
 }
 
-func TestGenerateMapObserverIgnoresNestedField(t *testing.T) {
+func TestGenerateMapProviderIgnoresNestedField(t *testing.T) {
 	caseData := newRendererActionCase("Reader", "Read")
 	records := map[string]any{"first": map[string]any{"name": "Alice", "source": "remote"}}
 	caseData.Input.Roles = append(caseData.Input.Roles, fizzbee.RoleState{Name: "DB", Fields: fizzbee.JSONObject{"records": records}})
 	caseData.Outputs[0].Roles = append(caseData.Outputs[0].Roles, fizzbee.RoleState{Name: "DB", Fields: fizzbee.JSONObject{"records": records}})
-	declarations := Declarations{Observers: []Observer{{
-		Field: mustField(t, "DB.records"), ObserverID: "db", PluginImportPath: "example.test/db", PluginAlias: "dbobserver", ValueKind: "message",
+	declarations := Declarations{Providers: []Provider{{
+		Field: mustField(t, "DB.records"), ProviderID: "db", SourceImportPath: "example.test/db", SourceAlias: "dbprovider", ValueKind: "message",
 		Type: Type{Kind: KindMap, Values: &Type{Kind: KindMessage, Fields: map[string]Type{
 			"name": {Kind: KindString}, "source": {Kind: KindString, SkipComparison: true},
 		}}},
@@ -298,7 +317,7 @@ func TestGenerateListComparison_IgnoresDeclaredOrder(t *testing.T) {
 		name     string
 		observed bool
 	}{
-		{"observer field", true},
+		{"provider field", true},
 		{"manual field", false},
 	}
 	for _, tt := range tests {
@@ -314,7 +333,7 @@ func TestGenerateListComparison_IgnoresDeclaredOrder(t *testing.T) {
 			field := mustField(t, "ObjectStore.data_files")
 			var declarations Declarations
 			if tt.observed {
-				declarations.Observers = []Observer{{Field: field, ObserverID: "files", PluginImportPath: "example.test/files", PluginAlias: "filesobserver", Type: output}}
+				declarations.Providers = []Provider{{Field: field, ProviderID: "files", SourceImportPath: "example.test/files", SourceAlias: "filesprovider", Type: output}}
 			} else {
 				declarations.TypedFields = []TypedField{{Field: field, Type: output}}
 			}
@@ -335,9 +354,9 @@ func TestGenerateBuildsFetchedObservationAfterAllConversions(t *testing.T) {
 		role.Fields["first"] = map[string]any{"one": "value"}
 		role.Fields["second"] = map[string]any{"two": "value"}
 	}
-	declarations := Declarations{Observers: []Observer{
-		{Field: mustField(t, "Reader.first"), ObserverID: "first", PluginImportPath: "example.test/observer", PluginAlias: "stateobserver", ValueKind: "string"},
-		{Field: mustField(t, "Reader.second"), ObserverID: "second", PluginImportPath: "example.test/observer", PluginAlias: "stateobserver", ValueKind: "string"},
+	declarations := Declarations{Providers: []Provider{
+		{Field: mustField(t, "Reader.first"), ProviderID: "first", SourceImportPath: "example.test/provider", SourceAlias: "stateprovider", ValueKind: "string"},
+		{Field: mustField(t, "Reader.second"), ProviderID: "second", SourceImportPath: "example.test/provider", SourceAlias: "stateprovider", ValueKind: "string"},
 	}}
 	sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: []fizzbee.ActionCase{actionCase}}, declarations)
 	require.NoError(t, err)
@@ -368,7 +387,7 @@ func TestUnobservableFieldRemainsInModelButNotComparison(t *testing.T) {
 	refresh.Outputs[0].Roles[0].Fields["records"] = map[string]any{"key": "value"}
 
 	declarations := Declarations{
-		Observers:    []Observer{{Field: mustField(t, "Reader.records"), ObserverID: "store", PluginImportPath: "example.test/observer", PluginAlias: "storeobserver", ValueKind: "string"}},
+		Providers:    []Provider{{Field: mustField(t, "Reader.records"), ProviderID: "store", SourceImportPath: "example.test/provider", SourceAlias: "storeprovider", ValueKind: "string"}},
 		Unobservable: []UnobservableField{{Field: mustField(t, "Reader.history"), Reason: "not retained"}},
 	}
 	sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: []fizzbee.ActionCase{read, refresh}}, declarations)
@@ -434,9 +453,9 @@ func TestGenerateOmitsRolesWithoutManualFields(t *testing.T) {
 		fizzbee.RoleState{Name: "Cache", Fields: fizzbee.JSONObject{"cached_records": map[string]any{"key": "value"}}},
 	)
 	declarations := Declarations{
-		Observers: []Observer{
-			{Field: mustField(t, "DB.records"), ObserverID: "db", PluginImportPath: "example.test/observer", PluginAlias: "dbobserver", ValueKind: "string"},
-			{Field: mustField(t, "Cache.cached_records"), ObserverID: "cache", PluginImportPath: "example.test/observer", PluginAlias: "cacheobserver", ValueKind: "string"},
+		Providers: []Provider{
+			{Field: mustField(t, "DB.records"), ProviderID: "db", SourceImportPath: "example.test/provider", SourceAlias: "dbprovider", ValueKind: "string"},
+			{Field: mustField(t, "Cache.cached_records"), ProviderID: "cache", SourceImportPath: "example.test/provider", SourceAlias: "cacheprovider", ValueKind: "string"},
 		},
 	}
 	sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: []fizzbee.ActionCase{read}}, declarations)
@@ -495,7 +514,7 @@ func TestGenerateOmitsEmptyManualAndRoleFields(t *testing.T) {
 	read.Input.Roles = append(read.Input.Roles, fizzbee.RoleState{Name: "Internal", Fields: fizzbee.JSONObject{"status": "INIT"}})
 	read.Outputs[0].Roles = append(read.Outputs[0].Roles, fizzbee.RoleState{Name: "Internal", Fields: fizzbee.JSONObject{"status": "DONE"}})
 	declarations := Declarations{
-		Observers:    []Observer{{Field: mustField(t, "Reader.records"), ObserverID: "store", PluginImportPath: "example.test/observer", PluginAlias: "storeobserver", ValueKind: "string"}},
+		Providers:    []Provider{{Field: mustField(t, "Reader.records"), ProviderID: "store", SourceImportPath: "example.test/provider", SourceAlias: "storeprovider", ValueKind: "string"}},
 		Unobservable: []UnobservableField{{Field: mustField(t, "Internal.status"), Reason: "internal state"}},
 	}
 	sources, err := GenerateScaffold("example.test/project", fizzbee.Model{Cases: []fizzbee.ActionCase{read}}, declarations)
@@ -574,12 +593,12 @@ func parseSource(t *testing.T, name string, source []byte) {
 	require.NoError(t, err)
 }
 
-func TestGenerateListObserver_NullableAndWholeContainerIgnore(t *testing.T) {
+func TestGenerateListProvider_NullableAndWholeContainerIgnore(t *testing.T) {
 	caseData := newRendererActionCase("Reader", "Read")
 	caseData.Input.Roles = append(caseData.Input.Roles, fizzbee.RoleState{Name: "ObjectStore", Fields: fizzbee.JSONObject{"records": []any{}}})
 	caseData.Outputs[0].Roles = append(caseData.Outputs[0].Roles, fizzbee.RoleState{Name: "ObjectStore", Fields: fizzbee.JSONObject{"records": []any{}}})
-	declarations := Declarations{Observers: []Observer{{
-		Field: mustField(t, "ObjectStore.records"), ObserverID: "records", PluginImportPath: "example.test/records", PluginAlias: "recordsobserver",
+	declarations := Declarations{Providers: []Provider{{
+		Field: mustField(t, "ObjectStore.records"), ProviderID: "records", SourceImportPath: "example.test/records", SourceAlias: "recordsprovider",
 		Type: Type{Kind: KindList, Values: &Type{Kind: KindMessage, Fields: map[string]Type{
 			"snapshot": {Kind: KindMessage, Nullable: true, Fields: map[string]Type{"id": {Kind: KindInt64, Nullable: true}}},
 			"detail":   {Kind: KindMessage, SkipComparison: true, Fields: map[string]Type{"name": {Kind: KindString}}},

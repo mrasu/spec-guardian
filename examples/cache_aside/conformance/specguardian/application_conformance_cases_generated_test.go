@@ -9,11 +9,22 @@ import (
 
 	"github.com/mrasu/spec-guardian/guardian"
 	"github.com/mrasu/spec-guardian/guardian/gcmp"
-	"github.com/mrasu/spec-guardian/guardian/observer"
-	errorascrashedobserver "github.com/mrasu/spec-guardian/guardian/observer/errorascrashed"
-	sqlobserver "github.com/mrasu/spec-guardian/guardian/observer/sql"
-	valkeyobserver "github.com/mrasu/spec-guardian/guardian/observer/valkey"
+	"github.com/mrasu/spec-guardian/guardian/provider"
+	errorascrashedprovider "github.com/mrasu/spec-guardian/guardian/provider/errorascrashed"
+	sqlprovider "github.com/mrasu/spec-guardian/guardian/provider/sql"
+	valkeyprovider "github.com/mrasu/spec-guardian/guardian/provider/valkey"
 )
+
+var _ provider.Lifecycle = (*valkeyprovider.Provider)(nil)
+var _ provider.Seeder = (*valkeyprovider.Provider)(nil)
+var _ provider.Observer = (*valkeyprovider.Provider)(nil)
+
+var _ provider.Lifecycle = (*sqlprovider.Provider)(nil)
+var _ provider.Seeder = (*sqlprovider.Provider)(nil)
+var _ provider.Observer = (*sqlprovider.Provider)(nil)
+
+var _ provider.Lifecycle = (*errorascrashedprovider.Provider)(nil)
+var _ provider.ResultObserver = (*errorascrashedprovider.Provider)(nil)
 
 // ApplicationActions describes the application methods exercised by this role.
 // This generated interface is the contract implemented by the application adapter.
@@ -26,48 +37,48 @@ type ApplicationActions interface {
 type ApplicationConformanceEnvironment struct {
 	Actions ApplicationActions
 	*ApplicationEnvironment
-	observerCache          *valkeyobserver.Observer
-	observerDb             *sqlobserver.Observer
-	observerErrorAsCrashed *errorascrashedobserver.Observer
+	providerCache          *valkeyprovider.Provider
+	providerDb             *sqlprovider.Provider
+	providerErrorAsCrashed *errorascrashedprovider.Provider
 }
 
 // NewApplicationConformanceEnvironment builds the adapter and resources for a conformance case.
 func NewApplicationConformanceEnvironment(t *testing.T, controller *guardian.InjectionController) *ApplicationConformanceEnvironment {
 	t.Helper()
 	actions, environment := BuildApplicationConformanceComponents(t, controller)
-	configCache, fieldsCache := _sgObserverCacheSettings()
-	observerCache, errCache := valkeyobserver.New(
-		valkeyobserver.Config{},
+	configCache, fieldsCache := _sgProviderCacheSettings()
+	providerCache, errCache := valkeyprovider.New(
+		valkeyprovider.Config{},
 		configCache,
 		fieldsCache,
 	)
 	if errCache != nil {
-		t.Fatalf("observer cache New: %v", errCache)
+		t.Fatalf("provider cache New: %v", errCache)
 	}
-	configDb, fieldsDb := _sgObserverDbSettings()
-	observerDb, errDb := sqlobserver.New(
-		sqlobserver.Config{},
+	configDb, fieldsDb := _sgProviderDbSettings()
+	providerDb, errDb := sqlprovider.New(
+		sqlprovider.Config{},
 		configDb,
 		fieldsDb,
 	)
 	if errDb != nil {
-		t.Fatalf("observer db New: %v", errDb)
+		t.Fatalf("provider db New: %v", errDb)
 	}
-	configErrorAsCrashed, fieldsErrorAsCrashed := _sgObserverErrorAsCrashedSettings()
-	observerErrorAsCrashed, errErrorAsCrashed := errorascrashedobserver.New(
-		errorascrashedobserver.Config{},
+	configErrorAsCrashed, fieldsErrorAsCrashed := _sgProviderErrorAsCrashedSettings()
+	providerErrorAsCrashed, errErrorAsCrashed := errorascrashedprovider.New(
+		errorascrashedprovider.Config{},
 		configErrorAsCrashed,
 		fieldsErrorAsCrashed,
 	)
 	if errErrorAsCrashed != nil {
-		t.Fatalf("observer error_as_crashed New: %v", errErrorAsCrashed)
+		t.Fatalf("provider error_as_crashed New: %v", errErrorAsCrashed)
 	}
 	return &ApplicationConformanceEnvironment{
 		Actions:                actions,
 		ApplicationEnvironment: environment,
-		observerCache:          observerCache,
-		observerDb:             observerDb,
-		observerErrorAsCrashed: observerErrorAsCrashed,
+		providerCache:          providerCache,
+		providerDb:             providerDb,
+		providerErrorAsCrashed: providerErrorAsCrashed,
 	}
 }
 
@@ -79,66 +90,87 @@ func LoadApplicationCases(t *testing.T, filepath string) []ApplicationCase {
 
 // PrepareReadCase sets up one case and registers its cleanup.
 func (e *ApplicationConformanceEnvironment) PrepareReadCase(t *testing.T) {
-	e.SetupReadCase(t)
 	t.Cleanup(func() {
 		e.CleanupReadCase(t)
 	})
-	if err := e.observerCache.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer cache PrepareCase: %v", err)
+	if err := e.providerCache.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider cache PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerCache.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer cache CleanupCase: %v", err)
+		if err := e.providerCache.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider cache CleanupCase: %v", err)
 		}
 	})
-	if err := e.observerDb.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer db PrepareCase: %v", err)
+	if err := e.providerDb.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider db PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerDb.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer db CleanupCase: %v", err)
+		if err := e.providerDb.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider db CleanupCase: %v", err)
 		}
 	})
-	if err := e.observerErrorAsCrashed.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer error_as_crashed PrepareCase: %v", err)
+	if err := e.providerErrorAsCrashed.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider error_as_crashed PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerErrorAsCrashed.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer error_as_crashed CleanupCase: %v", err)
+		if err := e.providerErrorAsCrashed.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider error_as_crashed CleanupCase: %v", err)
 		}
 	})
 }
 
 // PrepareReadAttempt sets up one fault attempt and registers its cleanup.
 func (e *ApplicationConformanceEnvironment) PrepareReadAttempt(t *testing.T, input FizzbeeApplicationState) {
-	e.SetupReadAttempt(t, input)
 	t.Cleanup(func() {
-		e.CleanupReadAttempt(t)
-	})
-	if err := e.observerCache.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer cache PrepareAttempt: %v", err)
-	}
-	t.Cleanup(func() {
-		if err := e.observerCache.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer cache CleanupAttempt: %v", err)
+		if err := e.providerCache.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider cache CleanupAttempt: %v", err)
 		}
 	})
-	if err := e.observerDb.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer db PrepareAttempt: %v", err)
+	if err := e.providerCache.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider cache PrepareAttempt: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerDb.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer db CleanupAttempt: %v", err)
+		if err := e.providerDb.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider db CleanupAttempt: %v", err)
 		}
 	})
-	if err := e.observerErrorAsCrashed.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer error_as_crashed PrepareAttempt: %v", err)
+	if err := e.providerDb.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider db PrepareAttempt: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerErrorAsCrashed.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer error_as_crashed CleanupAttempt: %v", err)
+		if err := e.providerErrorAsCrashed.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider error_as_crashed CleanupAttempt: %v", err)
 		}
 	})
+	if err := e.providerErrorAsCrashed.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider error_as_crashed PrepareAttempt: %v", err)
+	}
+	_sgSeedRequestCache := provider.SeedRequest{Values: []provider.SeedValue{
+		{Field: "Cache.cached_records", Value: input.Fields.Cache.CachedRecords},
+	}}
+	_sgSeedResultCache, _sgSeedErrCache := e.providerCache.Seed(t.Context(), provider.CloneSeedRequest(_sgSeedRequestCache))
+	if _sgSeedErrCache != nil {
+		t.Fatalf("provider cache Seed: %v", _sgSeedErrCache)
+	}
+	if err := provider.ValidateSeedFields(_sgSeedRequestCache, _sgSeedResultCache); err != nil {
+		t.Fatalf("provider cache Seed: %v", err)
+	}
+	if err := provider.ValidateSeedValue("Cache.cached_records", input.Fields.Cache.CachedRecords, _sgSeedResultCache.Values[0].Value); err != nil {
+		t.Fatalf("provider cache Seed %s: %v", "Cache.cached_records", err)
+	}
+	_sgSeedRequestDb := provider.SeedRequest{Values: []provider.SeedValue{
+		{Field: "DB.records", Value: input.Fields.DB.Records},
+	}}
+	_sgSeedResultDb, _sgSeedErrDb := e.providerDb.Seed(t.Context(), provider.CloneSeedRequest(_sgSeedRequestDb))
+	if _sgSeedErrDb != nil {
+		t.Fatalf("provider db Seed: %v", _sgSeedErrDb)
+	}
+	if err := provider.ValidateSeedFields(_sgSeedRequestDb, _sgSeedResultDb); err != nil {
+		t.Fatalf("provider db Seed: %v", err)
+	}
+	if err := provider.ValidateSeedValue("DB.records", input.Fields.DB.Records, _sgSeedResultDb.Values[0].Value); err != nil {
+		t.Fatalf("provider db Seed %s: %v", "DB.records", err)
+	}
 }
 
 // ExecuteRead invokes the application action.
@@ -149,29 +181,29 @@ func (e *ApplicationConformanceEnvironment) ExecuteRead(ctx context.Context, inp
 // ObserveReadState collects the state and output visible after the action.
 func (e *ApplicationConformanceEnvironment) ObserveReadState(t *testing.T, input FizzbeeApplicationState, output ApplicationReadOutput, actionErr error) *ApplicationObservedState {
 	t.Helper()
-	valueCacheCachedRecords, err := e.observerCache.Observe(t.Context(), _sgFieldCacheCachedRecords)
+	valueCacheCachedRecords, err := e.providerCache.Observe(t.Context(), _sgFieldCacheCachedRecords)
 	if err != nil {
-		t.Fatalf("observer cache Observe %s: %v", _sgFieldCacheCachedRecords, err)
+		t.Fatalf("provider cache Observe %s: %v", _sgFieldCacheCachedRecords, err)
 	}
-	typedCacheCachedRecords, convertErr := observer.Convert[map[string]string](valueCacheCachedRecords)
+	typedCacheCachedRecords, convertErr := provider.Convert[map[string]string](valueCacheCachedRecords)
 	if convertErr != nil {
-		t.Fatalf("observer cache Observe %s: %v", _sgFieldCacheCachedRecords, convertErr)
+		t.Fatalf("provider cache Observe %s: %v", _sgFieldCacheCachedRecords, convertErr)
 	}
-	valueDBRecords, err := e.observerDb.Observe(t.Context(), _sgFieldDBRecords)
+	valueDBRecords, err := e.providerDb.Observe(t.Context(), _sgFieldDBRecords)
 	if err != nil {
-		t.Fatalf("observer db Observe %s: %v", _sgFieldDBRecords, err)
+		t.Fatalf("provider db Observe %s: %v", _sgFieldDBRecords, err)
 	}
-	typedDBRecords, convertErr := observer.Convert[map[string]string](valueDBRecords)
+	typedDBRecords, convertErr := provider.Convert[DBRecordsValue](valueDBRecords)
 	if convertErr != nil {
-		t.Fatalf("observer db Observe %s: %v", _sgFieldDBRecords, convertErr)
+		t.Fatalf("provider db Observe %s: %v", _sgFieldDBRecords, convertErr)
 	}
-	valueSgMetadataActionCrashed, err := e.observerErrorAsCrashed.Observe(t.Context(), _sgFieldSgMetadataActionCrashed, output, actionErr)
+	valueSgMetadataActionCrashed, err := e.providerErrorAsCrashed.ObserveResult(t.Context(), _sgFieldSgMetadataActionCrashed, output, actionErr)
 	if err != nil {
-		t.Fatalf("observer error_as_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, err)
+		t.Fatalf("provider error_as_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, err)
 	}
-	typedSgMetadataActionCrashed, convertErr := observer.Convert[bool](valueSgMetadataActionCrashed)
+	typedSgMetadataActionCrashed, convertErr := provider.Convert[bool](valueSgMetadataActionCrashed)
 	if convertErr != nil {
-		t.Fatalf("observer error_as_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, convertErr)
+		t.Fatalf("provider error_as_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, convertErr)
 	}
 	fetched := ApplicationFetchedObservation{
 		Fields: ApplicationFetchedField{
@@ -192,7 +224,7 @@ func (e *ApplicationConformanceEnvironment) ObserveReadState(t *testing.T, input
 	return &ApplicationObservedState{
 		Fields: ApplicationObservedField{
 			DB: ApplicationDBObservedField{
-				Records: gcmp.Observed(fetched.Fields.DB.Records),
+				Records: _sgToDBRecordsObservedList(fetched.Fields.DB.Records),
 			},
 			Cache: ApplicationCacheObservedField{
 				CachedRecords: gcmp.Observed(fetched.Fields.Cache.CachedRecords),
@@ -213,7 +245,7 @@ func (e *ApplicationConformanceEnvironment) BuildAllowedReadState(t *testing.T, 
 	return ApplicationComparisonState{
 		Fields: ApplicationComparisonField{
 			DB: ApplicationDBComparisonField{
-				Records: gcmp.Equal(allowed.Fields.DB.Records),
+				Records: _sgToDBRecordsComparisonList(allowed.Fields.DB.Records),
 			},
 			Cache: ApplicationCacheComparisonField{
 				CachedRecords: gcmp.Equal(allowed.Fields.Cache.CachedRecords),
@@ -242,66 +274,87 @@ func (e *ApplicationConformanceEnvironment) BuildAllowedReadStates(t *testing.T,
 
 // PrepareWriteCase sets up one case and registers its cleanup.
 func (e *ApplicationConformanceEnvironment) PrepareWriteCase(t *testing.T) {
-	e.SetupWriteCase(t)
 	t.Cleanup(func() {
 		e.CleanupWriteCase(t)
 	})
-	if err := e.observerCache.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer cache PrepareCase: %v", err)
+	if err := e.providerCache.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider cache PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerCache.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer cache CleanupCase: %v", err)
+		if err := e.providerCache.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider cache CleanupCase: %v", err)
 		}
 	})
-	if err := e.observerDb.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer db PrepareCase: %v", err)
+	if err := e.providerDb.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider db PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerDb.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer db CleanupCase: %v", err)
+		if err := e.providerDb.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider db CleanupCase: %v", err)
 		}
 	})
-	if err := e.observerErrorAsCrashed.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer error_as_crashed PrepareCase: %v", err)
+	if err := e.providerErrorAsCrashed.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider error_as_crashed PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerErrorAsCrashed.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer error_as_crashed CleanupCase: %v", err)
+		if err := e.providerErrorAsCrashed.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider error_as_crashed CleanupCase: %v", err)
 		}
 	})
 }
 
 // PrepareWriteAttempt sets up one fault attempt and registers its cleanup.
 func (e *ApplicationConformanceEnvironment) PrepareWriteAttempt(t *testing.T, input FizzbeeApplicationState) {
-	e.SetupWriteAttempt(t, input)
 	t.Cleanup(func() {
-		e.CleanupWriteAttempt(t)
-	})
-	if err := e.observerCache.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer cache PrepareAttempt: %v", err)
-	}
-	t.Cleanup(func() {
-		if err := e.observerCache.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer cache CleanupAttempt: %v", err)
+		if err := e.providerCache.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider cache CleanupAttempt: %v", err)
 		}
 	})
-	if err := e.observerDb.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer db PrepareAttempt: %v", err)
+	if err := e.providerCache.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider cache PrepareAttempt: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerDb.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer db CleanupAttempt: %v", err)
+		if err := e.providerDb.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider db CleanupAttempt: %v", err)
 		}
 	})
-	if err := e.observerErrorAsCrashed.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer error_as_crashed PrepareAttempt: %v", err)
+	if err := e.providerDb.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider db PrepareAttempt: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerErrorAsCrashed.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer error_as_crashed CleanupAttempt: %v", err)
+		if err := e.providerErrorAsCrashed.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider error_as_crashed CleanupAttempt: %v", err)
 		}
 	})
+	if err := e.providerErrorAsCrashed.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider error_as_crashed PrepareAttempt: %v", err)
+	}
+	_sgSeedRequestCache := provider.SeedRequest{Values: []provider.SeedValue{
+		{Field: "Cache.cached_records", Value: input.Fields.Cache.CachedRecords},
+	}}
+	_sgSeedResultCache, _sgSeedErrCache := e.providerCache.Seed(t.Context(), provider.CloneSeedRequest(_sgSeedRequestCache))
+	if _sgSeedErrCache != nil {
+		t.Fatalf("provider cache Seed: %v", _sgSeedErrCache)
+	}
+	if err := provider.ValidateSeedFields(_sgSeedRequestCache, _sgSeedResultCache); err != nil {
+		t.Fatalf("provider cache Seed: %v", err)
+	}
+	if err := provider.ValidateSeedValue("Cache.cached_records", input.Fields.Cache.CachedRecords, _sgSeedResultCache.Values[0].Value); err != nil {
+		t.Fatalf("provider cache Seed %s: %v", "Cache.cached_records", err)
+	}
+	_sgSeedRequestDb := provider.SeedRequest{Values: []provider.SeedValue{
+		{Field: "DB.records", Value: input.Fields.DB.Records},
+	}}
+	_sgSeedResultDb, _sgSeedErrDb := e.providerDb.Seed(t.Context(), provider.CloneSeedRequest(_sgSeedRequestDb))
+	if _sgSeedErrDb != nil {
+		t.Fatalf("provider db Seed: %v", _sgSeedErrDb)
+	}
+	if err := provider.ValidateSeedFields(_sgSeedRequestDb, _sgSeedResultDb); err != nil {
+		t.Fatalf("provider db Seed: %v", err)
+	}
+	if err := provider.ValidateSeedValue("DB.records", input.Fields.DB.Records, _sgSeedResultDb.Values[0].Value); err != nil {
+		t.Fatalf("provider db Seed %s: %v", "DB.records", err)
+	}
 }
 
 // ExecuteWrite invokes the application action.
@@ -312,29 +365,29 @@ func (e *ApplicationConformanceEnvironment) ExecuteWrite(ctx context.Context, in
 // ObserveWriteState collects the state and output visible after the action.
 func (e *ApplicationConformanceEnvironment) ObserveWriteState(t *testing.T, input FizzbeeApplicationState, output ApplicationWriteOutput, actionErr error) *ApplicationObservedState {
 	t.Helper()
-	valueCacheCachedRecords, err := e.observerCache.Observe(t.Context(), _sgFieldCacheCachedRecords)
+	valueCacheCachedRecords, err := e.providerCache.Observe(t.Context(), _sgFieldCacheCachedRecords)
 	if err != nil {
-		t.Fatalf("observer cache Observe %s: %v", _sgFieldCacheCachedRecords, err)
+		t.Fatalf("provider cache Observe %s: %v", _sgFieldCacheCachedRecords, err)
 	}
-	typedCacheCachedRecords, convertErr := observer.Convert[map[string]string](valueCacheCachedRecords)
+	typedCacheCachedRecords, convertErr := provider.Convert[map[string]string](valueCacheCachedRecords)
 	if convertErr != nil {
-		t.Fatalf("observer cache Observe %s: %v", _sgFieldCacheCachedRecords, convertErr)
+		t.Fatalf("provider cache Observe %s: %v", _sgFieldCacheCachedRecords, convertErr)
 	}
-	valueDBRecords, err := e.observerDb.Observe(t.Context(), _sgFieldDBRecords)
+	valueDBRecords, err := e.providerDb.Observe(t.Context(), _sgFieldDBRecords)
 	if err != nil {
-		t.Fatalf("observer db Observe %s: %v", _sgFieldDBRecords, err)
+		t.Fatalf("provider db Observe %s: %v", _sgFieldDBRecords, err)
 	}
-	typedDBRecords, convertErr := observer.Convert[map[string]string](valueDBRecords)
+	typedDBRecords, convertErr := provider.Convert[DBRecordsValue](valueDBRecords)
 	if convertErr != nil {
-		t.Fatalf("observer db Observe %s: %v", _sgFieldDBRecords, convertErr)
+		t.Fatalf("provider db Observe %s: %v", _sgFieldDBRecords, convertErr)
 	}
-	valueSgMetadataActionCrashed, err := e.observerErrorAsCrashed.Observe(t.Context(), _sgFieldSgMetadataActionCrashed, output, actionErr)
+	valueSgMetadataActionCrashed, err := e.providerErrorAsCrashed.ObserveResult(t.Context(), _sgFieldSgMetadataActionCrashed, output, actionErr)
 	if err != nil {
-		t.Fatalf("observer error_as_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, err)
+		t.Fatalf("provider error_as_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, err)
 	}
-	typedSgMetadataActionCrashed, convertErr := observer.Convert[bool](valueSgMetadataActionCrashed)
+	typedSgMetadataActionCrashed, convertErr := provider.Convert[bool](valueSgMetadataActionCrashed)
 	if convertErr != nil {
-		t.Fatalf("observer error_as_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, convertErr)
+		t.Fatalf("provider error_as_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, convertErr)
 	}
 	fetched := ApplicationFetchedObservation{
 		Fields: ApplicationFetchedField{
@@ -355,7 +408,7 @@ func (e *ApplicationConformanceEnvironment) ObserveWriteState(t *testing.T, inpu
 	return &ApplicationObservedState{
 		Fields: ApplicationObservedField{
 			DB: ApplicationDBObservedField{
-				Records: gcmp.Observed(fetched.Fields.DB.Records),
+				Records: _sgToDBRecordsObservedList(fetched.Fields.DB.Records),
 			},
 			Cache: ApplicationCacheObservedField{
 				CachedRecords: gcmp.Observed(fetched.Fields.Cache.CachedRecords),
@@ -376,7 +429,7 @@ func (e *ApplicationConformanceEnvironment) BuildAllowedWriteState(t *testing.T,
 	return ApplicationComparisonState{
 		Fields: ApplicationComparisonField{
 			DB: ApplicationDBComparisonField{
-				Records: gcmp.Equal(allowed.Fields.DB.Records),
+				Records: _sgToDBRecordsComparisonList(allowed.Fields.DB.Records),
 			},
 			Cache: ApplicationCacheComparisonField{
 				CachedRecords: gcmp.Equal(allowed.Fields.Cache.CachedRecords),
@@ -437,8 +490,8 @@ type ApplicationField struct {
 
 // ApplicationDBField contains model fields for DB.
 type ApplicationDBField struct {
-	CommittedValues map[string]any    `json:"committed_values"`
-	Records         map[string]string `json:"records"`
+	CommittedValues map[string]any `json:"committed_values"`
+	Records         DBRecordsValue `json:"records"`
 }
 
 // ApplicationCacheField contains model fields for Cache.
@@ -468,7 +521,7 @@ type ApplicationObservedField struct {
 
 // ApplicationDBObservedField contains observed fields for DB.
 type ApplicationDBObservedField struct {
-	Records *gcmp.ObservedField[map[string]string]
+	Records *gcmp.ObservedList[*gcmp.ObservedMessage[DBRecordsObservedField]]
 }
 
 // ApplicationCacheObservedField contains observed fields for Cache.
@@ -481,7 +534,7 @@ type ApplicationApplicationObservedField struct {
 	ReadResValue *gcmp.ObservedField[*string]
 }
 
-// ApplicationFetchedObservation contains fields collected by declared observers.
+// ApplicationFetchedObservation contains fields collected by declared providers.
 type ApplicationFetchedObservation struct {
 	Fields     ApplicationFetchedField
 	SgMetadata guardian.SgFetchedMetadata
@@ -493,7 +546,7 @@ type ApplicationFetchedField struct {
 }
 
 type ApplicationDBFetchedField struct {
-	Records map[string]string
+	Records DBRecordsValue
 }
 
 type ApplicationCacheFetchedField struct {
@@ -533,7 +586,7 @@ type ApplicationComparisonField struct {
 
 // ApplicationDBComparisonField contains field comparisons for DB.
 type ApplicationDBComparisonField struct {
-	Records *gcmp.ComparisonField[map[string]string]
+	Records *gcmp.ComparisonList[*gcmp.ComparisonMessage[DBRecordsComparisonField]]
 }
 
 // ApplicationCacheComparisonField contains field comparisons for Cache.

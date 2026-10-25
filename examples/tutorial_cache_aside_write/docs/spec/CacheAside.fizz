@@ -4,10 +4,12 @@ deadlock_detection: false
 
 role DB:
   action Init:
-    self.records = {"cached": "old", "uncached": "old"}
+    self.records = [{"key": "cached", "value": "old"}, {"key": "uncached", "value": "old"}]
 
   atomic func write(key, value):
-    self.records[key] = value
+    for record in self.records:
+      if record["key"] == key:
+        record["value"] = value
 
 role Cache:
   action Init:

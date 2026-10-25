@@ -5,51 +5,51 @@ package specguardian_test
 
 import (
 	"github.com/mrasu/spec-guardian/guardian/gcmp"
-	"github.com/mrasu/spec-guardian/guardian/observer"
+	"github.com/mrasu/spec-guardian/guardian/provider"
 )
 
 const (
 	_sgFieldDynamoDBDeliveryRecords         = "DynamoDB.delivery_records"
 	_sgFieldDynamoDBOrderIdempotencyRecords = "DynamoDB.order_idempotency_records"
 	_sgFieldMySQLOrderRecords               = "MySQL.order_records"
-	_sgFieldSgMetadataActionCrashed         = observer.ActionCrashedField
+	_sgFieldSgMetadataActionCrashed         = provider.ActionCrashedField
 )
 
 // DynamoDBDeliveryRecordsComparisonField is the declared shape of a model field.
 type DynamoDBDeliveryRecordsComparisonField struct {
-	Data    *gcmp.ComparisonField[string]
-	OrderId *gcmp.ComparisonField[int64]
+	Data *gcmp.ComparisonField[string]
 }
 
 // DynamoDBDeliveryRecordsField is the declared shape of a model field.
 type DynamoDBDeliveryRecordsField struct {
 	Data    string `json:"data"`
-	OrderId int64  `json:"order_id"`
+	Id      string `json:"id"`
+	OrderId string `json:"order_id"`
 }
 
 // DynamoDBDeliveryRecordsObservedField is the declared shape of a model field.
 type DynamoDBDeliveryRecordsObservedField struct {
-	Data    *gcmp.ObservedField[string]
-	OrderId *gcmp.ObservedField[int64]
+	Data *gcmp.ObservedField[string]
 }
+
+// DynamoDBDeliveryRecordsValue is the declared shape of a model field.
+type DynamoDBDeliveryRecordsValue []DynamoDBDeliveryRecordsField
 
 // DynamoDBOrderIdempotencyRecordsComparisonField is the declared shape of a model field.
 type DynamoDBOrderIdempotencyRecordsComparisonField struct {
-	OrderId *gcmp.ComparisonField[*int64]
 	Payload *gcmp.ComparisonField[string]
 	Status  *gcmp.ComparisonField[string]
 }
 
 // DynamoDBOrderIdempotencyRecordsField is the declared shape of a model field.
 type DynamoDBOrderIdempotencyRecordsField struct {
-	OrderId *int64 `json:"order_id"`
-	Payload string `json:"payload"`
-	Status  string `json:"status"`
+	OrderId *string `json:"order_id"`
+	Payload string  `json:"payload"`
+	Status  string  `json:"status"`
 }
 
 // DynamoDBOrderIdempotencyRecordsObservedField is the declared shape of a model field.
 type DynamoDBOrderIdempotencyRecordsObservedField struct {
-	OrderId *gcmp.ObservedField[*int64]
 	Payload *gcmp.ObservedField[string]
 	Status  *gcmp.ObservedField[string]
 }
@@ -57,7 +57,6 @@ type DynamoDBOrderIdempotencyRecordsObservedField struct {
 // MySQLOrderRecordsComparisonField is the declared shape of a model field.
 type MySQLOrderRecordsComparisonField struct {
 	DeliveryData *gcmp.ComparisonField[*string]
-	DeliveryId   *gcmp.ComparisonField[*string]
 	Payload      *gcmp.ComparisonField[string]
 	RequestId    *gcmp.ComparisonField[string]
 	Status       *gcmp.ComparisonField[string]
@@ -67,6 +66,7 @@ type MySQLOrderRecordsComparisonField struct {
 type MySQLOrderRecordsField struct {
 	DeliveryData *string `json:"delivery_data"`
 	DeliveryId   *string `json:"delivery_id"`
+	Id           int64   `json:"id"`
 	Payload      string  `json:"payload"`
 	RequestId    string  `json:"request_id"`
 	Status       string  `json:"status"`
@@ -75,49 +75,85 @@ type MySQLOrderRecordsField struct {
 // MySQLOrderRecordsObservedField is the declared shape of a model field.
 type MySQLOrderRecordsObservedField struct {
 	DeliveryData *gcmp.ObservedField[*string]
-	DeliveryId   *gcmp.ObservedField[*string]
 	Payload      *gcmp.ObservedField[string]
 	RequestId    *gcmp.ObservedField[string]
 	Status       *gcmp.ObservedField[string]
 }
 
-func _sgObserverActionCrashedSettings() (map[string]any, []observer.FieldRequest) {
-	return map[string]any{}, []observer.FieldRequest{
+// MySQLOrderRecordsValue is the declared shape of a model field.
+type MySQLOrderRecordsValue []MySQLOrderRecordsField
+
+func _sgProviderActionCrashedSettings() (map[string]any, []provider.FieldRequest) {
+	return map[string]any{}, []provider.FieldRequest{
 		{
 			Field:  _sgFieldSgMetadataActionCrashed,
 			Config: map[string]any{},
-			Output: observer.ActionCrashedOutputSpec(),
+			Output: provider.ActionCrashedOutputSpec(),
 		},
 	}
 }
 
-func _sgObserverDynamodbSettings() (map[string]any, []observer.FieldRequest) {
+func _sgProviderDynamodbSettings() (map[string]any, []provider.FieldRequest) {
 	return map[string]any{
 		"access_key_id":     "test",
 		"endpoint":          "http://localhost:14566",
 		"region":            "us-east-1",
 		"secret_access_key": "test",
-	}, []observer.FieldRequest{
+		"tables": []any{
+			map[string]any{
+				"attribute_definitions": []any{
+					map[string]any{
+						"attribute_name": "id",
+						"attribute_type": "S",
+					},
+				},
+				"key_schema": []any{
+					map[string]any{
+						"attribute_name": "id",
+						"key_type":       "HASH",
+					},
+				},
+				"name": "order_idempotency_records",
+			},
+			map[string]any{
+				"attribute_definitions": []any{
+					map[string]any{
+						"attribute_name": "id",
+						"attribute_type": "S",
+					},
+				},
+				"key_schema": []any{
+					map[string]any{
+						"attribute_name": "id",
+						"key_type":       "HASH",
+					},
+				},
+				"name": "delivery_records",
+			},
+		},
+	}, []provider.FieldRequest{
 		{
 			Field: _sgFieldDynamoDBDeliveryRecords,
 			Config: map[string]any{
 				"result": map[string]any{
-					"key_attribute": "id",
-					"type":          "item_map",
+					"type": "item_list",
 				},
 				"table": "delivery_records",
 			},
-			Output: observer.OutputSpec{
-				Type: observer.Type{
-					Kind: observer.KindMap,
-					Values: &observer.Type{
-						Kind: observer.KindMessage,
-						Fields: map[string]observer.Type{
+			Output: provider.OutputSpec{
+				Type: provider.Type{
+					Kind: provider.KindList,
+					Values: &provider.Type{
+						Kind: provider.KindMessage,
+						Fields: map[string]provider.Type{
 							"data": {
-								Kind: observer.KindString,
+								Kind: provider.KindString,
+							},
+							"id": {
+								Kind: provider.KindString,
 							},
 							"order_id": {
-								Kind: observer.KindInt64,
+								Kind: provider.KindString,
 							},
 						},
 					},
@@ -128,26 +164,25 @@ func _sgObserverDynamodbSettings() (map[string]any, []observer.FieldRequest) {
 			Field: _sgFieldDynamoDBOrderIdempotencyRecords,
 			Config: map[string]any{
 				"result": map[string]any{
-					"key_attribute": "id",
-					"type":          "item_map",
+					"type": "item_map",
 				},
 				"table": "order_idempotency_records",
 			},
-			Output: observer.OutputSpec{
-				Type: observer.Type{
-					Kind: observer.KindMap,
-					Values: &observer.Type{
-						Kind: observer.KindMessage,
-						Fields: map[string]observer.Type{
+			Output: provider.OutputSpec{
+				Type: provider.Type{
+					Kind: provider.KindMap,
+					Values: &provider.Type{
+						Kind: provider.KindMessage,
+						Fields: map[string]provider.Type{
 							"order_id": {
-								Kind:     observer.KindInt64,
+								Kind:     provider.KindString,
 								Nullable: true,
 							},
 							"payload": {
-								Kind: observer.KindString,
+								Kind: provider.KindString,
 							},
 							"status": {
-								Kind: observer.KindString,
+								Kind: provider.KindString,
 							},
 						},
 					},
@@ -157,42 +192,72 @@ func _sgObserverDynamodbSettings() (map[string]any, []observer.FieldRequest) {
 	}
 }
 
-func _sgObserverMysqlSettings() (map[string]any, []observer.FieldRequest) {
+func _sgProviderMysqlSettings() (map[string]any, []provider.FieldRequest) {
 	return map[string]any{
 		"connection_string": "root@tcp(localhost:13306)/idempotent_request?parseTime=true",
 		"driver":            "mysql",
-	}, []observer.FieldRequest{
+		"tables": []any{
+			map[string]any{
+				"columns": []any{
+					map[string]any{
+						"name": "id",
+						"type": "int64",
+					},
+					map[string]any{
+						"name": "request_id",
+						"type": "string",
+					},
+					map[string]any{
+						"name": "payload",
+						"type": "string",
+					},
+					map[string]any{
+						"name": "delivery_id",
+						"type": "string",
+					},
+					map[string]any{
+						"name": "delivery_data",
+						"type": "string",
+					},
+					map[string]any{
+						"name": "status",
+						"type": "string",
+					},
+				},
+				"name": "orders",
+			},
+		},
+	}, []provider.FieldRequest{
 		{
 			Field: _sgFieldMySQLOrderRecords,
 			Config: map[string]any{
-				"query": "SELECT id, request_id, payload, delivery_id, delivery_data, status FROM orders",
-				"result": map[string]any{
-					"key_column": "id",
-					"type":       "row_map",
-				},
+				"table": "orders",
 			},
-			Output: observer.OutputSpec{
-				Type: observer.Type{
-					Kind: observer.KindMap,
-					Values: &observer.Type{
-						Kind: observer.KindMessage,
-						Fields: map[string]observer.Type{
+			Output: provider.OutputSpec{
+				Type: provider.Type{
+					Kind: provider.KindList,
+					Values: &provider.Type{
+						Kind: provider.KindMessage,
+						Fields: map[string]provider.Type{
 							"delivery_data": {
-								Kind:     observer.KindString,
+								Kind:     provider.KindString,
 								Nullable: true,
 							},
 							"delivery_id": {
-								Kind:     observer.KindString,
+								Kind:     provider.KindString,
 								Nullable: true,
 							},
+							"id": {
+								Kind: provider.KindInt64,
+							},
 							"payload": {
-								Kind: observer.KindString,
+								Kind: provider.KindString,
 							},
 							"request_id": {
-								Kind: observer.KindString,
+								Kind: provider.KindString,
 							},
 							"status": {
-								Kind: observer.KindString,
+								Kind: provider.KindString,
 							},
 						},
 					},
@@ -205,8 +270,7 @@ func _sgObserverMysqlSettings() (map[string]any, []observer.FieldRequest) {
 func _sgToDynamoDBDeliveryRecordsObservedMessage(value DynamoDBDeliveryRecordsField) *gcmp.ObservedMessage[DynamoDBDeliveryRecordsObservedField] {
 	return gcmp.MessageObserved(
 		&DynamoDBDeliveryRecordsObservedField{
-			Data:    gcmp.Observed(value.Data),
-			OrderId: gcmp.Observed(value.OrderId),
+			Data: gcmp.Observed(value.Data),
 		},
 	)
 }
@@ -214,38 +278,36 @@ func _sgToDynamoDBDeliveryRecordsObservedMessage(value DynamoDBDeliveryRecordsFi
 func _sgToDynamoDBDeliveryRecordsComparisonMessage(value DynamoDBDeliveryRecordsField) *gcmp.ComparisonMessage[DynamoDBDeliveryRecordsComparisonField] {
 	return gcmp.MessageEqual(
 		&DynamoDBDeliveryRecordsComparisonField{
-			Data:    gcmp.Equal(value.Data),
-			OrderId: gcmp.Equal(value.OrderId),
+			Data: gcmp.Equal(value.Data),
 		},
 	)
 }
 
-func _sgToDynamoDBDeliveryRecordsObservedField(value map[string]DynamoDBDeliveryRecordsField) map[string]*gcmp.ObservedMessage[DynamoDBDeliveryRecordsObservedField] {
-	var result map[string]*gcmp.ObservedMessage[DynamoDBDeliveryRecordsObservedField]
+func _sgToDynamoDBDeliveryRecordsObservedList(value DynamoDBDeliveryRecordsValue) *gcmp.ObservedList[*gcmp.ObservedMessage[DynamoDBDeliveryRecordsObservedField]] {
+	var result []*gcmp.ObservedMessage[DynamoDBDeliveryRecordsObservedField]
 	if value != nil {
-		result = make(map[string]*gcmp.ObservedMessage[DynamoDBDeliveryRecordsObservedField], len(value))
+		result = make([]*gcmp.ObservedMessage[DynamoDBDeliveryRecordsObservedField], len(value))
 	}
 	for key, item := range value {
 		result[key] = _sgToDynamoDBDeliveryRecordsObservedMessage(item)
 	}
-	return result
+	return gcmp.ListObserved(result)
 }
 
-func _sgToDynamoDBDeliveryRecordsComparisonField(value map[string]DynamoDBDeliveryRecordsField) map[string]*gcmp.ComparisonMessage[DynamoDBDeliveryRecordsComparisonField] {
-	var result map[string]*gcmp.ComparisonMessage[DynamoDBDeliveryRecordsComparisonField]
+func _sgToDynamoDBDeliveryRecordsComparisonList(value DynamoDBDeliveryRecordsValue) *gcmp.ComparisonList[*gcmp.ComparisonMessage[DynamoDBDeliveryRecordsComparisonField]] {
+	var result []*gcmp.ComparisonMessage[DynamoDBDeliveryRecordsComparisonField]
 	if value != nil {
-		result = make(map[string]*gcmp.ComparisonMessage[DynamoDBDeliveryRecordsComparisonField], len(value))
+		result = make([]*gcmp.ComparisonMessage[DynamoDBDeliveryRecordsComparisonField], len(value))
 	}
 	for key, item := range value {
 		result[key] = _sgToDynamoDBDeliveryRecordsComparisonMessage(item)
 	}
-	return result
+	return gcmp.ListUnordered(result)
 }
 
 func _sgToDynamoDBOrderIdempotencyRecordsObservedMessage(value DynamoDBOrderIdempotencyRecordsField) *gcmp.ObservedMessage[DynamoDBOrderIdempotencyRecordsObservedField] {
 	return gcmp.MessageObserved(
 		&DynamoDBOrderIdempotencyRecordsObservedField{
-			OrderId: gcmp.Observed(value.OrderId),
 			Payload: gcmp.Observed(value.Payload),
 			Status:  gcmp.Observed(value.Status),
 		},
@@ -255,7 +317,6 @@ func _sgToDynamoDBOrderIdempotencyRecordsObservedMessage(value DynamoDBOrderIdem
 func _sgToDynamoDBOrderIdempotencyRecordsComparisonMessage(value DynamoDBOrderIdempotencyRecordsField) *gcmp.ComparisonMessage[DynamoDBOrderIdempotencyRecordsComparisonField] {
 	return gcmp.MessageEqual(
 		&DynamoDBOrderIdempotencyRecordsComparisonField{
-			OrderId: gcmp.Equal(value.OrderId),
 			Payload: gcmp.Equal(value.Payload),
 			Status:  gcmp.Equal(value.Status),
 		},
@@ -288,7 +349,6 @@ func _sgToMySQLOrderRecordsObservedMessage(value MySQLOrderRecordsField) *gcmp.O
 	return gcmp.MessageObserved(
 		&MySQLOrderRecordsObservedField{
 			DeliveryData: gcmp.Observed(value.DeliveryData),
-			DeliveryId:   gcmp.Observed(value.DeliveryId),
 			Payload:      gcmp.Observed(value.Payload),
 			RequestId:    gcmp.Observed(value.RequestId),
 			Status:       gcmp.Observed(value.Status),
@@ -300,7 +360,6 @@ func _sgToMySQLOrderRecordsComparisonMessage(value MySQLOrderRecordsField) *gcmp
 	return gcmp.MessageEqual(
 		&MySQLOrderRecordsComparisonField{
 			DeliveryData: gcmp.Equal(value.DeliveryData),
-			DeliveryId:   gcmp.Equal(value.DeliveryId),
 			Payload:      gcmp.Equal(value.Payload),
 			RequestId:    gcmp.Equal(value.RequestId),
 			Status:       gcmp.Equal(value.Status),
@@ -308,24 +367,24 @@ func _sgToMySQLOrderRecordsComparisonMessage(value MySQLOrderRecordsField) *gcmp
 	)
 }
 
-func _sgToMySQLOrderRecordsObservedField(value map[string]MySQLOrderRecordsField) map[string]*gcmp.ObservedMessage[MySQLOrderRecordsObservedField] {
-	var result map[string]*gcmp.ObservedMessage[MySQLOrderRecordsObservedField]
+func _sgToMySQLOrderRecordsObservedList(value MySQLOrderRecordsValue) *gcmp.ObservedList[*gcmp.ObservedMessage[MySQLOrderRecordsObservedField]] {
+	var result []*gcmp.ObservedMessage[MySQLOrderRecordsObservedField]
 	if value != nil {
-		result = make(map[string]*gcmp.ObservedMessage[MySQLOrderRecordsObservedField], len(value))
+		result = make([]*gcmp.ObservedMessage[MySQLOrderRecordsObservedField], len(value))
 	}
 	for key, item := range value {
 		result[key] = _sgToMySQLOrderRecordsObservedMessage(item)
 	}
-	return result
+	return gcmp.ListObserved(result)
 }
 
-func _sgToMySQLOrderRecordsComparisonField(value map[string]MySQLOrderRecordsField) map[string]*gcmp.ComparisonMessage[MySQLOrderRecordsComparisonField] {
-	var result map[string]*gcmp.ComparisonMessage[MySQLOrderRecordsComparisonField]
+func _sgToMySQLOrderRecordsComparisonList(value MySQLOrderRecordsValue) *gcmp.ComparisonList[*gcmp.ComparisonMessage[MySQLOrderRecordsComparisonField]] {
+	var result []*gcmp.ComparisonMessage[MySQLOrderRecordsComparisonField]
 	if value != nil {
-		result = make(map[string]*gcmp.ComparisonMessage[MySQLOrderRecordsComparisonField], len(value))
+		result = make([]*gcmp.ComparisonMessage[MySQLOrderRecordsComparisonField], len(value))
 	}
 	for key, item := range value {
 		result[key] = _sgToMySQLOrderRecordsComparisonMessage(item)
 	}
-	return result
+	return gcmp.ListUnordered(result)
 }

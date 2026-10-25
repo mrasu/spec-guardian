@@ -85,11 +85,6 @@ func (e *IcebergTableEnvironment) SetupAppendCase(t *testing.T) {
 	t.Parallel()
 }
 
-// CleanupAppendCase cleans up after one conformance case.
-func (e *IcebergTableEnvironment) CleanupAppendCase(t *testing.T) {
-	t.Helper()
-}
-
 // SetupAppendAttempt prepares application state before IcebergTable.Append.
 func (e *IcebergTableEnvironment) SetupAppendAttempt(t *testing.T, input FizzbeeIcebergTableState) {
 	e.setupAttempt(t, input)
@@ -104,11 +99,11 @@ func (e *IcebergTableConformanceEnvironment) setupObservedAttempt(t *testing.T, 
 	t.Helper()
 	e.setupAttempt(t, input)
 	prefix := strings.Join(e.identifier, "/") + "/"
-	require.NoError(t, e.observerMetadataFilesObserver.SetTable(e.s3, conformanceBucket, prefix))
-	require.NoError(t, e.observerManifestListsObserver.SetTable(e.s3, conformanceBucket, prefix))
-	require.NoError(t, e.observerManifestFilesObserver.SetTable(e.s3, conformanceBucket, prefix))
-	require.NoError(t, e.observerDataFilesObserver.SetTable(e.s3, conformanceBucket, prefix))
-	require.NoError(t, e.observerDeleteFilesObserver.SetTable(e.s3, conformanceBucket, prefix))
+	require.NoError(t, e.providerMetadataFiles.SetTable(e.s3, conformanceBucket, prefix))
+	require.NoError(t, e.providerManifestLists.SetTable(e.s3, conformanceBucket, prefix))
+	require.NoError(t, e.providerManifestFiles.SetTable(e.s3, conformanceBucket, prefix))
+	require.NoError(t, e.providerDataFiles.SetTable(e.s3, conformanceBucket, prefix))
+	require.NoError(t, e.providerDeleteFiles.SetTable(e.s3, conformanceBucket, prefix))
 }
 
 // CleanupAppendAttempt removes state left by this attempt. It runs through t.Cleanup, so use a context independent of t.Context when needed.
@@ -123,7 +118,7 @@ func (e *IcebergTableEnvironment) BuildAppendInput(t *testing.T, input FizzbeeIc
 	return IcebergTableAppendInput{Row: operation.appendRow(t)}
 }
 
-// BuildAppendManualObservation returns fields not supplied by declared observers.
+// BuildAppendManualObservation returns fields not supplied by declared providers.
 func (e *IcebergTableEnvironment) BuildAppendManualObservation(t *testing.T, fetched IcebergTableFetchedObservation, input FizzbeeIcebergTableState, output IcebergTableAppendOutput, actionErr error) IcebergTableManualObservation {
 	t.Helper()
 	return IcebergTableManualObservation{}
@@ -144,17 +139,12 @@ func (e *IcebergTableEnvironment) SetupOverwriteCase(t *testing.T) {
 	t.Parallel()
 }
 
-// CleanupOverwriteCase cleans up after one conformance case.
-func (e *IcebergTableEnvironment) CleanupOverwriteCase(t *testing.T) {
-	t.Helper()
-}
-
 // SetupOverwriteAttempt prepares application state before IcebergTable.Overwrite.
 func (e *IcebergTableEnvironment) SetupOverwriteAttempt(t *testing.T, input FizzbeeIcebergTableState) {
 	e.setupAttempt(t, input)
 }
 
-// SetupOverwriteAttempt prepares application state and observers before IcebergTable.Overwrite.
+// SetupOverwriteAttempt prepares application state and providers before IcebergTable.Overwrite.
 func (e *IcebergTableConformanceEnvironment) SetupOverwriteAttempt(t *testing.T, input FizzbeeIcebergTableState) {
 	e.setupObservedAttempt(t, input)
 }
@@ -174,7 +164,7 @@ func (e *IcebergTableEnvironment) BuildOverwriteInput(t *testing.T, input Fizzbe
 	}
 }
 
-// BuildOverwriteManualObservation returns fields not supplied by declared observers.
+// BuildOverwriteManualObservation returns fields not supplied by declared providers.
 func (e *IcebergTableEnvironment) BuildOverwriteManualObservation(t *testing.T, fetched IcebergTableFetchedObservation, input FizzbeeIcebergTableState, output IcebergTableOverwriteOutput, actionErr error) IcebergTableManualObservation {
 	t.Helper()
 	return IcebergTableManualObservation{}
@@ -190,11 +180,6 @@ type IcebergTableDeleteOutput struct{ Table *table.Table }
 func (e *IcebergTableEnvironment) SetupDeleteCase(t *testing.T) {
 	t.Helper()
 	t.Parallel()
-}
-
-// CleanupDeleteCase cleans up after one conformance case.
-func (e *IcebergTableEnvironment) CleanupDeleteCase(t *testing.T) {
-	t.Helper()
 }
 
 // SetupDeleteAttempt prepares application state before IcebergTable.Delete.
@@ -219,7 +204,7 @@ func (e *IcebergTableEnvironment) BuildDeleteInput(t *testing.T, input FizzbeeIc
 	return IcebergTableDeleteInput{Filter: operation.predicateExpression(t)}
 }
 
-// BuildDeleteManualObservation returns fields not supplied by declared observers.
+// BuildDeleteManualObservation returns fields not supplied by declared providers.
 func (e *IcebergTableEnvironment) BuildDeleteManualObservation(t *testing.T, fetched IcebergTableFetchedObservation, input FizzbeeIcebergTableState, output IcebergTableDeleteOutput, actionErr error) IcebergTableManualObservation {
 	t.Helper()
 	return IcebergTableManualObservation{}

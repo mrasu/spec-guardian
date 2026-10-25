@@ -1,0 +1,124 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+description: >-
+  Seed table rows or observe SQL query results.
+title: sql provider configuration
+$defs:
+  nonemptyString:
+    type: string
+    minLength: 1
+  providerConfig:
+    type: object
+    description: >-
+      Connection settings and existing table declarations. Tables are not created.
+    additionalProperties: false
+    properties:
+      driver:
+        $ref: '#/$defs/nonemptyString'
+        description: >-
+          Registered database/sql driver, such as pgx or mysql. Overrides Config.Driver; required unless supplied there.
+      connection_string:
+        $ref: '#/$defs/nonemptyString'
+        description: >-
+          Driver connection string. Overrides Config.ConnectionString; required unless Config.Database is supplied.
+      tables:
+        type: array
+        description: >-
+          Existing tables available to field config.table.
+        items:
+          type: object
+          additionalProperties: false
+          required: [name, columns]
+          properties:
+            name:
+              $ref: '#/$defs/nonemptyString'
+              description: >-
+                SQL table name.
+            columns:
+              type: array
+              description: >-
+                Columns to seed and observe. Must cover all model message fields; undeclared database columns are not compared.
+              minItems: 1
+              items:
+                type: object
+                additionalProperties: false
+                required: [name, type]
+                properties:
+                  name:
+                    $ref: '#/$defs/nonemptyString'
+                    description: >-
+                      Database column name. Uses the same model field name unless overridden in field config.columns.
+                  type:
+                    description: >-
+                      Must match the model field kind. Nullability comes from the model type.
+                    enum: [string, int64, bool, double, bytes]
+  fieldConfig:
+    description: >-
+      Choose table preparation and observation or query-only observation.
+    oneOf:
+      - type: object
+        description: >-
+          Seed and observe all rows as a list of messages. Delete all table rows only in CleanupAttempt after each attempt.
+        additionalProperties: false
+        required: [table]
+        properties:
+          table:
+            $ref: '#/$defs/nonemptyString'
+            description: >-
+              Name in provider config.tables. Each table may serve only one field.
+          columns:
+            type: array
+            description: >-
+              Field-to-column overrides. Unmapped fields use their model names.
+            items:
+              type: object
+              additionalProperties: false
+              required: [field, column]
+              properties:
+                field:
+                  $ref: '#/$defs/nonemptyString'
+                  description: >-
+                    Model message field to map.
+                column:
+                  $ref: '#/$defs/nonemptyString'
+                  description: >-
+                    Column name in the declared table.
+      - type: object
+        description: >-
+          Observe query results. The caller prepares and cleans up the data.
+        additionalProperties: false
+        required: [query, result]
+        properties:
+          query:
+            $ref: '#/$defs/nonemptyString'
+            description: >-
+              SQL statement selecting the columns needed by result.
+          result:
+            oneOf:
+              - type: object
+                description: >-
+                  Map two columns to string keys and string values.
+                additionalProperties: false
+                required: [type, key_column, value_column]
+                properties:
+                  type:
+                    const: kv
+                  key_column:
+                    $ref: '#/$defs/nonemptyString'
+                    description: >-
+                      Column containing unique map keys. Must differ from value_column.
+                  value_column:
+                    $ref: '#/$defs/nonemptyString'
+                    description: >-
+                      Column containing string map values.
+              - type: object
+                description: >-
+                  Map rows to messages with string fields. Select exactly the key column and message field columns.
+                additionalProperties: false
+                required: [type, key_column]
+                properties:
+                  type:
+                    const: row_map
+                  key_column:
+                    $ref: '#/$defs/nonemptyString'
+                    description: >-
+                      Column containing unique map keys, excluded from each message. Other column names must match message fields.

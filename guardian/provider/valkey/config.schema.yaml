@@ -1,0 +1,55 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+description: >-
+  Seed and observe string values by key prefix, or observe them by pattern.
+title: valkey provider configuration
+$defs:
+  nonemptyString:
+    type: string
+    minLength: 1
+  providerConfig:
+    type: object
+    description: >-
+      Connection address and named keyspaces.
+    additionalProperties: false
+    required: [address]
+    properties:
+      address:
+        $ref: '#/$defs/nonemptyString'
+        description: >-
+          Server host:port. Required even with Config.Client; used to connect when no client is supplied.
+      keyspaces:
+        type: array
+        description: >-
+          Named key prefixes available to field config.keyspace.
+        items:
+          type: object
+          additionalProperties: false
+          required: [name, data_type]
+          properties:
+            name:
+              $ref: '#/$defs/nonemptyString'
+              description: >-
+                Unique name referenced by field config.keyspace.
+            prefix:
+              type: string
+              description: >-
+                Literal prefix added to model keys when seeding and stripped when observing. Defaults to empty, selecting all keys.
+            data_type:
+              const: string
+  fieldConfig:
+    type: object
+    description: >-
+      Choose keyspace or keys. Requires a non-nullable map of non-nullable strings.
+    additionalProperties: false
+    properties:
+      keyspace:
+        $ref: '#/$defs/nonemptyString'
+        description: >-
+          Name in provider config.keyspaces. Seed and observe all prefixed keys; delete them only in CleanupAttempt after each attempt.
+      keys:
+        $ref: '#/$defs/nonemptyString'
+        description: >-
+          SCAN MATCH pattern for observation only, such as records:*. Keys remain unchanged; the caller prepares and cleans up data.
+    oneOf:
+      - required: [keyspace]
+      - required: [keys]

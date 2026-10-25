@@ -63,7 +63,7 @@ func GenerateScaffold(modulePath string, model fizzbee.Model, declarations Decla
 
 func generateScaffold(data *TemplateData) (*Scaffold, error) {
 	var common []byte
-	if len(data.Observers) > 0 || len(data.DeclaredTypes) > 0 {
+	if len(data.Providers) > 0 || len(data.DeclaredTypes) > 0 {
 		var err error
 		common, err = generateTemplateScaffold(templateCommon, data)
 		if err != nil {
@@ -195,11 +195,12 @@ func generateRoleSources(data *TemplateData, name templateName) (map[string][]by
 	scaffolds := make(map[string][]byte, len(roleNames))
 	for _, role := range roleNames {
 		roleData := newTemplateData(data.Module, role, byRole[role])
+		roleData.Hooks = data.Hooks
 		roleData.FetchedActionCrashed = data.FetchedActionCrashed
 		roleData.ManualActionCrashed = data.ManualActionCrashed
-		roleData.Observers = data.Observers
-		roleData.ObserverGroups = data.ObserverGroups
-		roleData.PluginImports = data.PluginImports
+		roleData.Providers = data.Providers
+		roleData.ProviderGroups = data.ProviderGroups
+		roleData.SourceImports = data.SourceImports
 		source, err := generateTemplateScaffold(name, roleData)
 		if err != nil {
 			return nil, err

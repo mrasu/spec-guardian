@@ -24,10 +24,16 @@
             ],
             "not_written": []
           },
-          "records": {
-            "db_cache_written": "foo",
-            "db_written": "bar"
-          }
+          "records": [
+            {
+              "key": "db_cache_written",
+              "value": "foo"
+            },
+            {
+              "key": "db_written",
+              "value": "bar"
+            }
+          ]
         }
       },
       "params": {
@@ -62,10 +68,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "written"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "written"
+              }
+            ]
           }
         },
         "params": {
@@ -101,10 +113,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "written"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "written"
+              }
+            ]
           }
         },
         "params": {
@@ -140,10 +158,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "written"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "written"
+              }
+            ]
           }
         },
         "params": {
@@ -179,10 +203,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -222,10 +252,16 @@
             ],
             "not_written": []
           },
-          "records": {
-            "db_cache_written": "foo",
-            "db_written": "bar"
-          }
+          "records": [
+            {
+              "key": "db_cache_written",
+              "value": "foo"
+            },
+            {
+              "key": "db_written",
+              "value": "bar"
+            }
+          ]
         }
       },
       "params": {
@@ -260,10 +296,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "written"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "written"
+              }
+            ]
           }
         },
         "params": {
@@ -299,10 +341,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "written"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "written"
+              }
+            ]
           }
         },
         "params": {
@@ -338,10 +386,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "written"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "written"
+              }
+            ]
           }
         },
         "params": {
@@ -377,10 +431,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -420,10 +480,16 @@
             ],
             "not_written": []
           },
-          "records": {
-            "db_cache_written": "foo",
-            "db_written": "bar"
-          }
+          "records": [
+            {
+              "key": "db_cache_written",
+              "value": "foo"
+            },
+            {
+              "key": "db_written",
+              "value": "bar"
+            }
+          ]
         }
       },
       "params": {
@@ -458,10 +524,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "written"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "written"
+              }
+            ]
           }
         },
         "params": {
@@ -497,10 +569,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "written"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "written"
+              }
+            ]
           }
         },
         "params": {
@@ -536,10 +614,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "written"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "written"
+              }
+            ]
           }
         },
         "params": {
@@ -575,10 +659,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -617,10 +707,16 @@
             ],
             "not_written": []
           },
-          "records": {
-            "db_cache_written": "foo",
-            "db_written": "bar"
-          }
+          "records": [
+            {
+              "key": "db_cache_written",
+              "value": "foo"
+            },
+            {
+              "key": "db_written",
+              "value": "bar"
+            }
+          ]
         }
       },
       "params": {
@@ -654,10 +750,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "written",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "written"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -691,10 +793,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "written",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "written"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -728,10 +836,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "written",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "written"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -766,10 +880,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -808,10 +928,16 @@
             ],
             "not_written": []
           },
-          "records": {
-            "db_cache_written": "foo",
-            "db_written": "bar"
-          }
+          "records": [
+            {
+              "key": "db_cache_written",
+              "value": "foo"
+            },
+            {
+              "key": "db_written",
+              "value": "bar"
+            }
+          ]
         }
       },
       "params": {
@@ -845,10 +971,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "written",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "written"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -882,10 +1014,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "written",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "written"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -919,10 +1057,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "written",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "written"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -957,10 +1101,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -999,10 +1149,16 @@
             ],
             "not_written": []
           },
-          "records": {
-            "db_cache_written": "foo",
-            "db_written": "bar"
-          }
+          "records": [
+            {
+              "key": "db_cache_written",
+              "value": "foo"
+            },
+            {
+              "key": "db_written",
+              "value": "bar"
+            }
+          ]
         }
       },
       "params": {
@@ -1037,11 +1193,20 @@
                 "written"
               ]
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar",
-              "not_written": "written"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              },
+              {
+                "key": "not_written",
+                "value": "written"
+              }
+            ]
           }
         },
         "params": {
@@ -1078,11 +1243,20 @@
                 "written"
               ]
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar",
-              "not_written": "written"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              },
+              {
+                "key": "not_written",
+                "value": "written"
+              }
+            ]
           }
         },
         "params": {
@@ -1117,10 +1291,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -1159,10 +1339,16 @@
             ],
             "not_written": []
           },
-          "records": {
-            "db_cache_written": "foo",
-            "db_written": "bar"
-          }
+          "records": [
+            {
+              "key": "db_cache_written",
+              "value": "foo"
+            },
+            {
+              "key": "db_written",
+              "value": "bar"
+            }
+          ]
         }
       },
       "params": {
@@ -1196,10 +1382,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "written",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "written"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -1233,10 +1425,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "written",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "written"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -1270,10 +1468,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "written",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "written"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -1308,10 +1512,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -1350,10 +1560,16 @@
             ],
             "not_written": []
           },
-          "records": {
-            "db_cache_written": "foo",
-            "db_written": "bar"
-          }
+          "records": [
+            {
+              "key": "db_cache_written",
+              "value": "foo"
+            },
+            {
+              "key": "db_written",
+              "value": "bar"
+            }
+          ]
         }
       },
       "params": {
@@ -1387,10 +1603,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "written"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "written"
+              }
+            ]
           }
         },
         "params": {
@@ -1426,10 +1648,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "written"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "written"
+              }
+            ]
           }
         },
         "params": {
@@ -1464,10 +1692,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -1506,10 +1740,16 @@
             ],
             "not_written": []
           },
-          "records": {
-            "db_cache_written": "foo",
-            "db_written": "bar"
-          }
+          "records": [
+            {
+              "key": "db_cache_written",
+              "value": "foo"
+            },
+            {
+              "key": "db_written",
+              "value": "bar"
+            }
+          ]
         }
       },
       "params": {
@@ -1544,11 +1784,20 @@
                 "written"
               ]
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar",
-              "not_written": "written"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              },
+              {
+                "key": "not_written",
+                "value": "written"
+              }
+            ]
           }
         },
         "params": {
@@ -1585,11 +1834,20 @@
                 "written"
               ]
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar",
-              "not_written": "written"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              },
+              {
+                "key": "not_written",
+                "value": "written"
+              }
+            ]
           }
         },
         "params": {
@@ -1624,10 +1882,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -1666,10 +1930,16 @@
             ],
             "not_written": []
           },
-          "records": {
-            "db_cache_written": "foo",
-            "db_written": "bar"
-          }
+          "records": [
+            {
+              "key": "db_cache_written",
+              "value": "foo"
+            },
+            {
+              "key": "db_written",
+              "value": "bar"
+            }
+          ]
         }
       },
       "params": {
@@ -1703,10 +1973,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "written",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "written"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -1740,10 +2016,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "written",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "written"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -1777,10 +2059,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "written",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "written"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -1815,10 +2103,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -1857,10 +2151,16 @@
             ],
             "not_written": []
           },
-          "records": {
-            "db_cache_written": "foo",
-            "db_written": "bar"
-          }
+          "records": [
+            {
+              "key": "db_cache_written",
+              "value": "foo"
+            },
+            {
+              "key": "db_written",
+              "value": "bar"
+            }
+          ]
         }
       },
       "params": {
@@ -1894,10 +2194,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "written"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "written"
+              }
+            ]
           }
         },
         "params": {
@@ -1933,10 +2239,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "written"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "written"
+              }
+            ]
           }
         },
         "params": {
@@ -1971,10 +2283,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {
@@ -2013,10 +2331,16 @@
             ],
             "not_written": []
           },
-          "records": {
-            "db_cache_written": "foo",
-            "db_written": "bar"
-          }
+          "records": [
+            {
+              "key": "db_cache_written",
+              "value": "foo"
+            },
+            {
+              "key": "db_written",
+              "value": "bar"
+            }
+          ]
         }
       },
       "params": {
@@ -2051,11 +2375,20 @@
                 "written"
               ]
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar",
-              "not_written": "written"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              },
+              {
+                "key": "not_written",
+                "value": "written"
+              }
+            ]
           }
         },
         "params": {
@@ -2092,11 +2425,20 @@
                 "written"
               ]
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar",
-              "not_written": "written"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              },
+              {
+                "key": "not_written",
+                "value": "written"
+              }
+            ]
           }
         },
         "params": {
@@ -2131,10 +2473,16 @@
               ],
               "not_written": []
             },
-            "records": {
-              "db_cache_written": "foo",
-              "db_written": "bar"
-            }
+            "records": [
+              {
+                "key": "db_cache_written",
+                "value": "foo"
+              },
+              {
+                "key": "db_written",
+                "value": "bar"
+              }
+            ]
           }
         },
         "params": {

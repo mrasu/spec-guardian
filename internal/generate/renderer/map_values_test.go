@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGenerateMapObserver_ConvertsAndComparesNestedValues(t *testing.T) {
+func TestGenerateMapProvider_ConvertsAndComparesNestedValues(t *testing.T) {
 	tests := []struct {
 		name                      string
 		values                    Type
@@ -48,7 +48,7 @@ func TestGenerateMapObserver_ConvertsAndComparesNestedValues(t *testing.T) {
 		} else {
 			caseData.Input.Roles[1].Fields[fieldName] = map[string]any{}
 		}
-		declarations.Observers = append(declarations.Observers, Observer{Field: mustField(t, "DB."+fieldName), ObserverID: "db", PluginImportPath: "example.test/db", PluginAlias: "dbobserver", Type: *spec})
+		declarations.Providers = append(declarations.Providers, Provider{Field: mustField(t, "DB."+fieldName), ProviderID: "db", SourceImportPath: "example.test/db", SourceAlias: "dbprovider", Type: *spec})
 		shape := toDeclaredShape(*spec, "DB"+tt.name, true)
 		fmt.Fprintf(&runtimeTests, "func Test%s(t *testing.T) { check(t, %s, %s, %s, %s, %s) }\n", tt.name, tt.actual, tt.allowed, tt.mismatch, shape.ObservedConvert, shape.ComparisonConvert)
 	}
@@ -75,11 +75,11 @@ func _sgToDBIntsObservedField(value map[string]int64) *gcmp.ObservedField[map[st
 func _sgToDBIntsComparisonField(value map[string]int64) *gcmp.ComparisonField[map[string]int64] { return gcmp.Equal(value) }
 func check[T, O, A any](t *testing.T, actual, allowed, mismatch any, observe func(T) O, compare func(T) A) {
  t.Helper()
- got, err := observer.Convert[T](actual)
+ got, err := provider.Convert[T](actual)
  if err != nil { t.Fatal(err) }
- want, err := observer.Convert[T](allowed)
+ want, err := provider.Convert[T](allowed)
  if err != nil { t.Fatal(err) }
- bad, err := observer.Convert[T](mismatch)
+ bad, err := provider.Convert[T](mismatch)
  if err != nil { t.Fatal(err) }
  observed := &struct{ Value O }{observe(got)}
  comparator := gcmp.NewObservedStateComparator[*struct{ Value A }](observed)
@@ -88,7 +88,7 @@ func check[T, O, A any](t *testing.T, actual, allowed, mismatch any, observe fun
  if diffs := comparator.Match(&struct{ Value A }{compare(bad)}); len(diffs) == 0 { t.Fatal("mismatch was accepted") }
 }
 func TestNestedIntegerTypeError(t *testing.T) {
- got, err := observer.Convert[map[string][]map[string]int64](map[string]any{"a": []any{map[string]any{"b": float64(3)}}})
+ got, err := provider.Convert[map[string][]map[string]int64](map[string]any{"a": []any{map[string]any{"b": float64(3)}}})
  if err == nil || got != nil || !strings.Contains(err.Error(), "want int64") { t.Fatalf("got %v, error %v", got, err) }
 }
 `)
@@ -98,7 +98,7 @@ func TestNestedIntegerTypeError(t *testing.T) {
 	module := fmt.Sprintf("module example.test/generated\n\ngo 1.27.0\n\nrequire github.com/mrasu/spec-guardian/guardian v0.0.0\nreplace github.com/mrasu/spec-guardian/guardian => %s\n", filepath.ToSlash(guardianDir))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte(module), 0600))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "common_test.go"), sources.Common, 0600))
-	harness := "package specguardian_test\nimport (\"testing\"; \"strings\"; \"github.com/mrasu/spec-guardian/guardian/gcmp\"; \"github.com/mrasu/spec-guardian/guardian/observer\")\n" + runtimeTests.String()
+	harness := "package specguardian_test\nimport (\"testing\"; \"strings\"; \"github.com/mrasu/spec-guardian/guardian/gcmp\"; \"github.com/mrasu/spec-guardian/guardian/provider\")\n" + runtimeTests.String()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "runtime_test.go"), []byte(harness), 0600))
 	command := exec.Command("go", "test", "-mod=mod", "-tags=specguardian", "./...")
 	command.Dir = dir

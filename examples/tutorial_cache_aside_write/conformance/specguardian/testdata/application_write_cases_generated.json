@@ -10,10 +10,16 @@
           }
         },
         "DB": {
-          "records": {
-            "cached": "new",
-            "uncached": "old"
-          }
+          "records": [
+            {
+              "key": "cached",
+              "value": "new"
+            },
+            {
+              "key": "uncached",
+              "value": "old"
+            }
+          ]
         }
       },
       "params": {
@@ -33,10 +39,16 @@
             }
           },
           "DB": {
-            "records": {
-              "cached": "new",
-              "uncached": "old"
-            }
+            "records": [
+              {
+                "key": "cached",
+                "value": "new"
+              },
+              {
+                "key": "uncached",
+                "value": "old"
+              }
+            ]
           }
         },
         "params": {
@@ -56,10 +68,16 @@
             "cached_records": {}
           },
           "DB": {
-            "records": {
-              "cached": "new",
-              "uncached": "old"
-            }
+            "records": [
+              {
+                "key": "cached",
+                "value": "new"
+              },
+              {
+                "key": "uncached",
+                "value": "old"
+              }
+            ]
           }
         },
         "params": {
@@ -79,10 +97,16 @@
             "cached_records": {}
           },
           "DB": {
-            "records": {
-              "cached": "new",
-              "uncached": "old"
-            }
+            "records": [
+              {
+                "key": "cached",
+                "value": "new"
+              },
+              {
+                "key": "uncached",
+                "value": "old"
+              }
+            ]
           }
         },
         "params": {
@@ -106,10 +130,16 @@
           "cached_records": {}
         },
         "DB": {
-          "records": {
-            "cached": "new",
-            "uncached": "old"
-          }
+          "records": [
+            {
+              "key": "cached",
+              "value": "new"
+            },
+            {
+              "key": "uncached",
+              "value": "old"
+            }
+          ]
         }
       },
       "params": {
@@ -127,10 +157,16 @@
             "cached_records": {}
           },
           "DB": {
-            "records": {
-              "cached": "new",
-              "uncached": "old"
-            }
+            "records": [
+              {
+                "key": "cached",
+                "value": "new"
+              },
+              {
+                "key": "uncached",
+                "value": "old"
+              }
+            ]
           }
         },
         "params": {
@@ -150,10 +186,16 @@
             "cached_records": {}
           },
           "DB": {
-            "records": {
-              "cached": "new",
-              "uncached": "old"
-            }
+            "records": [
+              {
+                "key": "cached",
+                "value": "new"
+              },
+              {
+                "key": "uncached",
+                "value": "old"
+              }
+            ]
           }
         },
         "params": {
@@ -179,10 +221,16 @@
           }
         },
         "DB": {
-          "records": {
-            "cached": "old",
-            "uncached": "new"
-          }
+          "records": [
+            {
+              "key": "cached",
+              "value": "old"
+            },
+            {
+              "key": "uncached",
+              "value": "new"
+            }
+          ]
         }
       },
       "params": {
@@ -202,10 +250,16 @@
             }
           },
           "DB": {
-            "records": {
-              "cached": "old",
-              "uncached": "new"
-            }
+            "records": [
+              {
+                "key": "cached",
+                "value": "old"
+              },
+              {
+                "key": "uncached",
+                "value": "new"
+              }
+            ]
           }
         },
         "params": {
@@ -227,10 +281,16 @@
             }
           },
           "DB": {
-            "records": {
-              "cached": "old",
-              "uncached": "new"
-            }
+            "records": [
+              {
+                "key": "cached",
+                "value": "old"
+              },
+              {
+                "key": "uncached",
+                "value": "new"
+              }
+            ]
           }
         },
         "params": {
@@ -256,10 +316,16 @@
           }
         },
         "DB": {
-          "records": {
-            "cached": "old",
-            "uncached": "old"
-          }
+          "records": [
+            {
+              "key": "cached",
+              "value": "old"
+            },
+            {
+              "key": "uncached",
+              "value": "old"
+            }
+          ]
         }
       },
       "params": {
@@ -279,10 +345,16 @@
             }
           },
           "DB": {
-            "records": {
-              "cached": "new",
-              "uncached": "old"
-            }
+            "records": [
+              {
+                "key": "cached",
+                "value": "new"
+              },
+              {
+                "key": "uncached",
+                "value": "old"
+              }
+            ]
           }
         },
         "params": {
@@ -302,10 +374,16 @@
             "cached_records": {}
           },
           "DB": {
-            "records": {
-              "cached": "new",
-              "uncached": "old"
-            }
+            "records": [
+              {
+                "key": "cached",
+                "value": "new"
+              },
+              {
+                "key": "uncached",
+                "value": "old"
+              }
+            ]
           }
         },
         "params": {
@@ -325,10 +403,16 @@
             "cached_records": {}
           },
           "DB": {
-            "records": {
-              "cached": "new",
-              "uncached": "old"
-            }
+            "records": [
+              {
+                "key": "cached",
+                "value": "new"
+              },
+              {
+                "key": "uncached",
+                "value": "old"
+              }
+            ]
           }
         },
         "params": {
@@ -350,10 +434,16 @@
             }
           },
           "DB": {
-            "records": {
-              "cached": "old",
-              "uncached": "old"
-            }
+            "records": [
+              {
+                "key": "cached",
+                "value": "old"
+              },
+              {
+                "key": "uncached",
+                "value": "old"
+              }
+            ]
           }
         },
         "params": {
@@ -379,10 +469,16 @@
           }
         },
         "DB": {
-          "records": {
-            "cached": "old",
-            "uncached": "old"
-          }
+          "records": [
+            {
+              "key": "cached",
+              "value": "old"
+            },
+            {
+              "key": "uncached",
+              "value": "old"
+            }
+          ]
         }
       },
       "params": {
@@ -402,10 +498,16 @@
             }
           },
           "DB": {
-            "records": {
-              "cached": "old",
-              "uncached": "new"
-            }
+            "records": [
+              {
+                "key": "cached",
+                "value": "old"
+              },
+              {
+                "key": "uncached",
+                "value": "new"
+              }
+            ]
           }
         },
         "params": {
@@ -427,10 +529,16 @@
             }
           },
           "DB": {
-            "records": {
-              "cached": "old",
-              "uncached": "new"
-            }
+            "records": [
+              {
+                "key": "cached",
+                "value": "old"
+              },
+              {
+                "key": "uncached",
+                "value": "new"
+              }
+            ]
           }
         },
         "params": {
@@ -452,10 +560,16 @@
             }
           },
           "DB": {
-            "records": {
-              "cached": "old",
-              "uncached": "old"
-            }
+            "records": [
+              {
+                "key": "cached",
+                "value": "old"
+              },
+              {
+                "key": "uncached",
+                "value": "old"
+              }
+            ]
           }
         },
         "params": {

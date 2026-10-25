@@ -5,7 +5,7 @@ package specguardian_test
 
 import (
 	"github.com/mrasu/spec-guardian/guardian/gcmp"
-	"github.com/mrasu/spec-guardian/guardian/observer"
+	"github.com/mrasu/spec-guardian/guardian/provider"
 )
 
 const (
@@ -277,26 +277,26 @@ type ObjectStoreMetadataFilesSnapshotsObservedField struct {
 // ObjectStoreMetadataFilesValue is the declared shape of a model field.
 type ObjectStoreMetadataFilesValue []ObjectStoreMetadataFilesField
 
-func _sgObserverDataFilesObserverSettings() (map[string]any, []observer.FieldRequest) {
-	return map[string]any{}, []observer.FieldRequest{
+func _sgProviderDataFilesSettings() (map[string]any, []provider.FieldRequest) {
+	return map[string]any{}, []provider.FieldRequest{
 		{
 			Field:  _sgFieldObjectStoreDataFiles,
 			Config: map[string]any{},
-			Output: observer.OutputSpec{
-				Type: observer.Type{
-					Kind: observer.KindList,
-					Values: &observer.Type{
-						Kind: observer.KindMessage,
-						Fields: map[string]observer.Type{
+			Output: provider.OutputSpec{
+				Type: provider.Type{
+					Kind: provider.KindList,
+					Values: &provider.Type{
+						Kind: provider.KindMessage,
+						Fields: map[string]provider.Type{
 							"file_path": {
-								Kind: observer.KindString,
+								Kind: provider.KindString,
 							},
 							"rows": {
-								Kind: observer.KindList,
-								Values: &observer.Type{
-									Kind: observer.KindList,
-									Values: &observer.Type{
-										Kind: observer.KindString,
+								Kind: provider.KindList,
+								Values: &provider.Type{
+									Kind: provider.KindList,
+									Values: &provider.Type{
+										Kind: provider.KindString,
 									},
 								},
 							},
@@ -308,33 +308,33 @@ func _sgObserverDataFilesObserverSettings() (map[string]any, []observer.FieldReq
 	}
 }
 
-func _sgObserverDeleteFilesObserverSettings() (map[string]any, []observer.FieldRequest) {
-	return map[string]any{}, []observer.FieldRequest{
+func _sgProviderDeleteFilesSettings() (map[string]any, []provider.FieldRequest) {
+	return map[string]any{}, []provider.FieldRequest{
 		{
 			Field:  _sgFieldObjectStoreDeleteFiles,
 			Config: map[string]any{},
-			Output: observer.OutputSpec{
-				Type: observer.Type{
-					Kind: observer.KindList,
-					Values: &observer.Type{
-						Kind: observer.KindMessage,
-						Fields: map[string]observer.Type{
+			Output: provider.OutputSpec{
+				Type: provider.Type{
+					Kind: provider.KindList,
+					Values: &provider.Type{
+						Kind: provider.KindMessage,
+						Fields: map[string]provider.Type{
 							"file": {
-								Kind: observer.KindList,
-								Values: &observer.Type{
-									Kind: observer.KindMessage,
-									Fields: map[string]observer.Type{
+								Kind: provider.KindList,
+								Values: &provider.Type{
+									Kind: provider.KindMessage,
+									Fields: map[string]provider.Type{
 										"file_index": {
-											Kind: observer.KindInt64,
+											Kind: provider.KindInt64,
 										},
 										"row_index": {
-											Kind: observer.KindInt64,
+											Kind: provider.KindInt64,
 										},
 									},
 								},
 							},
 							"location": {
-								Kind: observer.KindString,
+								Kind: provider.KindString,
 							},
 						},
 					},
@@ -344,76 +344,76 @@ func _sgObserverDeleteFilesObserverSettings() (map[string]any, []observer.FieldR
 	}
 }
 
-func _sgObserverManifestFilesObserverSettings() (map[string]any, []observer.FieldRequest) {
-	return map[string]any{}, []observer.FieldRequest{
+func _sgProviderManifestFilesSettings() (map[string]any, []provider.FieldRequest) {
+	return map[string]any{}, []provider.FieldRequest{
 		{
 			Field:  _sgFieldObjectStoreManifestFiles,
 			Config: map[string]any{},
-			Output: observer.OutputSpec{
-				Type: observer.Type{
-					Kind: observer.KindList,
-					Values: &observer.Type{
-						Kind: observer.KindMessage,
-						Fields: map[string]observer.Type{
+			Output: provider.OutputSpec{
+				Type: provider.Type{
+					Kind: provider.KindList,
+					Values: &provider.Type{
+						Kind: provider.KindMessage,
+						Fields: map[string]provider.Type{
 							"file": {
-								Kind: observer.KindMessage,
-								Fields: map[string]observer.Type{
+								Kind: provider.KindMessage,
+								Fields: map[string]provider.Type{
 									"added_file_count": {
-										Kind: observer.KindInt64,
+										Kind: provider.KindInt64,
 									},
 									"content": {
-										Kind: observer.KindString,
+										Kind: provider.KindString,
 									},
 									"deleted_file_count": {
-										Kind: observer.KindInt64,
+										Kind: provider.KindInt64,
 									},
 									"entries": {
-										Kind: observer.KindList,
-										Values: &observer.Type{
-											Kind: observer.KindMessage,
-											Fields: map[string]observer.Type{
+										Kind: provider.KindList,
+										Values: &provider.Type{
+											Kind: provider.KindMessage,
+											Fields: map[string]provider.Type{
 												"data_file": {
-													Kind: observer.KindMessage,
-													Fields: map[string]observer.Type{
+													Kind: provider.KindMessage,
+													Fields: map[string]provider.Type{
 														"content": {
-															Kind: observer.KindString,
+															Kind: provider.KindString,
 														},
 														"file_index": {
-															Kind: observer.KindInt64,
+															Kind: provider.KindInt64,
 														},
 													},
 												},
 												"data_sequence_no": {
-													Kind: observer.KindInt64,
+													Kind: provider.KindInt64,
 												},
 												"file_sequence_no": {
-													Kind: observer.KindInt64,
+													Kind: provider.KindInt64,
 												},
 												"snapshot_id": {
-													Kind: observer.KindInt64,
+													Kind: provider.KindInt64,
 												},
 												"status": {
-													Kind: observer.KindString,
+													Kind: provider.KindString,
 												},
 											},
 										},
 									},
 									"existing_file_count": {
-										Kind: observer.KindInt64,
+										Kind: provider.KindInt64,
 									},
 									"min_sequence_no": {
-										Kind: observer.KindInt64,
+										Kind: provider.KindInt64,
 									},
 									"sequence_no": {
-										Kind: observer.KindInt64,
+										Kind: provider.KindInt64,
 									},
 									"snapshot_id": {
-										Kind: observer.KindInt64,
+										Kind: provider.KindInt64,
 									},
 								},
 							},
 							"location": {
-								Kind: observer.KindString,
+								Kind: provider.KindString,
 							},
 						},
 					},
@@ -423,51 +423,51 @@ func _sgObserverManifestFilesObserverSettings() (map[string]any, []observer.Fiel
 	}
 }
 
-func _sgObserverManifestListsObserverSettings() (map[string]any, []observer.FieldRequest) {
-	return map[string]any{}, []observer.FieldRequest{
+func _sgProviderManifestListsSettings() (map[string]any, []provider.FieldRequest) {
+	return map[string]any{}, []provider.FieldRequest{
 		{
 			Field:  _sgFieldObjectStoreManifestLists,
 			Config: map[string]any{},
-			Output: observer.OutputSpec{
-				Type: observer.Type{
-					Kind: observer.KindList,
-					Values: &observer.Type{
-						Kind: observer.KindMessage,
-						Fields: map[string]observer.Type{
+			Output: provider.OutputSpec{
+				Type: provider.Type{
+					Kind: provider.KindList,
+					Values: &provider.Type{
+						Kind: provider.KindMessage,
+						Fields: map[string]provider.Type{
 							"entries": {
-								Kind: observer.KindList,
-								Values: &observer.Type{
-									Kind: observer.KindMessage,
-									Fields: map[string]observer.Type{
+								Kind: provider.KindList,
+								Values: &provider.Type{
+									Kind: provider.KindMessage,
+									Fields: map[string]provider.Type{
 										"added_file_count": {
-											Kind: observer.KindInt64,
+											Kind: provider.KindInt64,
 										},
 										"content": {
-											Kind: observer.KindString,
+											Kind: provider.KindString,
 										},
 										"deleted_file_count": {
-											Kind: observer.KindInt64,
+											Kind: provider.KindInt64,
 										},
 										"existing_file_count": {
-											Kind: observer.KindInt64,
+											Kind: provider.KindInt64,
 										},
 										"manifest_path": {
-											Kind: observer.KindString,
+											Kind: provider.KindString,
 										},
 										"min_sequence_no": {
-											Kind: observer.KindInt64,
+											Kind: provider.KindInt64,
 										},
 										"sequence_no": {
-											Kind: observer.KindInt64,
+											Kind: provider.KindInt64,
 										},
 										"snapshot_id": {
-											Kind: observer.KindInt64,
+											Kind: provider.KindInt64,
 										},
 									},
 								},
 							},
 							"location": {
-								Kind: observer.KindString,
+								Kind: provider.KindString,
 							},
 						},
 					},
@@ -477,71 +477,71 @@ func _sgObserverManifestListsObserverSettings() (map[string]any, []observer.Fiel
 	}
 }
 
-func _sgObserverMetadataFilesObserverSettings() (map[string]any, []observer.FieldRequest) {
-	return map[string]any{}, []observer.FieldRequest{
+func _sgProviderMetadataFilesSettings() (map[string]any, []provider.FieldRequest) {
+	return map[string]any{}, []provider.FieldRequest{
 		{
 			Field:  _sgFieldObjectStoreMetadataFiles,
 			Config: map[string]any{},
-			Output: observer.OutputSpec{
-				Type: observer.Type{
-					Kind: observer.KindList,
-					Values: &observer.Type{
-						Kind: observer.KindMessage,
-						Fields: map[string]observer.Type{
+			Output: provider.OutputSpec{
+				Type: provider.Type{
+					Kind: provider.KindList,
+					Values: &provider.Type{
+						Kind: provider.KindMessage,
+						Fields: map[string]provider.Type{
 							"current_snapshot": {
-								Kind:     observer.KindMessage,
+								Kind:     provider.KindMessage,
 								Nullable: true,
-								Fields: map[string]observer.Type{
+								Fields: map[string]provider.Type{
 									"manifest_list_path": {
-										Kind: observer.KindString,
+										Kind: provider.KindString,
 									},
 									"operation": {
-										Kind: observer.KindString,
+										Kind: provider.KindString,
 									},
 									"parent_snapshot_id": {
-										Kind:     observer.KindInt64,
+										Kind:     provider.KindInt64,
 										Nullable: true,
 									},
 									"sequence_no": {
-										Kind: observer.KindInt64,
+										Kind: provider.KindInt64,
 									},
 									"snapshot_id": {
-										Kind: observer.KindInt64,
+										Kind: provider.KindInt64,
 									},
 								},
 							},
 							"last_sequence_no": {
-								Kind: observer.KindInt64,
+								Kind: provider.KindInt64,
 							},
 							"location": {
-								Kind: observer.KindString,
+								Kind: provider.KindString,
 							},
 							"snapshots": {
-								Kind: observer.KindList,
-								Values: &observer.Type{
-									Kind: observer.KindMessage,
-									Fields: map[string]observer.Type{
+								Kind: provider.KindList,
+								Values: &provider.Type{
+									Kind: provider.KindMessage,
+									Fields: map[string]provider.Type{
 										"manifest_list_path": {
-											Kind: observer.KindString,
+											Kind: provider.KindString,
 										},
 										"operation": {
-											Kind: observer.KindString,
+											Kind: provider.KindString,
 										},
 										"parent_snapshot_id": {
-											Kind:     observer.KindInt64,
+											Kind:     provider.KindInt64,
 											Nullable: true,
 										},
 										"sequence_no": {
-											Kind: observer.KindInt64,
+											Kind: provider.KindInt64,
 										},
 										"snapshot_id": {
-											Kind: observer.KindInt64,
+											Kind: provider.KindInt64,
 										},
 									},
 								},
 							},
 							"version": {
-								Kind: observer.KindInt64,
+								Kind: provider.KindInt64,
 							},
 						},
 					},

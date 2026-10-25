@@ -43,20 +43,6 @@ type OrderServerCreateOrderInput struct{ RequestID, Payload string }
 
 type OrderServerCreateOrderOutput = *idempotentrequest.Order
 
-func (e *OrderServerEnvironment) SetupCreateOrderCase(t *testing.T) { t.Helper() }
-
-func (e *OrderServerEnvironment) CleanupCreateOrderCase(t *testing.T) { t.Helper() }
-
-func (e *OrderServerEnvironment) SetupCreateOrderAttempt(t *testing.T, input FizzbeeOrderServerState) {
-	t.Helper()
-	e.resources.setup(t, input.Fields.DynamoDB.OrderIdempotencyRecords, input.Fields.DynamoDB.DeliveryRecords, input.Fields.MySQL.OrderRecords, input.Fields.MySQL.NextOrderId)
-}
-
-func (e *OrderServerEnvironment) CleanupCreateOrderAttempt(t *testing.T) {
-	t.Helper()
-	e.resources.cleanup(t)
-}
-
 func (e *OrderServerEnvironment) BuildCreateOrderInput(t *testing.T, input FizzbeeOrderServerState) OrderServerCreateOrderInput {
 	t.Helper()
 	return OrderServerCreateOrderInput{RequestID: input.Params.OrderServer.RequestId, Payload: input.Fields.OrderServer.RequestPayload}
@@ -64,10 +50,6 @@ func (e *OrderServerEnvironment) BuildCreateOrderInput(t *testing.T, input Fizzb
 
 func (e *OrderServerEnvironment) BuildCreateOrderManualObservation(t *testing.T, fetched OrderServerFetchedObservation, input FizzbeeOrderServerState, output OrderServerCreateOrderOutput, actionErr error) OrderServerManualObservation {
 	t.Helper()
-	orderedID := input.Fields.OrderServer.OrderedId
-	if output != nil {
-		orderedID = new(int(output.ID))
-	}
 	result := "ORDERED"
 	if actionErr != nil {
 		result = "PROCESSING"
@@ -79,7 +61,6 @@ func (e *OrderServerEnvironment) BuildCreateOrderManualObservation(t *testing.T,
 	return OrderServerManualObservation{
 		Fields: OrderServerManualField{
 			OrderServer: OrderServerOrderServerManualField{
-				OrderedId:      gcmp.Observed(orderedID),
 				RequestPayload: gcmp.Observed(input.Fields.OrderServer.RequestPayload),
 				Result:         gcmp.Observed(result),
 			},

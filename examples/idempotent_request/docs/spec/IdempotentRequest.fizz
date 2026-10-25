@@ -17,36 +17,34 @@ always assertion DoneIdempotencyRecordHasOrder:
   for request_id in dynamodb.order_idempotency_records:
     record = dynamodb.order_idempotency_records[request_id]
     if record["status"] == IdempotencyStatus.DONE:
-      if not record["order_id"] in mysql.order_records:
+      orders = [order for order in mysql.order_records if str(order["id"]) == record["order_id"]]
+      if len(orders) != 1:
         return False
-
-      order = mysql.order_records[record["order_id"]]
+      order = orders[0]
       if order["request_id"] != request_id or order["payload"] != record["payload"]:
         return False
   return True
 
 always assertion DeliveredOrderHasDynamoDBDeliveryRecord:
-  for order_id in mysql.order_records:
-    order = mysql.order_records[order_id]
+  for order in mysql.order_records:
     if order["status"] == OrderStatus.DELIVERED:
-      if order["delivery_id"] not in dynamodb.delivery_records:
+      deliveries = [delivery for delivery in dynamodb.delivery_records if delivery["id"] == order["delivery_id"]]
+      if len(deliveries) != 1:
         return False
-      delivery = dynamodb.delivery_records[order["delivery_id"]]
-      if delivery["order_id"] != order_id or delivery["data"] != order["delivery_data"]:
+      delivery = deliveries[0]
+      if delivery["order_id"] != str(order["id"]) or delivery["data"] != order["delivery_data"]:
         return False
   return True
 
 always assertion DynamoDBDeliveryRecordMatchesOrder:
-  for delivery_id in dynamodb.delivery_records:
-    delivery = dynamodb.delivery_records[delivery_id]
-
-    if not delivery["order_id"] in mysql.order_records:
+  for delivery in dynamodb.delivery_records:
+    orders = [order for order in mysql.order_records if str(order["id"]) == delivery["order_id"]]
+    if len(orders) != 1:
       return False
-
-    order = mysql.order_records[delivery["order_id"]]
+    order = orders[0]
     if order["status"] != OrderStatus.DELIVERING and order["status"] != OrderStatus.DELIVERED:
       return False
-    if order["delivery_id"] != delivery_id or order["delivery_data"] != delivery["data"]:
+    if order["delivery_id"] != delivery["id"] or order["delivery_data"] != delivery["data"]:
       return False
   return True
 
@@ -58,7 +56,7 @@ eventually always assertion RequestsSettle:
 role DynamoDB:
   action Init:
     self.order_idempotency_records = {}
-    self.delivery_records = {}
+    self.delivery_records = []
 
   atomic func begin_order_idempotent_request(request_id, payload):
     if request_id not in self.order_idempotency_records:
@@ -69,21 +67,22 @@ role DynamoDB:
 
   atomic func end_order_idempotent_request(request_id, order_id):
     record = self.order_idempotency_records[request_id]
-    record["order_id"] = order_id
+    record["order_id"] = str(order_id)
     record["status"] = IdempotencyStatus.DONE
     return True
 
   atomic func create_delivery_record(delivery_id, order_id, data):
-    delivery = {"order_id": order_id, "data": data}
-    if delivery_id not in self.delivery_records:
-      self.delivery_records[delivery_id] = delivery
-    elif self.delivery_records[delivery_id] != delivery:
+    delivery = {"id": delivery_id, "order_id": str(order_id), "data": data}
+    existing = [record for record in self.delivery_records if record["id"] == delivery_id]
+    if len(existing) == 0:
+      self.delivery_records.append(delivery)
+    elif existing[0] != delivery:
       return PersistenceResult.CONFLICT
     return PersistenceResult.SUCCEEDED
 
 role MySQL:
   action Init:
-    self.order_records = {}
+    self.order_records = []
     self.next_order_id = 0
     self.delivery_prepared_count = 0
 
@@ -92,15 +91,14 @@ role MySQL:
     return self.next_order_id
 
   atomic func create_order(request_id, payload):
-    for order_id in self.order_records:
-      order = self.order_records[order_id]
+    for order in self.order_records:
       if order["request_id"] == request_id:
         if order["payload"] != payload:
           return [PersistenceResult.CONFLICT, None]
-        return [PersistenceResult.SUCCEEDED, order_id]
+        return [PersistenceResult.SUCCEEDED, order["id"]]
 
     order_id = self.generate_order_id()
-    self.order_records[order_id] = {"request_id": request_id, "payload": payload, "status": OrderStatus.CREATED, "delivery_id": None, "delivery_data": None}
+    self.order_records.append({"id": order_id, "request_id": request_id, "payload": payload, "status": OrderStatus.CREATED, "delivery_id": None, "delivery_data": None})
     return [PersistenceResult.SUCCEEDED, order_id]
 
   atomic func generate_delivery_id():
@@ -108,10 +106,11 @@ role MySQL:
     return "delivery-id-" + str(self.delivery_prepared_count)
 
   atomic func mark_order_delivering(order_id, delivery_data):
-    if order_id not in self.order_records:
+    orders = [order for order in self.order_records if order["id"] == order_id]
+    if len(orders) == 0:
       return [PersistenceResult.NOT_FOUND, None, None]
 
-    order = self.order_records[order_id]
+    order = orders[0]
     if order["status"] == OrderStatus.DELIVERED:
       return [PersistenceResult.ALREADY_DELIVERED, None, None]
     elif order["status"] == OrderStatus.DELIVERING and order["delivery_data"] != delivery_data:
@@ -125,7 +124,9 @@ role MySQL:
     return [PersistenceResult.SUCCEEDED, order["delivery_id"], order["delivery_data"]]
 
   atomic func mark_order_delivered(order_id):
-    self.order_records[order_id]["status"] = OrderStatus.DELIVERED
+    for order in self.order_records:
+      if order["id"] == order_id:
+        order["status"] = OrderStatus.DELIVERED
     return True
 
 @conformance

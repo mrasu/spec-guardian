@@ -9,13 +9,28 @@ import (
 
 	"github.com/mrasu/spec-guardian/guardian"
 	"github.com/mrasu/spec-guardian/guardian/gcmp"
-	"github.com/mrasu/spec-guardian/guardian/observer"
-	_sgDatafiles "spec-guardian/examples/iceberg/conformance/specguardian/observer/datafiles"
-	_sgDeletefiles "spec-guardian/examples/iceberg/conformance/specguardian/observer/deletefiles"
-	_sgManifestfiles "spec-guardian/examples/iceberg/conformance/specguardian/observer/manifestfiles"
-	_sgManifestlists "spec-guardian/examples/iceberg/conformance/specguardian/observer/manifestlists"
-	_sgMetadatafiles "spec-guardian/examples/iceberg/conformance/specguardian/observer/metadatafiles"
+	"github.com/mrasu/spec-guardian/guardian/provider"
+	_sgDatafiles "spec-guardian/examples/iceberg/conformance/specguardian/provider/datafiles"
+	_sgDeletefiles "spec-guardian/examples/iceberg/conformance/specguardian/provider/deletefiles"
+	_sgManifestfiles "spec-guardian/examples/iceberg/conformance/specguardian/provider/manifestfiles"
+	_sgManifestlists "spec-guardian/examples/iceberg/conformance/specguardian/provider/manifestlists"
+	_sgMetadatafiles "spec-guardian/examples/iceberg/conformance/specguardian/provider/metadatafiles"
 )
+
+var _ provider.Lifecycle = (*_sgDatafiles.Provider)(nil)
+var _ provider.Observer = (*_sgDatafiles.Provider)(nil)
+
+var _ provider.Lifecycle = (*_sgDeletefiles.Provider)(nil)
+var _ provider.Observer = (*_sgDeletefiles.Provider)(nil)
+
+var _ provider.Lifecycle = (*_sgManifestfiles.Provider)(nil)
+var _ provider.Observer = (*_sgManifestfiles.Provider)(nil)
+
+var _ provider.Lifecycle = (*_sgManifestlists.Provider)(nil)
+var _ provider.Observer = (*_sgManifestlists.Provider)(nil)
+
+var _ provider.Lifecycle = (*_sgMetadatafiles.Provider)(nil)
+var _ provider.Observer = (*_sgMetadatafiles.Provider)(nil)
 
 // IcebergTableActions describes the application methods exercised by this role.
 // This generated interface is the contract implemented by the application adapter.
@@ -29,70 +44,70 @@ type IcebergTableActions interface {
 type IcebergTableConformanceEnvironment struct {
 	Actions IcebergTableActions
 	*IcebergTableEnvironment
-	observerDataFilesObserver     *_sgDatafiles.Observer
-	observerDeleteFilesObserver   *_sgDeletefiles.Observer
-	observerManifestFilesObserver *_sgManifestfiles.Observer
-	observerManifestListsObserver *_sgManifestlists.Observer
-	observerMetadataFilesObserver *_sgMetadatafiles.Observer
+	providerDataFiles     *_sgDatafiles.Provider
+	providerDeleteFiles   *_sgDeletefiles.Provider
+	providerManifestFiles *_sgManifestfiles.Provider
+	providerManifestLists *_sgManifestlists.Provider
+	providerMetadataFiles *_sgMetadatafiles.Provider
 }
 
 // NewIcebergTableConformanceEnvironment builds the adapter and resources for a conformance case.
 func NewIcebergTableConformanceEnvironment(t *testing.T, controller *guardian.InjectionController) *IcebergTableConformanceEnvironment {
 	t.Helper()
 	actions, environment := BuildIcebergTableConformanceComponents(t, controller)
-	configDataFilesObserver, fieldsDataFilesObserver := _sgObserverDataFilesObserverSettings()
-	observerDataFilesObserver, errDataFilesObserver := _sgDatafiles.New(
+	configDataFiles, fieldsDataFiles := _sgProviderDataFilesSettings()
+	providerDataFiles, errDataFiles := _sgDatafiles.New(
 		_sgDatafiles.Config{},
-		configDataFilesObserver,
-		fieldsDataFilesObserver,
+		configDataFiles,
+		fieldsDataFiles,
 	)
-	if errDataFilesObserver != nil {
-		t.Fatalf("observer data_files_observer New: %v", errDataFilesObserver)
+	if errDataFiles != nil {
+		t.Fatalf("provider data_files New: %v", errDataFiles)
 	}
-	configDeleteFilesObserver, fieldsDeleteFilesObserver := _sgObserverDeleteFilesObserverSettings()
-	observerDeleteFilesObserver, errDeleteFilesObserver := _sgDeletefiles.New(
+	configDeleteFiles, fieldsDeleteFiles := _sgProviderDeleteFilesSettings()
+	providerDeleteFiles, errDeleteFiles := _sgDeletefiles.New(
 		_sgDeletefiles.Config{},
-		configDeleteFilesObserver,
-		fieldsDeleteFilesObserver,
+		configDeleteFiles,
+		fieldsDeleteFiles,
 	)
-	if errDeleteFilesObserver != nil {
-		t.Fatalf("observer delete_files_observer New: %v", errDeleteFilesObserver)
+	if errDeleteFiles != nil {
+		t.Fatalf("provider delete_files New: %v", errDeleteFiles)
 	}
-	configManifestFilesObserver, fieldsManifestFilesObserver := _sgObserverManifestFilesObserverSettings()
-	observerManifestFilesObserver, errManifestFilesObserver := _sgManifestfiles.New(
+	configManifestFiles, fieldsManifestFiles := _sgProviderManifestFilesSettings()
+	providerManifestFiles, errManifestFiles := _sgManifestfiles.New(
 		_sgManifestfiles.Config{},
-		configManifestFilesObserver,
-		fieldsManifestFilesObserver,
+		configManifestFiles,
+		fieldsManifestFiles,
 	)
-	if errManifestFilesObserver != nil {
-		t.Fatalf("observer manifest_files_observer New: %v", errManifestFilesObserver)
+	if errManifestFiles != nil {
+		t.Fatalf("provider manifest_files New: %v", errManifestFiles)
 	}
-	configManifestListsObserver, fieldsManifestListsObserver := _sgObserverManifestListsObserverSettings()
-	observerManifestListsObserver, errManifestListsObserver := _sgManifestlists.New(
+	configManifestLists, fieldsManifestLists := _sgProviderManifestListsSettings()
+	providerManifestLists, errManifestLists := _sgManifestlists.New(
 		_sgManifestlists.Config{},
-		configManifestListsObserver,
-		fieldsManifestListsObserver,
+		configManifestLists,
+		fieldsManifestLists,
 	)
-	if errManifestListsObserver != nil {
-		t.Fatalf("observer manifest_lists_observer New: %v", errManifestListsObserver)
+	if errManifestLists != nil {
+		t.Fatalf("provider manifest_lists New: %v", errManifestLists)
 	}
-	configMetadataFilesObserver, fieldsMetadataFilesObserver := _sgObserverMetadataFilesObserverSettings()
-	observerMetadataFilesObserver, errMetadataFilesObserver := _sgMetadatafiles.New(
+	configMetadataFiles, fieldsMetadataFiles := _sgProviderMetadataFilesSettings()
+	providerMetadataFiles, errMetadataFiles := _sgMetadatafiles.New(
 		_sgMetadatafiles.Config{},
-		configMetadataFilesObserver,
-		fieldsMetadataFilesObserver,
+		configMetadataFiles,
+		fieldsMetadataFiles,
 	)
-	if errMetadataFilesObserver != nil {
-		t.Fatalf("observer metadata_files_observer New: %v", errMetadataFilesObserver)
+	if errMetadataFiles != nil {
+		t.Fatalf("provider metadata_files New: %v", errMetadataFiles)
 	}
 	return &IcebergTableConformanceEnvironment{
-		Actions:                       actions,
-		IcebergTableEnvironment:       environment,
-		observerDataFilesObserver:     observerDataFilesObserver,
-		observerDeleteFilesObserver:   observerDeleteFilesObserver,
-		observerManifestFilesObserver: observerManifestFilesObserver,
-		observerManifestListsObserver: observerManifestListsObserver,
-		observerMetadataFilesObserver: observerMetadataFilesObserver,
+		Actions:                 actions,
+		IcebergTableEnvironment: environment,
+		providerDataFiles:       providerDataFiles,
+		providerDeleteFiles:     providerDeleteFiles,
+		providerManifestFiles:   providerManifestFiles,
+		providerManifestLists:   providerManifestLists,
+		providerMetadataFiles:   providerMetadataFiles,
 	}
 }
 
@@ -105,47 +120,44 @@ func LoadIcebergTableCases(t *testing.T, filepath string) []IcebergTableCase {
 // PrepareAppendCase sets up one case and registers its cleanup.
 func (e *IcebergTableConformanceEnvironment) PrepareAppendCase(t *testing.T) {
 	e.SetupAppendCase(t)
-	t.Cleanup(func() {
-		e.CleanupAppendCase(t)
-	})
-	if err := e.observerDataFilesObserver.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer data_files_observer PrepareCase: %v", err)
+	if err := e.providerDataFiles.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider data_files PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerDataFilesObserver.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer data_files_observer CleanupCase: %v", err)
+		if err := e.providerDataFiles.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider data_files CleanupCase: %v", err)
 		}
 	})
-	if err := e.observerDeleteFilesObserver.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer delete_files_observer PrepareCase: %v", err)
+	if err := e.providerDeleteFiles.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider delete_files PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerDeleteFilesObserver.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer delete_files_observer CleanupCase: %v", err)
+		if err := e.providerDeleteFiles.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider delete_files CleanupCase: %v", err)
 		}
 	})
-	if err := e.observerManifestFilesObserver.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer manifest_files_observer PrepareCase: %v", err)
+	if err := e.providerManifestFiles.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider manifest_files PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerManifestFilesObserver.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer manifest_files_observer CleanupCase: %v", err)
+		if err := e.providerManifestFiles.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider manifest_files CleanupCase: %v", err)
 		}
 	})
-	if err := e.observerManifestListsObserver.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer manifest_lists_observer PrepareCase: %v", err)
+	if err := e.providerManifestLists.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider manifest_lists PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerManifestListsObserver.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer manifest_lists_observer CleanupCase: %v", err)
+		if err := e.providerManifestLists.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider manifest_lists CleanupCase: %v", err)
 		}
 	})
-	if err := e.observerMetadataFilesObserver.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer metadata_files_observer PrepareCase: %v", err)
+	if err := e.providerMetadataFiles.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider metadata_files PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerMetadataFilesObserver.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer metadata_files_observer CleanupCase: %v", err)
+		if err := e.providerMetadataFiles.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider metadata_files CleanupCase: %v", err)
 		}
 	})
 }
@@ -156,46 +168,46 @@ func (e *IcebergTableConformanceEnvironment) PrepareAppendAttempt(t *testing.T, 
 	t.Cleanup(func() {
 		e.CleanupAppendAttempt(t)
 	})
-	if err := e.observerDataFilesObserver.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer data_files_observer PrepareAttempt: %v", err)
-	}
 	t.Cleanup(func() {
-		if err := e.observerDataFilesObserver.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer data_files_observer CleanupAttempt: %v", err)
+		if err := e.providerDataFiles.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider data_files CleanupAttempt: %v", err)
 		}
 	})
-	if err := e.observerDeleteFilesObserver.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer delete_files_observer PrepareAttempt: %v", err)
+	if err := e.providerDataFiles.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider data_files PrepareAttempt: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerDeleteFilesObserver.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer delete_files_observer CleanupAttempt: %v", err)
+		if err := e.providerDeleteFiles.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider delete_files CleanupAttempt: %v", err)
 		}
 	})
-	if err := e.observerManifestFilesObserver.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer manifest_files_observer PrepareAttempt: %v", err)
+	if err := e.providerDeleteFiles.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider delete_files PrepareAttempt: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerManifestFilesObserver.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer manifest_files_observer CleanupAttempt: %v", err)
+		if err := e.providerManifestFiles.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider manifest_files CleanupAttempt: %v", err)
 		}
 	})
-	if err := e.observerManifestListsObserver.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer manifest_lists_observer PrepareAttempt: %v", err)
+	if err := e.providerManifestFiles.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider manifest_files PrepareAttempt: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerManifestListsObserver.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer manifest_lists_observer CleanupAttempt: %v", err)
+		if err := e.providerManifestLists.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider manifest_lists CleanupAttempt: %v", err)
 		}
 	})
-	if err := e.observerMetadataFilesObserver.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer metadata_files_observer PrepareAttempt: %v", err)
+	if err := e.providerManifestLists.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider manifest_lists PrepareAttempt: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerMetadataFilesObserver.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer metadata_files_observer CleanupAttempt: %v", err)
+		if err := e.providerMetadataFiles.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider metadata_files CleanupAttempt: %v", err)
 		}
 	})
+	if err := e.providerMetadataFiles.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider metadata_files PrepareAttempt: %v", err)
+	}
 }
 
 // ExecuteAppend invokes the application action.
@@ -206,45 +218,45 @@ func (e *IcebergTableConformanceEnvironment) ExecuteAppend(ctx context.Context, 
 // ObserveAppendState collects the state and output visible after the action.
 func (e *IcebergTableConformanceEnvironment) ObserveAppendState(t *testing.T, input FizzbeeIcebergTableState, output IcebergTableAppendOutput, actionErr error) *IcebergTableObservedState {
 	t.Helper()
-	valueObjectStoreDataFiles, err := e.observerDataFilesObserver.Observe(t.Context(), _sgFieldObjectStoreDataFiles)
+	valueObjectStoreDataFiles, err := e.providerDataFiles.Observe(t.Context(), _sgFieldObjectStoreDataFiles)
 	if err != nil {
-		t.Fatalf("observer data_files_observer Observe %s: %v", _sgFieldObjectStoreDataFiles, err)
+		t.Fatalf("provider data_files Observe %s: %v", _sgFieldObjectStoreDataFiles, err)
 	}
-	typedObjectStoreDataFiles, convertErr := observer.Convert[ObjectStoreDataFilesValue](valueObjectStoreDataFiles)
+	typedObjectStoreDataFiles, convertErr := provider.Convert[ObjectStoreDataFilesValue](valueObjectStoreDataFiles)
 	if convertErr != nil {
-		t.Fatalf("observer data_files_observer Observe %s: %v", _sgFieldObjectStoreDataFiles, convertErr)
+		t.Fatalf("provider data_files Observe %s: %v", _sgFieldObjectStoreDataFiles, convertErr)
 	}
-	valueObjectStoreDeleteFiles, err := e.observerDeleteFilesObserver.Observe(t.Context(), _sgFieldObjectStoreDeleteFiles)
+	valueObjectStoreDeleteFiles, err := e.providerDeleteFiles.Observe(t.Context(), _sgFieldObjectStoreDeleteFiles)
 	if err != nil {
-		t.Fatalf("observer delete_files_observer Observe %s: %v", _sgFieldObjectStoreDeleteFiles, err)
+		t.Fatalf("provider delete_files Observe %s: %v", _sgFieldObjectStoreDeleteFiles, err)
 	}
-	typedObjectStoreDeleteFiles, convertErr := observer.Convert[ObjectStoreDeleteFilesValue](valueObjectStoreDeleteFiles)
+	typedObjectStoreDeleteFiles, convertErr := provider.Convert[ObjectStoreDeleteFilesValue](valueObjectStoreDeleteFiles)
 	if convertErr != nil {
-		t.Fatalf("observer delete_files_observer Observe %s: %v", _sgFieldObjectStoreDeleteFiles, convertErr)
+		t.Fatalf("provider delete_files Observe %s: %v", _sgFieldObjectStoreDeleteFiles, convertErr)
 	}
-	valueObjectStoreManifestFiles, err := e.observerManifestFilesObserver.Observe(t.Context(), _sgFieldObjectStoreManifestFiles)
+	valueObjectStoreManifestFiles, err := e.providerManifestFiles.Observe(t.Context(), _sgFieldObjectStoreManifestFiles)
 	if err != nil {
-		t.Fatalf("observer manifest_files_observer Observe %s: %v", _sgFieldObjectStoreManifestFiles, err)
+		t.Fatalf("provider manifest_files Observe %s: %v", _sgFieldObjectStoreManifestFiles, err)
 	}
-	typedObjectStoreManifestFiles, convertErr := observer.Convert[ObjectStoreManifestFilesValue](valueObjectStoreManifestFiles)
+	typedObjectStoreManifestFiles, convertErr := provider.Convert[ObjectStoreManifestFilesValue](valueObjectStoreManifestFiles)
 	if convertErr != nil {
-		t.Fatalf("observer manifest_files_observer Observe %s: %v", _sgFieldObjectStoreManifestFiles, convertErr)
+		t.Fatalf("provider manifest_files Observe %s: %v", _sgFieldObjectStoreManifestFiles, convertErr)
 	}
-	valueObjectStoreManifestLists, err := e.observerManifestListsObserver.Observe(t.Context(), _sgFieldObjectStoreManifestLists)
+	valueObjectStoreManifestLists, err := e.providerManifestLists.Observe(t.Context(), _sgFieldObjectStoreManifestLists)
 	if err != nil {
-		t.Fatalf("observer manifest_lists_observer Observe %s: %v", _sgFieldObjectStoreManifestLists, err)
+		t.Fatalf("provider manifest_lists Observe %s: %v", _sgFieldObjectStoreManifestLists, err)
 	}
-	typedObjectStoreManifestLists, convertErr := observer.Convert[ObjectStoreManifestListsValue](valueObjectStoreManifestLists)
+	typedObjectStoreManifestLists, convertErr := provider.Convert[ObjectStoreManifestListsValue](valueObjectStoreManifestLists)
 	if convertErr != nil {
-		t.Fatalf("observer manifest_lists_observer Observe %s: %v", _sgFieldObjectStoreManifestLists, convertErr)
+		t.Fatalf("provider manifest_lists Observe %s: %v", _sgFieldObjectStoreManifestLists, convertErr)
 	}
-	valueObjectStoreMetadataFiles, err := e.observerMetadataFilesObserver.Observe(t.Context(), _sgFieldObjectStoreMetadataFiles)
+	valueObjectStoreMetadataFiles, err := e.providerMetadataFiles.Observe(t.Context(), _sgFieldObjectStoreMetadataFiles)
 	if err != nil {
-		t.Fatalf("observer metadata_files_observer Observe %s: %v", _sgFieldObjectStoreMetadataFiles, err)
+		t.Fatalf("provider metadata_files Observe %s: %v", _sgFieldObjectStoreMetadataFiles, err)
 	}
-	typedObjectStoreMetadataFiles, convertErr := observer.Convert[ObjectStoreMetadataFilesValue](valueObjectStoreMetadataFiles)
+	typedObjectStoreMetadataFiles, convertErr := provider.Convert[ObjectStoreMetadataFilesValue](valueObjectStoreMetadataFiles)
 	if convertErr != nil {
-		t.Fatalf("observer metadata_files_observer Observe %s: %v", _sgFieldObjectStoreMetadataFiles, convertErr)
+		t.Fatalf("provider metadata_files Observe %s: %v", _sgFieldObjectStoreMetadataFiles, convertErr)
 	}
 	fetched := IcebergTableFetchedObservation{
 		Fields: IcebergTableFetchedField{
@@ -311,47 +323,44 @@ func (e *IcebergTableConformanceEnvironment) BuildAllowedAppendStates(t *testing
 // PrepareDeleteCase sets up one case and registers its cleanup.
 func (e *IcebergTableConformanceEnvironment) PrepareDeleteCase(t *testing.T) {
 	e.SetupDeleteCase(t)
-	t.Cleanup(func() {
-		e.CleanupDeleteCase(t)
-	})
-	if err := e.observerDataFilesObserver.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer data_files_observer PrepareCase: %v", err)
+	if err := e.providerDataFiles.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider data_files PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerDataFilesObserver.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer data_files_observer CleanupCase: %v", err)
+		if err := e.providerDataFiles.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider data_files CleanupCase: %v", err)
 		}
 	})
-	if err := e.observerDeleteFilesObserver.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer delete_files_observer PrepareCase: %v", err)
+	if err := e.providerDeleteFiles.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider delete_files PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerDeleteFilesObserver.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer delete_files_observer CleanupCase: %v", err)
+		if err := e.providerDeleteFiles.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider delete_files CleanupCase: %v", err)
 		}
 	})
-	if err := e.observerManifestFilesObserver.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer manifest_files_observer PrepareCase: %v", err)
+	if err := e.providerManifestFiles.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider manifest_files PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerManifestFilesObserver.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer manifest_files_observer CleanupCase: %v", err)
+		if err := e.providerManifestFiles.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider manifest_files CleanupCase: %v", err)
 		}
 	})
-	if err := e.observerManifestListsObserver.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer manifest_lists_observer PrepareCase: %v", err)
+	if err := e.providerManifestLists.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider manifest_lists PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerManifestListsObserver.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer manifest_lists_observer CleanupCase: %v", err)
+		if err := e.providerManifestLists.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider manifest_lists CleanupCase: %v", err)
 		}
 	})
-	if err := e.observerMetadataFilesObserver.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer metadata_files_observer PrepareCase: %v", err)
+	if err := e.providerMetadataFiles.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider metadata_files PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerMetadataFilesObserver.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer metadata_files_observer CleanupCase: %v", err)
+		if err := e.providerMetadataFiles.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider metadata_files CleanupCase: %v", err)
 		}
 	})
 }
@@ -362,46 +371,46 @@ func (e *IcebergTableConformanceEnvironment) PrepareDeleteAttempt(t *testing.T, 
 	t.Cleanup(func() {
 		e.CleanupDeleteAttempt(t)
 	})
-	if err := e.observerDataFilesObserver.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer data_files_observer PrepareAttempt: %v", err)
-	}
 	t.Cleanup(func() {
-		if err := e.observerDataFilesObserver.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer data_files_observer CleanupAttempt: %v", err)
+		if err := e.providerDataFiles.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider data_files CleanupAttempt: %v", err)
 		}
 	})
-	if err := e.observerDeleteFilesObserver.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer delete_files_observer PrepareAttempt: %v", err)
+	if err := e.providerDataFiles.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider data_files PrepareAttempt: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerDeleteFilesObserver.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer delete_files_observer CleanupAttempt: %v", err)
+		if err := e.providerDeleteFiles.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider delete_files CleanupAttempt: %v", err)
 		}
 	})
-	if err := e.observerManifestFilesObserver.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer manifest_files_observer PrepareAttempt: %v", err)
+	if err := e.providerDeleteFiles.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider delete_files PrepareAttempt: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerManifestFilesObserver.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer manifest_files_observer CleanupAttempt: %v", err)
+		if err := e.providerManifestFiles.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider manifest_files CleanupAttempt: %v", err)
 		}
 	})
-	if err := e.observerManifestListsObserver.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer manifest_lists_observer PrepareAttempt: %v", err)
+	if err := e.providerManifestFiles.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider manifest_files PrepareAttempt: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerManifestListsObserver.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer manifest_lists_observer CleanupAttempt: %v", err)
+		if err := e.providerManifestLists.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider manifest_lists CleanupAttempt: %v", err)
 		}
 	})
-	if err := e.observerMetadataFilesObserver.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer metadata_files_observer PrepareAttempt: %v", err)
+	if err := e.providerManifestLists.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider manifest_lists PrepareAttempt: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerMetadataFilesObserver.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer metadata_files_observer CleanupAttempt: %v", err)
+		if err := e.providerMetadataFiles.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider metadata_files CleanupAttempt: %v", err)
 		}
 	})
+	if err := e.providerMetadataFiles.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider metadata_files PrepareAttempt: %v", err)
+	}
 }
 
 // ExecuteDelete invokes the application action.
@@ -412,45 +421,45 @@ func (e *IcebergTableConformanceEnvironment) ExecuteDelete(ctx context.Context, 
 // ObserveDeleteState collects the state and output visible after the action.
 func (e *IcebergTableConformanceEnvironment) ObserveDeleteState(t *testing.T, input FizzbeeIcebergTableState, output IcebergTableDeleteOutput, actionErr error) *IcebergTableObservedState {
 	t.Helper()
-	valueObjectStoreDataFiles, err := e.observerDataFilesObserver.Observe(t.Context(), _sgFieldObjectStoreDataFiles)
+	valueObjectStoreDataFiles, err := e.providerDataFiles.Observe(t.Context(), _sgFieldObjectStoreDataFiles)
 	if err != nil {
-		t.Fatalf("observer data_files_observer Observe %s: %v", _sgFieldObjectStoreDataFiles, err)
+		t.Fatalf("provider data_files Observe %s: %v", _sgFieldObjectStoreDataFiles, err)
 	}
-	typedObjectStoreDataFiles, convertErr := observer.Convert[ObjectStoreDataFilesValue](valueObjectStoreDataFiles)
+	typedObjectStoreDataFiles, convertErr := provider.Convert[ObjectStoreDataFilesValue](valueObjectStoreDataFiles)
 	if convertErr != nil {
-		t.Fatalf("observer data_files_observer Observe %s: %v", _sgFieldObjectStoreDataFiles, convertErr)
+		t.Fatalf("provider data_files Observe %s: %v", _sgFieldObjectStoreDataFiles, convertErr)
 	}
-	valueObjectStoreDeleteFiles, err := e.observerDeleteFilesObserver.Observe(t.Context(), _sgFieldObjectStoreDeleteFiles)
+	valueObjectStoreDeleteFiles, err := e.providerDeleteFiles.Observe(t.Context(), _sgFieldObjectStoreDeleteFiles)
 	if err != nil {
-		t.Fatalf("observer delete_files_observer Observe %s: %v", _sgFieldObjectStoreDeleteFiles, err)
+		t.Fatalf("provider delete_files Observe %s: %v", _sgFieldObjectStoreDeleteFiles, err)
 	}
-	typedObjectStoreDeleteFiles, convertErr := observer.Convert[ObjectStoreDeleteFilesValue](valueObjectStoreDeleteFiles)
+	typedObjectStoreDeleteFiles, convertErr := provider.Convert[ObjectStoreDeleteFilesValue](valueObjectStoreDeleteFiles)
 	if convertErr != nil {
-		t.Fatalf("observer delete_files_observer Observe %s: %v", _sgFieldObjectStoreDeleteFiles, convertErr)
+		t.Fatalf("provider delete_files Observe %s: %v", _sgFieldObjectStoreDeleteFiles, convertErr)
 	}
-	valueObjectStoreManifestFiles, err := e.observerManifestFilesObserver.Observe(t.Context(), _sgFieldObjectStoreManifestFiles)
+	valueObjectStoreManifestFiles, err := e.providerManifestFiles.Observe(t.Context(), _sgFieldObjectStoreManifestFiles)
 	if err != nil {
-		t.Fatalf("observer manifest_files_observer Observe %s: %v", _sgFieldObjectStoreManifestFiles, err)
+		t.Fatalf("provider manifest_files Observe %s: %v", _sgFieldObjectStoreManifestFiles, err)
 	}
-	typedObjectStoreManifestFiles, convertErr := observer.Convert[ObjectStoreManifestFilesValue](valueObjectStoreManifestFiles)
+	typedObjectStoreManifestFiles, convertErr := provider.Convert[ObjectStoreManifestFilesValue](valueObjectStoreManifestFiles)
 	if convertErr != nil {
-		t.Fatalf("observer manifest_files_observer Observe %s: %v", _sgFieldObjectStoreManifestFiles, convertErr)
+		t.Fatalf("provider manifest_files Observe %s: %v", _sgFieldObjectStoreManifestFiles, convertErr)
 	}
-	valueObjectStoreManifestLists, err := e.observerManifestListsObserver.Observe(t.Context(), _sgFieldObjectStoreManifestLists)
+	valueObjectStoreManifestLists, err := e.providerManifestLists.Observe(t.Context(), _sgFieldObjectStoreManifestLists)
 	if err != nil {
-		t.Fatalf("observer manifest_lists_observer Observe %s: %v", _sgFieldObjectStoreManifestLists, err)
+		t.Fatalf("provider manifest_lists Observe %s: %v", _sgFieldObjectStoreManifestLists, err)
 	}
-	typedObjectStoreManifestLists, convertErr := observer.Convert[ObjectStoreManifestListsValue](valueObjectStoreManifestLists)
+	typedObjectStoreManifestLists, convertErr := provider.Convert[ObjectStoreManifestListsValue](valueObjectStoreManifestLists)
 	if convertErr != nil {
-		t.Fatalf("observer manifest_lists_observer Observe %s: %v", _sgFieldObjectStoreManifestLists, convertErr)
+		t.Fatalf("provider manifest_lists Observe %s: %v", _sgFieldObjectStoreManifestLists, convertErr)
 	}
-	valueObjectStoreMetadataFiles, err := e.observerMetadataFilesObserver.Observe(t.Context(), _sgFieldObjectStoreMetadataFiles)
+	valueObjectStoreMetadataFiles, err := e.providerMetadataFiles.Observe(t.Context(), _sgFieldObjectStoreMetadataFiles)
 	if err != nil {
-		t.Fatalf("observer metadata_files_observer Observe %s: %v", _sgFieldObjectStoreMetadataFiles, err)
+		t.Fatalf("provider metadata_files Observe %s: %v", _sgFieldObjectStoreMetadataFiles, err)
 	}
-	typedObjectStoreMetadataFiles, convertErr := observer.Convert[ObjectStoreMetadataFilesValue](valueObjectStoreMetadataFiles)
+	typedObjectStoreMetadataFiles, convertErr := provider.Convert[ObjectStoreMetadataFilesValue](valueObjectStoreMetadataFiles)
 	if convertErr != nil {
-		t.Fatalf("observer metadata_files_observer Observe %s: %v", _sgFieldObjectStoreMetadataFiles, convertErr)
+		t.Fatalf("provider metadata_files Observe %s: %v", _sgFieldObjectStoreMetadataFiles, convertErr)
 	}
 	fetched := IcebergTableFetchedObservation{
 		Fields: IcebergTableFetchedField{
@@ -517,47 +526,44 @@ func (e *IcebergTableConformanceEnvironment) BuildAllowedDeleteStates(t *testing
 // PrepareOverwriteCase sets up one case and registers its cleanup.
 func (e *IcebergTableConformanceEnvironment) PrepareOverwriteCase(t *testing.T) {
 	e.SetupOverwriteCase(t)
-	t.Cleanup(func() {
-		e.CleanupOverwriteCase(t)
-	})
-	if err := e.observerDataFilesObserver.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer data_files_observer PrepareCase: %v", err)
+	if err := e.providerDataFiles.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider data_files PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerDataFilesObserver.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer data_files_observer CleanupCase: %v", err)
+		if err := e.providerDataFiles.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider data_files CleanupCase: %v", err)
 		}
 	})
-	if err := e.observerDeleteFilesObserver.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer delete_files_observer PrepareCase: %v", err)
+	if err := e.providerDeleteFiles.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider delete_files PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerDeleteFilesObserver.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer delete_files_observer CleanupCase: %v", err)
+		if err := e.providerDeleteFiles.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider delete_files CleanupCase: %v", err)
 		}
 	})
-	if err := e.observerManifestFilesObserver.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer manifest_files_observer PrepareCase: %v", err)
+	if err := e.providerManifestFiles.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider manifest_files PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerManifestFilesObserver.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer manifest_files_observer CleanupCase: %v", err)
+		if err := e.providerManifestFiles.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider manifest_files CleanupCase: %v", err)
 		}
 	})
-	if err := e.observerManifestListsObserver.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer manifest_lists_observer PrepareCase: %v", err)
+	if err := e.providerManifestLists.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider manifest_lists PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerManifestListsObserver.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer manifest_lists_observer CleanupCase: %v", err)
+		if err := e.providerManifestLists.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider manifest_lists CleanupCase: %v", err)
 		}
 	})
-	if err := e.observerMetadataFilesObserver.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer metadata_files_observer PrepareCase: %v", err)
+	if err := e.providerMetadataFiles.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider metadata_files PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerMetadataFilesObserver.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer metadata_files_observer CleanupCase: %v", err)
+		if err := e.providerMetadataFiles.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider metadata_files CleanupCase: %v", err)
 		}
 	})
 }
@@ -568,46 +574,46 @@ func (e *IcebergTableConformanceEnvironment) PrepareOverwriteAttempt(t *testing.
 	t.Cleanup(func() {
 		e.CleanupOverwriteAttempt(t)
 	})
-	if err := e.observerDataFilesObserver.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer data_files_observer PrepareAttempt: %v", err)
-	}
 	t.Cleanup(func() {
-		if err := e.observerDataFilesObserver.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer data_files_observer CleanupAttempt: %v", err)
+		if err := e.providerDataFiles.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider data_files CleanupAttempt: %v", err)
 		}
 	})
-	if err := e.observerDeleteFilesObserver.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer delete_files_observer PrepareAttempt: %v", err)
+	if err := e.providerDataFiles.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider data_files PrepareAttempt: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerDeleteFilesObserver.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer delete_files_observer CleanupAttempt: %v", err)
+		if err := e.providerDeleteFiles.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider delete_files CleanupAttempt: %v", err)
 		}
 	})
-	if err := e.observerManifestFilesObserver.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer manifest_files_observer PrepareAttempt: %v", err)
+	if err := e.providerDeleteFiles.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider delete_files PrepareAttempt: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerManifestFilesObserver.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer manifest_files_observer CleanupAttempt: %v", err)
+		if err := e.providerManifestFiles.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider manifest_files CleanupAttempt: %v", err)
 		}
 	})
-	if err := e.observerManifestListsObserver.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer manifest_lists_observer PrepareAttempt: %v", err)
+	if err := e.providerManifestFiles.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider manifest_files PrepareAttempt: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerManifestListsObserver.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer manifest_lists_observer CleanupAttempt: %v", err)
+		if err := e.providerManifestLists.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider manifest_lists CleanupAttempt: %v", err)
 		}
 	})
-	if err := e.observerMetadataFilesObserver.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer metadata_files_observer PrepareAttempt: %v", err)
+	if err := e.providerManifestLists.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider manifest_lists PrepareAttempt: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerMetadataFilesObserver.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer metadata_files_observer CleanupAttempt: %v", err)
+		if err := e.providerMetadataFiles.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider metadata_files CleanupAttempt: %v", err)
 		}
 	})
+	if err := e.providerMetadataFiles.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider metadata_files PrepareAttempt: %v", err)
+	}
 }
 
 // ExecuteOverwrite invokes the application action.
@@ -618,45 +624,45 @@ func (e *IcebergTableConformanceEnvironment) ExecuteOverwrite(ctx context.Contex
 // ObserveOverwriteState collects the state and output visible after the action.
 func (e *IcebergTableConformanceEnvironment) ObserveOverwriteState(t *testing.T, input FizzbeeIcebergTableState, output IcebergTableOverwriteOutput, actionErr error) *IcebergTableObservedState {
 	t.Helper()
-	valueObjectStoreDataFiles, err := e.observerDataFilesObserver.Observe(t.Context(), _sgFieldObjectStoreDataFiles)
+	valueObjectStoreDataFiles, err := e.providerDataFiles.Observe(t.Context(), _sgFieldObjectStoreDataFiles)
 	if err != nil {
-		t.Fatalf("observer data_files_observer Observe %s: %v", _sgFieldObjectStoreDataFiles, err)
+		t.Fatalf("provider data_files Observe %s: %v", _sgFieldObjectStoreDataFiles, err)
 	}
-	typedObjectStoreDataFiles, convertErr := observer.Convert[ObjectStoreDataFilesValue](valueObjectStoreDataFiles)
+	typedObjectStoreDataFiles, convertErr := provider.Convert[ObjectStoreDataFilesValue](valueObjectStoreDataFiles)
 	if convertErr != nil {
-		t.Fatalf("observer data_files_observer Observe %s: %v", _sgFieldObjectStoreDataFiles, convertErr)
+		t.Fatalf("provider data_files Observe %s: %v", _sgFieldObjectStoreDataFiles, convertErr)
 	}
-	valueObjectStoreDeleteFiles, err := e.observerDeleteFilesObserver.Observe(t.Context(), _sgFieldObjectStoreDeleteFiles)
+	valueObjectStoreDeleteFiles, err := e.providerDeleteFiles.Observe(t.Context(), _sgFieldObjectStoreDeleteFiles)
 	if err != nil {
-		t.Fatalf("observer delete_files_observer Observe %s: %v", _sgFieldObjectStoreDeleteFiles, err)
+		t.Fatalf("provider delete_files Observe %s: %v", _sgFieldObjectStoreDeleteFiles, err)
 	}
-	typedObjectStoreDeleteFiles, convertErr := observer.Convert[ObjectStoreDeleteFilesValue](valueObjectStoreDeleteFiles)
+	typedObjectStoreDeleteFiles, convertErr := provider.Convert[ObjectStoreDeleteFilesValue](valueObjectStoreDeleteFiles)
 	if convertErr != nil {
-		t.Fatalf("observer delete_files_observer Observe %s: %v", _sgFieldObjectStoreDeleteFiles, convertErr)
+		t.Fatalf("provider delete_files Observe %s: %v", _sgFieldObjectStoreDeleteFiles, convertErr)
 	}
-	valueObjectStoreManifestFiles, err := e.observerManifestFilesObserver.Observe(t.Context(), _sgFieldObjectStoreManifestFiles)
+	valueObjectStoreManifestFiles, err := e.providerManifestFiles.Observe(t.Context(), _sgFieldObjectStoreManifestFiles)
 	if err != nil {
-		t.Fatalf("observer manifest_files_observer Observe %s: %v", _sgFieldObjectStoreManifestFiles, err)
+		t.Fatalf("provider manifest_files Observe %s: %v", _sgFieldObjectStoreManifestFiles, err)
 	}
-	typedObjectStoreManifestFiles, convertErr := observer.Convert[ObjectStoreManifestFilesValue](valueObjectStoreManifestFiles)
+	typedObjectStoreManifestFiles, convertErr := provider.Convert[ObjectStoreManifestFilesValue](valueObjectStoreManifestFiles)
 	if convertErr != nil {
-		t.Fatalf("observer manifest_files_observer Observe %s: %v", _sgFieldObjectStoreManifestFiles, convertErr)
+		t.Fatalf("provider manifest_files Observe %s: %v", _sgFieldObjectStoreManifestFiles, convertErr)
 	}
-	valueObjectStoreManifestLists, err := e.observerManifestListsObserver.Observe(t.Context(), _sgFieldObjectStoreManifestLists)
+	valueObjectStoreManifestLists, err := e.providerManifestLists.Observe(t.Context(), _sgFieldObjectStoreManifestLists)
 	if err != nil {
-		t.Fatalf("observer manifest_lists_observer Observe %s: %v", _sgFieldObjectStoreManifestLists, err)
+		t.Fatalf("provider manifest_lists Observe %s: %v", _sgFieldObjectStoreManifestLists, err)
 	}
-	typedObjectStoreManifestLists, convertErr := observer.Convert[ObjectStoreManifestListsValue](valueObjectStoreManifestLists)
+	typedObjectStoreManifestLists, convertErr := provider.Convert[ObjectStoreManifestListsValue](valueObjectStoreManifestLists)
 	if convertErr != nil {
-		t.Fatalf("observer manifest_lists_observer Observe %s: %v", _sgFieldObjectStoreManifestLists, convertErr)
+		t.Fatalf("provider manifest_lists Observe %s: %v", _sgFieldObjectStoreManifestLists, convertErr)
 	}
-	valueObjectStoreMetadataFiles, err := e.observerMetadataFilesObserver.Observe(t.Context(), _sgFieldObjectStoreMetadataFiles)
+	valueObjectStoreMetadataFiles, err := e.providerMetadataFiles.Observe(t.Context(), _sgFieldObjectStoreMetadataFiles)
 	if err != nil {
-		t.Fatalf("observer metadata_files_observer Observe %s: %v", _sgFieldObjectStoreMetadataFiles, err)
+		t.Fatalf("provider metadata_files Observe %s: %v", _sgFieldObjectStoreMetadataFiles, err)
 	}
-	typedObjectStoreMetadataFiles, convertErr := observer.Convert[ObjectStoreMetadataFilesValue](valueObjectStoreMetadataFiles)
+	typedObjectStoreMetadataFiles, convertErr := provider.Convert[ObjectStoreMetadataFilesValue](valueObjectStoreMetadataFiles)
 	if convertErr != nil {
-		t.Fatalf("observer metadata_files_observer Observe %s: %v", _sgFieldObjectStoreMetadataFiles, convertErr)
+		t.Fatalf("provider metadata_files Observe %s: %v", _sgFieldObjectStoreMetadataFiles, convertErr)
 	}
 	fetched := IcebergTableFetchedObservation{
 		Fields: IcebergTableFetchedField{
@@ -820,7 +826,7 @@ type IcebergTableObjectStoreObservedField struct {
 	MetadataFiles *gcmp.ObservedList[*gcmp.ObservedMessage[ObjectStoreMetadataFilesObservedField]]
 }
 
-// IcebergTableFetchedObservation contains fields collected by declared observers.
+// IcebergTableFetchedObservation contains fields collected by declared providers.
 type IcebergTableFetchedObservation struct {
 	Fields IcebergTableFetchedField
 }

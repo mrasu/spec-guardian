@@ -7,5 +7,6 @@
 5. Apply semantic vertical formatting: keep related declarations and statements together, separate distinct concepts, and order code from higher-level behavior to details.
 6. Favor high cohesion: keep related types and helpers alongside the code they support unless they form a distinct responsibility.
 7. Name functions that only convert a value `toXxx`, using the destination type for `Xxx`.
-8. Wrap errors from outside the current Go module with `github.com/cockroachdb/errors`; return errors from within the module unchanged.
+8. In `guardian`, use only the standard library for error handling. Elsewhere, wrap errors from outside the current Go module with `github.com/cockroachdb/errors`; return errors from within the module unchanged.
 9. Use line breaks to make nested calls easier to read.
+10. Represent configuration enums with named string types and constants, validate them during decoding, and use constants in branches.

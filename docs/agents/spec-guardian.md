@@ -33,7 +33,7 @@ Examples contain runnable demonstrations and their generated conformance tests.
 Regenerate example conformance tests with `make generate-conformance-spec` when available.
 
 - `conformance/specguardian.go`: regeneration entry point.
-- `conformance/specguardian/<role>_conformance_cases_generated_test.go`: state types, observer wiring, case loading, and allowed-state comparisons.
+- `conformance/specguardian/<role>_conformance_cases_generated_test.go`: state types, provider wiring, case loading, and allowed-state comparisons.
 - `conformance/specguardian/<role>_conformance_generated_test.go`: test execution and fault iteration.
 - `conformance/specguardian/<role>_conformance_impl_test.go`: user-edited functions that map abstract specification states to concrete application states.
 - `conformance/specguardian/conformance_common_generated_test.go`: shared message types and field-level comparison helpers.

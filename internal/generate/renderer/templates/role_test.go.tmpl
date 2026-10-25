@@ -29,27 +29,31 @@ type {{.Role}}{{.Name}}Input struct{}
 // Replace this scaffold with a type alias or local type as needed.
 type {{.Role}}{{.Name}}Output struct{}
 
-// Setup{{.Name}}Case prepares resources and test settings for one conformance case.
+{{if $.Hooks.SetupCase}}// Setup{{.Name}}Case prepares resources and test settings for one conformance case.
 func (e *{{.Role}}Environment) Setup{{.Name}}Case(t *testing.T) {
 	t.Helper()
 }
+{{end}}
 
-// Cleanup{{.Name}}Case cleans up after one conformance case.
+{{if $.Hooks.CleanupCase}}// Cleanup{{.Name}}Case cleans up after one conformance case.
 func (e *{{.Role}}Environment) Cleanup{{.Name}}Case(t *testing.T) {
 	t.Helper()
 }
+{{end}}
 
-// Setup{{.Name}}Attempt prepares application state before {{.Role}}.{{.Name}}.
+{{if $.Hooks.SetupAttempt}}// Setup{{.Name}}Attempt prepares application state before {{.Role}}.{{.Name}}.
 func (e *{{.Role}}Environment) Setup{{.Name}}Attempt(t *testing.T, input Fizzbee{{.Role}}State) {
 	t.Helper()
 	require.NoError(t, errors.New("TODO: implement me"))
 }
+{{end}}
 
-// Cleanup{{.Name}}Attempt removes state left by this attempt. It runs through t.Cleanup, so use a context independent of t.Context when needed.
+{{if $.Hooks.CleanupAttempt}}// Cleanup{{.Name}}Attempt removes state left by this attempt. It runs through t.Cleanup, so use a context independent of t.Context when needed.
 func (e *{{.Role}}Environment) Cleanup{{.Name}}Attempt(t *testing.T) {
 	t.Helper()
 	require.NoError(t, errors.New("TODO: implement me"))
 }
+{{end}}
 
 // Build{{.Name}}Input maps the abstract FizzBee input to the application's concrete argument.
 func (e *{{.Role}}Environment) Build{{.Name}}Input(t *testing.T, input Fizzbee{{.Role}}State) {{.Role}}{{.Name}}Input {
@@ -58,7 +62,7 @@ func (e *{{.Role}}Environment) Build{{.Name}}Input(t *testing.T, input Fizzbee{{
 	return {{.Role}}{{.Name}}Input{}
 }
 
-// Build{{.Name}}ManualObservation returns fields not supplied by declared observers.
+// Build{{.Name}}ManualObservation returns fields not supplied by declared providers.
 func (e *{{.Role}}Environment) Build{{.Name}}ManualObservation(t *testing.T, fetched {{.Role}}FetchedObservation, input Fizzbee{{.Role}}State, output {{.Role}}{{.Name}}Output, actionErr error) {{.Role}}ManualObservation {
 	t.Helper()
 	require.NoError(t, errors.New("TODO: implement me"))

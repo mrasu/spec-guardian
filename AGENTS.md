@@ -5,6 +5,7 @@ SpecGuardian checks whether an application conforms to a FizzBee model by genera
 ## Agent behavior
 
 - Act only on explicit user instructions.
+- Keep each change necessary for the agreed scope, including documentation and dependency changes.
 - Before making changes, inspect the existing implementation and agree on the approach and concrete steps.
 - If the proposed approach would require awkward workarounds or structural compromises, explain the concerns and discuss alternatives, even when the approach was requested by the user.
 - After editing, check that the result serves its intended purpose and follows the applicable guidelines.
@@ -16,6 +17,7 @@ SpecGuardian checks whether an application conforms to a FizzBee model by genera
 - [Tests](docs/agents/test.md)
 - [Markdown](docs/agents/markdown.md)
 - [Documentation](docs/agents/document.md)
+- [Schema definitions](docs/agents/schema.md): Read before editing JSON Schema definitions.
 
 <!-- CODEGRAPH_START -->
 ## CodeGraph

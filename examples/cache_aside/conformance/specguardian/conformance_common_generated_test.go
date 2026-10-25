@@ -4,29 +4,58 @@
 package specguardian_test
 
 import (
-	"github.com/mrasu/spec-guardian/guardian/observer"
+	"github.com/mrasu/spec-guardian/guardian/gcmp"
+	"github.com/mrasu/spec-guardian/guardian/provider"
 )
 
 const (
 	_sgFieldCacheCachedRecords      = "Cache.cached_records"
 	_sgFieldDBRecords               = "DB.records"
-	_sgFieldSgMetadataActionCrashed = observer.ActionCrashedField
+	_sgFieldSgMetadataActionCrashed = provider.ActionCrashedField
 )
 
-func _sgObserverCacheSettings() (map[string]any, []observer.FieldRequest) {
+// DBRecordsComparisonField is the declared shape of a model field.
+type DBRecordsComparisonField struct {
+	Key   *gcmp.ComparisonField[string]
+	Value *gcmp.ComparisonField[string]
+}
+
+// DBRecordsField is the declared shape of a model field.
+type DBRecordsField struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+// DBRecordsObservedField is the declared shape of a model field.
+type DBRecordsObservedField struct {
+	Key   *gcmp.ObservedField[string]
+	Value *gcmp.ObservedField[string]
+}
+
+// DBRecordsValue is the declared shape of a model field.
+type DBRecordsValue []DBRecordsField
+
+func _sgProviderCacheSettings() (map[string]any, []provider.FieldRequest) {
 	return map[string]any{
 		"address": "localhost:16379",
-	}, []observer.FieldRequest{
+		"keyspaces": []any{
+			map[string]any{
+				"data_type": "string",
+				"name":      "records",
+				"prefix":    "records:",
+			},
+		},
+	}, []provider.FieldRequest{
 		{
 			Field: _sgFieldCacheCachedRecords,
 			Config: map[string]any{
-				"keys": "*",
+				"keyspace": "records",
 			},
-			Output: observer.OutputSpec{
-				Type: observer.Type{
-					Kind: observer.KindMap,
-					Values: &observer.Type{
-						Kind: observer.KindString,
+			Output: provider.OutputSpec{
+				Type: provider.Type{
+					Kind: provider.KindMap,
+					Values: &provider.Type{
+						Kind: provider.KindString,
 					},
 				},
 			},
@@ -34,26 +63,44 @@ func _sgObserverCacheSettings() (map[string]any, []observer.FieldRequest) {
 	}
 }
 
-func _sgObserverDbSettings() (map[string]any, []observer.FieldRequest) {
+func _sgProviderDbSettings() (map[string]any, []provider.FieldRequest) {
 	return map[string]any{
 		"connection_string": "postgres://postgres@localhost:15432/postgres?sslmode=disable",
 		"driver":            "pgx",
-	}, []observer.FieldRequest{
+		"tables": []any{
+			map[string]any{
+				"columns": []any{
+					map[string]any{
+						"name": "key",
+						"type": "string",
+					},
+					map[string]any{
+						"name": "value",
+						"type": "string",
+					},
+				},
+				"name": "records",
+			},
+		},
+	}, []provider.FieldRequest{
 		{
 			Field: _sgFieldDBRecords,
 			Config: map[string]any{
-				"query": "SELECT key, value FROM records",
-				"result": map[string]any{
-					"key_column":   "key",
-					"type":         "kv",
-					"value_column": "value",
-				},
+				"table": "records",
 			},
-			Output: observer.OutputSpec{
-				Type: observer.Type{
-					Kind: observer.KindMap,
-					Values: &observer.Type{
-						Kind: observer.KindString,
+			Output: provider.OutputSpec{
+				Type: provider.Type{
+					Kind: provider.KindList,
+					Values: &provider.Type{
+						Kind: provider.KindMessage,
+						Fields: map[string]provider.Type{
+							"key": {
+								Kind: provider.KindString,
+							},
+							"value": {
+								Kind: provider.KindString,
+							},
+						},
 					},
 				},
 			},
@@ -61,12 +108,52 @@ func _sgObserverDbSettings() (map[string]any, []observer.FieldRequest) {
 	}
 }
 
-func _sgObserverErrorAsCrashedSettings() (map[string]any, []observer.FieldRequest) {
-	return map[string]any{}, []observer.FieldRequest{
+func _sgProviderErrorAsCrashedSettings() (map[string]any, []provider.FieldRequest) {
+	return map[string]any{}, []provider.FieldRequest{
 		{
 			Field:  _sgFieldSgMetadataActionCrashed,
 			Config: map[string]any{},
-			Output: observer.ActionCrashedOutputSpec(),
+			Output: provider.ActionCrashedOutputSpec(),
 		},
 	}
+}
+
+func _sgToDBRecordsObservedMessage(value DBRecordsField) *gcmp.ObservedMessage[DBRecordsObservedField] {
+	return gcmp.MessageObserved(
+		&DBRecordsObservedField{
+			Key:   gcmp.Observed(value.Key),
+			Value: gcmp.Observed(value.Value),
+		},
+	)
+}
+
+func _sgToDBRecordsComparisonMessage(value DBRecordsField) *gcmp.ComparisonMessage[DBRecordsComparisonField] {
+	return gcmp.MessageEqual(
+		&DBRecordsComparisonField{
+			Key:   gcmp.Equal(value.Key),
+			Value: gcmp.Equal(value.Value),
+		},
+	)
+}
+
+func _sgToDBRecordsObservedList(value DBRecordsValue) *gcmp.ObservedList[*gcmp.ObservedMessage[DBRecordsObservedField]] {
+	var result []*gcmp.ObservedMessage[DBRecordsObservedField]
+	if value != nil {
+		result = make([]*gcmp.ObservedMessage[DBRecordsObservedField], len(value))
+	}
+	for key, item := range value {
+		result[key] = _sgToDBRecordsObservedMessage(item)
+	}
+	return gcmp.ListObserved(result)
+}
+
+func _sgToDBRecordsComparisonList(value DBRecordsValue) *gcmp.ComparisonList[*gcmp.ComparisonMessage[DBRecordsComparisonField]] {
+	var result []*gcmp.ComparisonMessage[DBRecordsComparisonField]
+	if value != nil {
+		result = make([]*gcmp.ComparisonMessage[DBRecordsComparisonField], len(value))
+	}
+	for key, item := range value {
+		result[key] = _sgToDBRecordsComparisonMessage(item)
+	}
+	return gcmp.ListUnordered(result)
 }

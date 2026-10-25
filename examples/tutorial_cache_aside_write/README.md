@@ -2,7 +2,7 @@
 
 This is the completed project built in the [SpecGuardian user guide](../../docs/user-guide.md). It models and tests `Application.Write` only. For `Read` and `Write` together, see the [full cache-aside example](../cache_aside/).
 
-[`specguardian.yml`](specguardian.yml) configures SQL and Valkey observers for the database and cache fields.
+[`specguardian.yml`](specguardian.yml) configures SQL and Valkey providers for the database and cache fields.
 
 With Go 1.27, FizzBee, and Docker Compose installed, run these commands from this directory:
 

@@ -9,11 +9,22 @@ import (
 
 	"github.com/mrasu/spec-guardian/guardian"
 	"github.com/mrasu/spec-guardian/guardian/gcmp"
-	"github.com/mrasu/spec-guardian/guardian/observer"
-	dynamodbobserver "github.com/mrasu/spec-guardian/guardian/observer/dynamodb"
-	sqlobserver "github.com/mrasu/spec-guardian/guardian/observer/sql"
-	_sgActionerror "spec-guardian/examples/idempotent-request/conformance/specguardian/observer/actionerror"
+	"github.com/mrasu/spec-guardian/guardian/provider"
+	dynamodbprovider "github.com/mrasu/spec-guardian/guardian/provider/dynamodb"
+	sqlprovider "github.com/mrasu/spec-guardian/guardian/provider/sql"
+	_sgActionerror "spec-guardian/examples/idempotent-request/conformance/specguardian/provider/actionerror"
 )
+
+var _ provider.Lifecycle = (*_sgActionerror.Provider)(nil)
+var _ provider.ResultObserver = (*_sgActionerror.Provider)(nil)
+
+var _ provider.Lifecycle = (*dynamodbprovider.Provider)(nil)
+var _ provider.Seeder = (*dynamodbprovider.Provider)(nil)
+var _ provider.Observer = (*dynamodbprovider.Provider)(nil)
+
+var _ provider.Lifecycle = (*sqlprovider.Provider)(nil)
+var _ provider.Seeder = (*sqlprovider.Provider)(nil)
+var _ provider.Observer = (*sqlprovider.Provider)(nil)
 
 // DeliveryServerActions describes the application methods exercised by this role.
 // This generated interface is the contract implemented by the application adapter.
@@ -25,48 +36,48 @@ type DeliveryServerActions interface {
 type DeliveryServerConformanceEnvironment struct {
 	Actions DeliveryServerActions
 	*DeliveryServerEnvironment
-	observerActionCrashed *_sgActionerror.Observer
-	observerDynamodb      *dynamodbobserver.Observer
-	observerMysql         *sqlobserver.Observer
+	providerActionCrashed *_sgActionerror.Provider
+	providerDynamodb      *dynamodbprovider.Provider
+	providerMysql         *sqlprovider.Provider
 }
 
 // NewDeliveryServerConformanceEnvironment builds the adapter and resources for a conformance case.
 func NewDeliveryServerConformanceEnvironment(t *testing.T, controller *guardian.InjectionController) *DeliveryServerConformanceEnvironment {
 	t.Helper()
 	actions, environment := BuildDeliveryServerConformanceComponents(t, controller)
-	configActionCrashed, fieldsActionCrashed := _sgObserverActionCrashedSettings()
-	observerActionCrashed, errActionCrashed := _sgActionerror.New(
+	configActionCrashed, fieldsActionCrashed := _sgProviderActionCrashedSettings()
+	providerActionCrashed, errActionCrashed := _sgActionerror.New(
 		_sgActionerror.Config{},
 		configActionCrashed,
 		fieldsActionCrashed,
 	)
 	if errActionCrashed != nil {
-		t.Fatalf("observer action_crashed New: %v", errActionCrashed)
+		t.Fatalf("provider action_crashed New: %v", errActionCrashed)
 	}
-	configDynamodb, fieldsDynamodb := _sgObserverDynamodbSettings()
-	observerDynamodb, errDynamodb := dynamodbobserver.New(
-		dynamodbobserver.Config{},
+	configDynamodb, fieldsDynamodb := _sgProviderDynamodbSettings()
+	providerDynamodb, errDynamodb := dynamodbprovider.New(
+		dynamodbprovider.Config{},
 		configDynamodb,
 		fieldsDynamodb,
 	)
 	if errDynamodb != nil {
-		t.Fatalf("observer dynamodb New: %v", errDynamodb)
+		t.Fatalf("provider dynamodb New: %v", errDynamodb)
 	}
-	configMysql, fieldsMysql := _sgObserverMysqlSettings()
-	observerMysql, errMysql := sqlobserver.New(
-		sqlobserver.Config{},
+	configMysql, fieldsMysql := _sgProviderMysqlSettings()
+	providerMysql, errMysql := sqlprovider.New(
+		sqlprovider.Config{},
 		configMysql,
 		fieldsMysql,
 	)
 	if errMysql != nil {
-		t.Fatalf("observer mysql New: %v", errMysql)
+		t.Fatalf("provider mysql New: %v", errMysql)
 	}
 	return &DeliveryServerConformanceEnvironment{
 		Actions:                   actions,
 		DeliveryServerEnvironment: environment,
-		observerActionCrashed:     observerActionCrashed,
-		observerDynamodb:          observerDynamodb,
-		observerMysql:             observerMysql,
+		providerActionCrashed:     providerActionCrashed,
+		providerDynamodb:          providerDynamodb,
+		providerMysql:             providerMysql,
 	}
 }
 
@@ -78,66 +89,88 @@ func LoadDeliveryServerCases(t *testing.T, filepath string) []DeliveryServerCase
 
 // PrepareDeliverCase sets up one case and registers its cleanup.
 func (e *DeliveryServerConformanceEnvironment) PrepareDeliverCase(t *testing.T) {
-	e.SetupDeliverCase(t)
-	t.Cleanup(func() {
-		e.CleanupDeliverCase(t)
-	})
-	if err := e.observerActionCrashed.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer action_crashed PrepareCase: %v", err)
+	if err := e.providerActionCrashed.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider action_crashed PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerActionCrashed.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer action_crashed CleanupCase: %v", err)
+		if err := e.providerActionCrashed.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider action_crashed CleanupCase: %v", err)
 		}
 	})
-	if err := e.observerDynamodb.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer dynamodb PrepareCase: %v", err)
+	if err := e.providerDynamodb.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider dynamodb PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerDynamodb.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer dynamodb CleanupCase: %v", err)
+		if err := e.providerDynamodb.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider dynamodb CleanupCase: %v", err)
 		}
 	})
-	if err := e.observerMysql.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer mysql PrepareCase: %v", err)
+	if err := e.providerMysql.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider mysql PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerMysql.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer mysql CleanupCase: %v", err)
+		if err := e.providerMysql.CleanupCase(context.Background()); err != nil {
+			t.Errorf("provider mysql CleanupCase: %v", err)
 		}
 	})
 }
 
 // PrepareDeliverAttempt sets up one fault attempt and registers its cleanup.
 func (e *DeliveryServerConformanceEnvironment) PrepareDeliverAttempt(t *testing.T, input FizzbeeDeliveryServerState) {
-	e.SetupDeliverAttempt(t, input)
 	t.Cleanup(func() {
-		e.CleanupDeliverAttempt(t)
-	})
-	if err := e.observerActionCrashed.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer action_crashed PrepareAttempt: %v", err)
-	}
-	t.Cleanup(func() {
-		if err := e.observerActionCrashed.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer action_crashed CleanupAttempt: %v", err)
+		if err := e.providerActionCrashed.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider action_crashed CleanupAttempt: %v", err)
 		}
 	})
-	if err := e.observerDynamodb.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer dynamodb PrepareAttempt: %v", err)
+	if err := e.providerActionCrashed.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider action_crashed PrepareAttempt: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerDynamodb.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer dynamodb CleanupAttempt: %v", err)
+		if err := e.providerDynamodb.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider dynamodb CleanupAttempt: %v", err)
 		}
 	})
-	if err := e.observerMysql.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer mysql PrepareAttempt: %v", err)
+	if err := e.providerDynamodb.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider dynamodb PrepareAttempt: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := e.observerMysql.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer mysql CleanupAttempt: %v", err)
+		if err := e.providerMysql.CleanupAttempt(context.Background()); err != nil {
+			t.Errorf("provider mysql CleanupAttempt: %v", err)
 		}
 	})
+	if err := e.providerMysql.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider mysql PrepareAttempt: %v", err)
+	}
+	_sgSeedRequestDynamodb := provider.SeedRequest{Values: []provider.SeedValue{
+		{Field: "DynamoDB.delivery_records", Value: input.Fields.DynamoDB.DeliveryRecords},
+		{Field: "DynamoDB.order_idempotency_records", Value: input.Fields.DynamoDB.OrderIdempotencyRecords},
+	}}
+	_sgSeedResultDynamodb, _sgSeedErrDynamodb := e.providerDynamodb.Seed(t.Context(), provider.CloneSeedRequest(_sgSeedRequestDynamodb))
+	if _sgSeedErrDynamodb != nil {
+		t.Fatalf("provider dynamodb Seed: %v", _sgSeedErrDynamodb)
+	}
+	if err := provider.ValidateSeedFields(_sgSeedRequestDynamodb, _sgSeedResultDynamodb); err != nil {
+		t.Fatalf("provider dynamodb Seed: %v", err)
+	}
+	if err := provider.ValidateSeedValue("DynamoDB.delivery_records", input.Fields.DynamoDB.DeliveryRecords, _sgSeedResultDynamodb.Values[0].Value); err != nil {
+		t.Fatalf("provider dynamodb Seed %s: %v", "DynamoDB.delivery_records", err)
+	}
+	if err := provider.ValidateSeedValue("DynamoDB.order_idempotency_records", input.Fields.DynamoDB.OrderIdempotencyRecords, _sgSeedResultDynamodb.Values[1].Value); err != nil {
+		t.Fatalf("provider dynamodb Seed %s: %v", "DynamoDB.order_idempotency_records", err)
+	}
+	_sgSeedRequestMysql := provider.SeedRequest{Values: []provider.SeedValue{
+		{Field: "MySQL.order_records", Value: input.Fields.MySQL.OrderRecords},
+	}}
+	_sgSeedResultMysql, _sgSeedErrMysql := e.providerMysql.Seed(t.Context(), provider.CloneSeedRequest(_sgSeedRequestMysql))
+	if _sgSeedErrMysql != nil {
+		t.Fatalf("provider mysql Seed: %v", _sgSeedErrMysql)
+	}
+	if err := provider.ValidateSeedFields(_sgSeedRequestMysql, _sgSeedResultMysql); err != nil {
+		t.Fatalf("provider mysql Seed: %v", err)
+	}
+	if err := provider.ValidateSeedValue("MySQL.order_records", input.Fields.MySQL.OrderRecords, _sgSeedResultMysql.Values[0].Value); err != nil {
+		t.Fatalf("provider mysql Seed %s: %v", "MySQL.order_records", err)
+	}
 }
 
 // ExecuteDeliver invokes the application action.
@@ -148,37 +181,37 @@ func (e *DeliveryServerConformanceEnvironment) ExecuteDeliver(ctx context.Contex
 // ObserveDeliverState collects the state and output visible after the action.
 func (e *DeliveryServerConformanceEnvironment) ObserveDeliverState(t *testing.T, input FizzbeeDeliveryServerState, output DeliveryServerDeliverOutput, actionErr error) *DeliveryServerObservedState {
 	t.Helper()
-	valueDynamoDBDeliveryRecords, err := e.observerDynamodb.Observe(t.Context(), _sgFieldDynamoDBDeliveryRecords)
+	valueDynamoDBDeliveryRecords, err := e.providerDynamodb.Observe(t.Context(), _sgFieldDynamoDBDeliveryRecords)
 	if err != nil {
-		t.Fatalf("observer dynamodb Observe %s: %v", _sgFieldDynamoDBDeliveryRecords, err)
+		t.Fatalf("provider dynamodb Observe %s: %v", _sgFieldDynamoDBDeliveryRecords, err)
 	}
-	typedDynamoDBDeliveryRecords, convertErr := observer.Convert[map[string]DynamoDBDeliveryRecordsField](valueDynamoDBDeliveryRecords)
+	typedDynamoDBDeliveryRecords, convertErr := provider.Convert[DynamoDBDeliveryRecordsValue](valueDynamoDBDeliveryRecords)
 	if convertErr != nil {
-		t.Fatalf("observer dynamodb Observe %s: %v", _sgFieldDynamoDBDeliveryRecords, convertErr)
+		t.Fatalf("provider dynamodb Observe %s: %v", _sgFieldDynamoDBDeliveryRecords, convertErr)
 	}
-	valueDynamoDBOrderIdempotencyRecords, err := e.observerDynamodb.Observe(t.Context(), _sgFieldDynamoDBOrderIdempotencyRecords)
+	valueDynamoDBOrderIdempotencyRecords, err := e.providerDynamodb.Observe(t.Context(), _sgFieldDynamoDBOrderIdempotencyRecords)
 	if err != nil {
-		t.Fatalf("observer dynamodb Observe %s: %v", _sgFieldDynamoDBOrderIdempotencyRecords, err)
+		t.Fatalf("provider dynamodb Observe %s: %v", _sgFieldDynamoDBOrderIdempotencyRecords, err)
 	}
-	typedDynamoDBOrderIdempotencyRecords, convertErr := observer.Convert[map[string]DynamoDBOrderIdempotencyRecordsField](valueDynamoDBOrderIdempotencyRecords)
+	typedDynamoDBOrderIdempotencyRecords, convertErr := provider.Convert[map[string]DynamoDBOrderIdempotencyRecordsField](valueDynamoDBOrderIdempotencyRecords)
 	if convertErr != nil {
-		t.Fatalf("observer dynamodb Observe %s: %v", _sgFieldDynamoDBOrderIdempotencyRecords, convertErr)
+		t.Fatalf("provider dynamodb Observe %s: %v", _sgFieldDynamoDBOrderIdempotencyRecords, convertErr)
 	}
-	valueMySQLOrderRecords, err := e.observerMysql.Observe(t.Context(), _sgFieldMySQLOrderRecords)
+	valueMySQLOrderRecords, err := e.providerMysql.Observe(t.Context(), _sgFieldMySQLOrderRecords)
 	if err != nil {
-		t.Fatalf("observer mysql Observe %s: %v", _sgFieldMySQLOrderRecords, err)
+		t.Fatalf("provider mysql Observe %s: %v", _sgFieldMySQLOrderRecords, err)
 	}
-	typedMySQLOrderRecords, convertErr := observer.Convert[map[string]MySQLOrderRecordsField](valueMySQLOrderRecords)
+	typedMySQLOrderRecords, convertErr := provider.Convert[MySQLOrderRecordsValue](valueMySQLOrderRecords)
 	if convertErr != nil {
-		t.Fatalf("observer mysql Observe %s: %v", _sgFieldMySQLOrderRecords, convertErr)
+		t.Fatalf("provider mysql Observe %s: %v", _sgFieldMySQLOrderRecords, convertErr)
 	}
-	valueSgMetadataActionCrashed, err := e.observerActionCrashed.Observe(t.Context(), _sgFieldSgMetadataActionCrashed, output, actionErr)
+	valueSgMetadataActionCrashed, err := e.providerActionCrashed.ObserveResult(t.Context(), _sgFieldSgMetadataActionCrashed, output, actionErr)
 	if err != nil {
-		t.Fatalf("observer action_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, err)
+		t.Fatalf("provider action_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, err)
 	}
-	typedSgMetadataActionCrashed, convertErr := observer.Convert[bool](valueSgMetadataActionCrashed)
+	typedSgMetadataActionCrashed, convertErr := provider.Convert[bool](valueSgMetadataActionCrashed)
 	if convertErr != nil {
-		t.Fatalf("observer action_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, convertErr)
+		t.Fatalf("provider action_crashed Observe %s: %v", _sgFieldSgMetadataActionCrashed, convertErr)
 	}
 	fetched := DeliveryServerFetchedObservation{
 		Fields: DeliveryServerFetchedField{
@@ -200,11 +233,11 @@ func (e *DeliveryServerConformanceEnvironment) ObserveDeliverState(t *testing.T,
 	return &DeliveryServerObservedState{
 		Fields: DeliveryServerObservedField{
 			DynamoDB: DeliveryServerDynamoDBObservedField{
-				DeliveryRecords:         _sgToDynamoDBDeliveryRecordsObservedField(fetched.Fields.DynamoDB.DeliveryRecords),
+				DeliveryRecords:         _sgToDynamoDBDeliveryRecordsObservedList(fetched.Fields.DynamoDB.DeliveryRecords),
 				OrderIdempotencyRecords: _sgToDynamoDBOrderIdempotencyRecordsObservedField(fetched.Fields.DynamoDB.OrderIdempotencyRecords),
 			},
 			MySQL: DeliveryServerMySQLObservedField{
-				OrderRecords: _sgToMySQLOrderRecordsObservedField(fetched.Fields.MySQL.OrderRecords),
+				OrderRecords: _sgToMySQLOrderRecordsObservedList(fetched.Fields.MySQL.OrderRecords),
 			},
 			DeliveryServer: DeliveryServerDeliveryServerObservedField{
 				OrderId:             manual.Fields.DeliveryServer.OrderId,
@@ -224,11 +257,11 @@ func (e *DeliveryServerConformanceEnvironment) BuildAllowedDeliverState(t *testi
 	return DeliveryServerComparisonState{
 		Fields: DeliveryServerComparisonField{
 			DynamoDB: DeliveryServerDynamoDBComparisonField{
-				DeliveryRecords:         _sgToDynamoDBDeliveryRecordsComparisonField(allowed.Fields.DynamoDB.DeliveryRecords),
+				DeliveryRecords:         _sgToDynamoDBDeliveryRecordsComparisonList(allowed.Fields.DynamoDB.DeliveryRecords),
 				OrderIdempotencyRecords: _sgToDynamoDBOrderIdempotencyRecordsComparisonField(allowed.Fields.DynamoDB.OrderIdempotencyRecords),
 			},
 			MySQL: DeliveryServerMySQLComparisonField{
-				OrderRecords: _sgToMySQLOrderRecordsComparisonField(allowed.Fields.MySQL.OrderRecords),
+				OrderRecords: _sgToMySQLOrderRecordsComparisonList(allowed.Fields.MySQL.OrderRecords),
 			},
 			DeliveryServer: DeliveryServerDeliveryServerComparisonField{
 				OrderId:             gcmp.Equal(allowed.Fields.DeliveryServer.OrderId),
@@ -282,15 +315,15 @@ type DeliveryServerField struct {
 
 // DeliveryServerDynamoDBField contains model fields for DynamoDB.
 type DeliveryServerDynamoDBField struct {
-	DeliveryRecords         map[string]DynamoDBDeliveryRecordsField         `json:"delivery_records"`
+	DeliveryRecords         DynamoDBDeliveryRecordsValue                    `json:"delivery_records"`
 	OrderIdempotencyRecords map[string]DynamoDBOrderIdempotencyRecordsField `json:"order_idempotency_records"`
 }
 
 // DeliveryServerMySQLField contains model fields for MySQL.
 type DeliveryServerMySQLField struct {
-	DeliveryPreparedCount int                               `json:"delivery_prepared_count"`
-	NextOrderId           int                               `json:"next_order_id"`
-	OrderRecords          map[string]MySQLOrderRecordsField `json:"order_records"`
+	DeliveryPreparedCount int                    `json:"delivery_prepared_count"`
+	NextOrderId           int                    `json:"next_order_id"`
+	OrderRecords          MySQLOrderRecordsValue `json:"order_records"`
 }
 
 // DeliveryServerRequestPreparatorField contains model fields for RequestPreparator.
@@ -323,13 +356,13 @@ type DeliveryServerObservedField struct {
 
 // DeliveryServerDynamoDBObservedField contains observed fields for DynamoDB.
 type DeliveryServerDynamoDBObservedField struct {
-	DeliveryRecords         map[string]*gcmp.ObservedMessage[DynamoDBDeliveryRecordsObservedField]
+	DeliveryRecords         *gcmp.ObservedList[*gcmp.ObservedMessage[DynamoDBDeliveryRecordsObservedField]]
 	OrderIdempotencyRecords map[string]*gcmp.ObservedMessage[DynamoDBOrderIdempotencyRecordsObservedField]
 }
 
 // DeliveryServerMySQLObservedField contains observed fields for MySQL.
 type DeliveryServerMySQLObservedField struct {
-	OrderRecords map[string]*gcmp.ObservedMessage[MySQLOrderRecordsObservedField]
+	OrderRecords *gcmp.ObservedList[*gcmp.ObservedMessage[MySQLOrderRecordsObservedField]]
 }
 
 // DeliveryServerDeliveryServerObservedField contains observed fields for DeliveryServer.
@@ -339,7 +372,7 @@ type DeliveryServerDeliveryServerObservedField struct {
 	Result              *gcmp.ObservedField[string]
 }
 
-// DeliveryServerFetchedObservation contains fields collected by declared observers.
+// DeliveryServerFetchedObservation contains fields collected by declared providers.
 type DeliveryServerFetchedObservation struct {
 	Fields     DeliveryServerFetchedField
 	SgMetadata guardian.SgFetchedMetadata
@@ -351,12 +384,12 @@ type DeliveryServerFetchedField struct {
 }
 
 type DeliveryServerDynamoDBFetchedField struct {
-	DeliveryRecords         map[string]DynamoDBDeliveryRecordsField
+	DeliveryRecords         DynamoDBDeliveryRecordsValue
 	OrderIdempotencyRecords map[string]DynamoDBOrderIdempotencyRecordsField
 }
 
 type DeliveryServerMySQLFetchedField struct {
-	OrderRecords map[string]MySQLOrderRecordsField
+	OrderRecords MySQLOrderRecordsValue
 }
 
 // DeliveryServerManualObservation contains fields supplied by the application.
@@ -394,13 +427,13 @@ type DeliveryServerComparisonField struct {
 
 // DeliveryServerDynamoDBComparisonField contains field comparisons for DynamoDB.
 type DeliveryServerDynamoDBComparisonField struct {
-	DeliveryRecords         map[string]*gcmp.ComparisonMessage[DynamoDBDeliveryRecordsComparisonField]
+	DeliveryRecords         *gcmp.ComparisonList[*gcmp.ComparisonMessage[DynamoDBDeliveryRecordsComparisonField]]
 	OrderIdempotencyRecords map[string]*gcmp.ComparisonMessage[DynamoDBOrderIdempotencyRecordsComparisonField]
 }
 
 // DeliveryServerMySQLComparisonField contains field comparisons for MySQL.
 type DeliveryServerMySQLComparisonField struct {
-	OrderRecords map[string]*gcmp.ComparisonMessage[MySQLOrderRecordsComparisonField]
+	OrderRecords *gcmp.ComparisonList[*gcmp.ComparisonMessage[MySQLOrderRecordsComparisonField]]
 }
 
 // DeliveryServerDeliveryServerComparisonField contains field comparisons for DeliveryServer.

@@ -12,23 +12,17 @@ SpecGuardian lets you verify that an AI-generated implementation actually confor
 
 ## From Spec to Test: Cache-Aside
 
-In this cache-aside example, a `Write` action stores a new value in the database, then invalidates the corresponding cache entry. The FizzBee spec describes what happens if either step fails:
+In this cache-aside example, a `Write` action stores a new value in the database, then invalidates the corresponding cache entry. The [tutorial spec](examples/tutorial_cache_aside_write/docs/spec/CacheAside.fizz) models each operation as atomic and allows a crash before or between them:
 
 ```python
 @conformance
 role Application:
   fair action Write:
-    db_succeeds = db.write(self.key, self.write_value)
-    if not db_succeeds:
-      self.write_status = RequestStatus.FAILED
-      return
-
-    delete_cache_succeeds = cache.delete_cache(self.key)
-    if not delete_cache_succeeds:
-      self.write_status = RequestStatus.FAILED
-      return
-
-    self.write_status = RequestStatus.DONE
+    # Yield to allow a crash before the first I/O.
+    atomic:
+      pass
+    db.write(self.key, self.write_value)
+    cache.delete_cache(self.key)
 ```
 
 SpecGuardian generates Go tests from FizzBee's results. They compare the observed state after the action with states allowed by the spec, including states reached when an I/O operation fails:
@@ -66,7 +60,7 @@ func TestApplication_Write_Conformance(t *testing.T) {
 }
 ```
 
-For each generated case, the test checks the resulting state against the spec, both with and without injected failures.
+SQL and Valkey providers seed each attempt from the model's input state, observe the result, and clean up afterward. The test compares that result with the spec's allowed states, injecting faults only during action execution.
 
 For example, the test also checks what happens when an error is injected before cache invalidation. This case can pass because the spec allows a state where the database holds the new value and the cache retains the old one.
 
@@ -76,7 +70,7 @@ Here's how SpecGuardian works:
 
 1. FizzBee explores the possible states described by the spec.
 2. SpecGuardian generates Go tests from the exploration results.
-3. Either AI or you write the setup and Action execution code, configure observers in `specguardian.yml`, and write any remaining state observation code.
+3. Either AI or you write the setup and Action execution code, configure providers in `specguardian.yml`, and write any remaining state observation code.
 4. The tests run a function normally and with an error injected immediately before a supported I/O call, then compare the observed state with states allowed by the spec.
 
 `specguardian.yml` configures state observation and comparison. See the [configuration schema](docs/specguardian.schema.yaml) for available settings and the [example configuration](examples/tutorial_cache_aside_write/specguardian.yml) for an example.

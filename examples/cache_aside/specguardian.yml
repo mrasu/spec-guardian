@@ -1,22 +1,33 @@
 version: "0.1"
-observers:
+providers:
   - id: db
-    plugin:
+    source:
       builtin: sql
     config:
       driver: pgx
       connection_string: postgres://postgres@localhost:15432/postgres?sslmode=disable
+      tables:
+        - name: records
+          columns:
+            - name: key
+              type: string
+            - name: value
+              type: string
   - id: cache
-    plugin:
+    source:
       builtin: valkey
     config:
       address: localhost:16379
+      keyspaces:
+        - name: records
+          prefix: "records:"
+          data_type: string
   - id: error_as_crashed
-    kind: result
-    plugin:
+    source:
       builtin: error_as_crashed
 fizzbee_files:
   - output_dir: docs/spec/fizzbee_output
+    hooks: [cleanup_case]
     roles:
       - name: Application
         fields:
@@ -29,34 +40,36 @@ fizzbee_files:
       - name: DB
         fields:
           - name: records
-            observer:
+            provider:
               id: db
               config:
-                query: SELECT key, value FROM records
-                result:
-                  type: kv
-                  key_column: key
-                  value_column: value
+                table: records
             type:
-              kind: map
+              kind: list
+              compare_order: false
               values:
-                kind: string
+                kind: message
+                fields:
+                  key:
+                    kind: string
+                  value:
+                    kind: string
           - name: committed_values
             compare: false
             reason: commit history is not stored
       - name: Cache
         fields:
           - name: cached_records
-            observer:
+            provider:
               id: cache
               config:
-                keys: "*"
+                keyspace: records
             type:
               kind: map
               values:
                 kind: string
     sg_metadata:
       action_crashed:
-        observer:
+        provider:
           id: error_as_crashed
 dev: true

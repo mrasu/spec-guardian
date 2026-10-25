@@ -23,15 +23,15 @@ This document records the boundaries and relationships that guide conformance te
 ## Responsibility boundaries
 
 - [SpecGuardian](spec-guardian.md) resolves the conformance contract during generation; [Guardian](guardian.md) enforces it at runtime.
-- Plugins own data-source-specific observation; user implementations bridge the model and application. Generation must not absorb those responsibilities.
+- Providers seed and observe model data and isolate attempts; user code prepares the environment and invokes Actions.
 - Preparing the execution environment is separate from generating tests.
 
 ## Observation and comparison
 
 - SpecGuardian metadata follows the same fetch, observation, and comparison stages as application fields.
 - Inject faults only during Action execution so test preparation and observation cannot become failure sources under test.
-- User setup establishes the context for plugin preparation; plugin cleanup precedes user cleanup to preserve that context.
-- Plugins isolate state between attempts.
+- User setup establishes the context for provider preparation; provider cleanup precedes user cleanup to preserve that context.
+- Providers isolate state between attempts.
 - Model inputs retain preparation information independently of comparison scope.
 - Observation must be independent of expected values so unexpected application state remains detectable.
 - Model-to-application mapping requires human review; passing tests cannot establish that setup and observation faithfully represent the model.

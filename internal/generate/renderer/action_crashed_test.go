@@ -12,19 +12,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGenerateActionCrashed_ObserverManualAndDisabled(t *testing.T) {
+func TestGenerateActionCrashed_ProviderManualAndDisabled(t *testing.T) {
 	falseValue := false
 	tests := []struct {
 		name     string
-		observer bool
+		provider bool
 		custom   bool
 		compare  *bool
 	}{
-		{name: "observer", observer: true},
-		{name: "custom observer", observer: true, custom: true},
+		{name: "provider", provider: true},
+		{name: "custom provider", provider: true, custom: true},
 		{name: "manual"},
-		{name: "disabled", observer: true, compare: &falseValue},
-		{name: "default disabled", observer: true},
+		{name: "disabled", provider: true, compare: &falseValue},
+		{name: "default disabled", provider: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -35,45 +35,45 @@ func TestGenerateActionCrashed_ObserverManualAndDisabled(t *testing.T) {
 				crashOnYield = false
 			}
 			declarations := Declarations{CompareActionCrashed: tt.compare}
-			if tt.observer {
-				declarations.ActionCrashedObserver = &Observer{Field: mustField(t, "sg_metadata.action_crashed"), Metadata: true, Result: true, ObserverID: "crash_result", PluginImportPath: "github.com/mrasu/spec-guardian/guardian/observer/errorascrashed", PluginAlias: "errorascrashedobserver", Type: Type{Kind: KindBool}}
+			if tt.provider {
+				declarations.ActionCrashedProvider = &Provider{Field: mustField(t, "sg_metadata.action_crashed"), Metadata: true, Result: true, ProviderID: "crash_result", SourceImportPath: "github.com/mrasu/spec-guardian/guardian/provider/errorascrashed", SourceAlias: "errorascrashedprovider", Type: Type{Kind: KindBool}}
 				if tt.custom {
-					declarations.ActionCrashedObserver.PluginImportPath = "example.test/generated/custom"
-					declarations.ActionCrashedObserver.PluginAlias = "custom"
+					declarations.ActionCrashedProvider.SourceImportPath = "example.test/generated/custom"
+					declarations.ActionCrashedProvider.SourceAlias = "custom"
 				}
 			}
 			sources, err := GenerateScaffold("example.test/generated", fizzbee.Model{Options: fizzbee.ModelOptions{CrashOnYield: crashOnYield}, Cases: cases}, declarations)
 			require.NoError(t, err)
 			source := string(sources.RoleCases["Reader"])
 			if tt.name == "default disabled" || tt.compare != nil && !*tt.compare {
-				require.NotContains(t, source, "observerCrashResult")
+				require.NotContains(t, source, "providerCrashResult")
 				require.Empty(t, sources.Common)
 				require.Empty(t, generatedStructFields(t, source, "ReaderManualObservation"))
 				require.Contains(t, source, "gcmp.Ignore[bool]")
-			} else if tt.observer {
-				require.Contains(t, source, "observerCrashResult.Observe")
+			} else if tt.provider {
+				require.Contains(t, source, "providerCrashResult.Observe")
 				if tt.custom {
-					require.Contains(t, source, "*custom.Observer")
+					require.Contains(t, source, "*custom.Provider")
 				} else {
-					require.Contains(t, source, "*errorascrashedobserver.Observer")
+					require.Contains(t, source, "*errorascrashedprovider.Provider")
 				}
 				require.Equal(t, map[string]string{"SgMetadata": "guardian.SgFetchedMetadata"}, generatedStructFields(t, source, "ReaderFetchedObservation"))
 				require.Contains(t, string(sources.Common), "return map[string]any{}")
 				require.Contains(t, string(sources.Common), "Config: map[string]any{}")
 			} else {
-				require.NotContains(t, source, "observerCrashResult")
+				require.NotContains(t, source, "providerCrashResult")
 				require.Equal(t, map[string]string{"SgMetadata": "guardian.SgObservedMetadata"}, generatedStructFields(t, source, "ReaderManualObservation"))
 				require.Contains(t, source, "ActionCrashed: manual.SgMetadata.ActionCrashed")
 			}
 			manual := "return ReaderManualObservation{}"
-			if !tt.observer {
+			if !tt.provider {
 				manual = "return ReaderManualObservation{SgMetadata: guardian.SgObservedMetadata{ActionCrashed: gcmp.Observed(actionErr != nil)}}"
 			}
 			impl := strings.ReplaceAll(string(sources.RoleScaffolds["Reader"]), `require.NoError(t, errors.New("TODO: implement me"))`, "")
 			impl = strings.ReplaceAll(impl, `"errors"`, "")
 			impl = strings.ReplaceAll(impl, `"github.com/stretchr/testify/require"`, "")
 			impl = strings.ReplaceAll(impl, "return ReaderManualObservation{}", manual)
-			if !tt.observer {
+			if !tt.provider {
 				impl = strings.Replace(impl, `"testing"`, "\"testing\"\n\"github.com/mrasu/spec-guardian/guardian/gcmp\"", 1)
 			}
 			runMetadataScaffold(t, sources, impl)
@@ -114,23 +114,23 @@ func TestMetadata(t *testing.T) {
 	}
 	if strings.Contains(string(sources.RoleCases["Reader"]), "example.test/generated/custom") {
 		require.NoError(t, os.Mkdir(filepath.Join(dir, "custom"), 0700))
-		files["custom/observer.go"] = []byte(`package custom
+		files["custom/provider.go"] = []byte(`package custom
 import (
  "context"
  "fmt"
- "github.com/mrasu/spec-guardian/guardian/observer"
+ "github.com/mrasu/spec-guardian/guardian/provider"
 )
 type Config struct{}
-type Observer struct{}
-func New(_ Config, config map[string]any, fields []observer.FieldRequest) (*Observer,error) {
+type Provider struct{}
+func New(_ Config, config map[string]any, fields []provider.FieldRequest) (*Provider,error) {
  if config == nil || len(fields) != 1 || fields[0].Config == nil { return nil,fmt.Errorf("config must be non-nil") }
- return &Observer{},nil
+ return &Provider{},nil
 }
-func (*Observer) PrepareCase(context.Context) error { return nil }
-func (*Observer) PrepareAttempt(context.Context) error { return nil }
-func (*Observer) CleanupCase(context.Context) error { return nil }
-func (*Observer) CleanupAttempt(context.Context) error { return nil }
-func (*Observer) Observe(_ context.Context, field string, output any, actionErr error) (any,error) {
+func (*Provider) PrepareCase(context.Context) error { return nil }
+func (*Provider) PrepareAttempt(context.Context) error { return nil }
+func (*Provider) CleanupCase(context.Context) error { return nil }
+func (*Provider) CleanupAttempt(context.Context) error { return nil }
+func (*Provider) ObserveResult(_ context.Context, field string, output any, actionErr error) (any,error) {
  if field != "sg_metadata.action_crashed" || output == nil { return nil,fmt.Errorf("missing action result") }
  return actionErr != nil,nil
 }`)
@@ -145,19 +145,19 @@ func (*Observer) Observe(_ context.Context, field string, output any, actionErr 
 	require.NoError(t, err, string(output))
 }
 
-func TestGenerateActionCrashed_DisabledSharedObserverKeepsOtherFields(t *testing.T) {
+func TestGenerateActionCrashed_DisabledSharedProviderKeepsOtherFields(t *testing.T) {
 	falseValue := false
 	role := fizzbee.RoleState{Name: "Reader", Fields: fizzbee.JSONObject{"failed": false}}
 	cases := []fizzbee.ActionCase{{Action: fizzbee.ActionRef{Role: "Reader", Action: "Read"}, Input: fizzbee.Input{Roles: []fizzbee.RoleState{role}}, Outputs: []fizzbee.Output{{Roles: []fizzbee.RoleState{role}}}}}
-	shared := Observer{ObserverID: "shared", Result: true, PluginImportPath: "example.test/plugin", PluginAlias: "custom", Type: Type{Kind: KindBool}}
+	shared := Provider{ProviderID: "shared", Result: true, SourceImportPath: "example.test/source", SourceAlias: "custom", Type: Type{Kind: KindBool}}
 	field := shared
 	field.Field = mustField(t, "Reader.failed")
 	metadata := shared
 	metadata.Field, metadata.Metadata = mustField(t, "sg_metadata.action_crashed"), true
-	sources, err := GenerateScaffold("example.test/generated", fizzbee.Model{Options: fizzbee.ModelOptions{CrashOnYield: true}, Cases: cases}, Declarations{CompareActionCrashed: &falseValue, ActionCrashedObserver: &metadata, Observers: []Observer{field}})
+	sources, err := GenerateScaffold("example.test/generated", fizzbee.Model{Options: fizzbee.ModelOptions{CrashOnYield: true}, Cases: cases}, Declarations{CompareActionCrashed: &falseValue, ActionCrashedProvider: &metadata, Providers: []Provider{field}})
 	require.NoError(t, err)
-	require.Contains(t, string(sources.RoleCases["Reader"]), "observerShared.PrepareCase")
-	require.Contains(t, string(sources.RoleCases["Reader"]), "observerShared.Observe")
+	require.Contains(t, string(sources.RoleCases["Reader"]), "providerShared.PrepareCase")
+	require.Contains(t, string(sources.RoleCases["Reader"]), "providerShared.Observe")
 	require.NotContains(t, string(sources.RoleCases["Reader"]), "typedSgMetadataActionCrashed")
 	require.NotContains(t, string(sources.Common), "ActionCrashedField")
 }

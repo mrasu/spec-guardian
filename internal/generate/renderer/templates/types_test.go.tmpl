@@ -9,12 +9,15 @@ import (
 
 	"github.com/mrasu/spec-guardian/guardian"
 	"github.com/mrasu/spec-guardian/guardian/gcmp"
-{{if .Observers}}	"github.com/mrasu/spec-guardian/guardian/observer"
-{{range .PluginImports}}	{{.Alias}} {{printf "%q" .Path}}
+{{if .Providers}}	"github.com/mrasu/spec-guardian/guardian/provider"
+{{range .SourceImports}}	{{.Alias}} {{printf "%q" .Path}}
 {{end}}
 {{end}}
 )
 
+{{range .ProviderGroups}}{{$source := .SourceAlias}}
+{{range .Interfaces}}var _ provider.{{.}} = (*{{$source}}.Provider)(nil)
+{{end}}{{end}}
 // {{.Role}}Actions describes the application methods exercised by this role.
 // This generated interface is the contract implemented by the application adapter.
 type {{.Role}}Actions interface {
@@ -27,8 +30,8 @@ type {{.Role}}Actions interface {
 type {{.Role}}ConformanceEnvironment struct {
 	Actions {{.Role}}Actions
 	*{{.Role}}Environment
-{{- range .ObserverGroups}}
-	{{.GoField}} *{{.PluginAlias}}.Observer
+{{- range .ProviderGroups}}
+	{{.GoField}} *{{.SourceAlias}}.Provider
 {{- end}}
 }
 
@@ -36,19 +39,19 @@ type {{.Role}}ConformanceEnvironment struct {
 func New{{.Role}}ConformanceEnvironment(t *testing.T, controller *guardian.InjectionController) *{{.Role}}ConformanceEnvironment {
 	t.Helper()
 	actions, environment := Build{{.Role}}ConformanceComponents(t, controller)
-{{range .ObserverGroups}}	config{{.GoName}}, fields{{.GoName}} := _sgObserver{{.GoName}}Settings()
-	{{.GoField}}, err{{.GoName}} := {{.PluginAlias}}.New(
-		{{.PluginAlias}}.Config{},
+{{range .ProviderGroups}}	config{{.GoName}}, fields{{.GoName}} := _sgProvider{{.GoName}}Settings()
+	{{.GoField}}, err{{.GoName}} := {{.SourceAlias}}.New(
+		{{.SourceAlias}}.Config{},
 		config{{.GoName}},
 		fields{{.GoName}},
 	)
 	if err{{.GoName}} != nil {
-		t.Fatalf("observer {{.ID}} New: %v", err{{.GoName}})
+		t.Fatalf("provider {{.ID}} New: %v", err{{.GoName}})
 	}
 {{end}}	return &{{.Role}}ConformanceEnvironment{
 		Actions: actions,
 		{{.Role}}Environment: environment,
-{{- range .ObserverGroups}}
+{{- range .ProviderGroups}}
 		{{.GoField}}: {{.GoField}},
 {{- end}}
 	}
@@ -63,35 +66,48 @@ func Load{{.Role}}Cases(t *testing.T, filepath string) []{{.Role}}Case {
 {{range .Actions}}
 // Prepare{{.Name}}Case sets up one case and registers its cleanup.
 func (e *{{.Role}}ConformanceEnvironment) Prepare{{.Name}}Case(t *testing.T) {
-	e.Setup{{.Name}}Case(t)
-	t.Cleanup(func() {
+{{if $.Hooks.SetupCase}}	e.Setup{{.Name}}Case(t)
+{{end}}{{if $.Hooks.CleanupCase}}	t.Cleanup(func() {
 		e.Cleanup{{.Name}}Case(t)
 	})
-{{range $.ObserverGroups}}	if err := e.{{.GoField}}.PrepareCase(t.Context()); err != nil {
-		t.Fatalf("observer {{.ID}} PrepareCase: %v", err)
+{{end}}{{range $.ProviderGroups}}	if err := e.{{.GoField}}.PrepareCase(t.Context()); err != nil {
+		t.Fatalf("provider {{.ID}} PrepareCase: %v", err)
 	}
 	t.Cleanup(func() {
 		if err := e.{{.GoField}}.CleanupCase(context.Background()); err != nil {
-			t.Errorf("observer {{.ID}} CleanupCase: %v", err)
+			t.Errorf("provider {{.ID}} CleanupCase: %v", err)
 		}
 	})
 {{end}}}
 
 // Prepare{{.Name}}Attempt sets up one fault attempt and registers its cleanup.
 func (e *{{.Role}}ConformanceEnvironment) Prepare{{.Name}}Attempt(t *testing.T, input Fizzbee{{.Role}}State) {
-	e.Setup{{.Name}}Attempt(t, input)
-	t.Cleanup(func() {
+{{if $.Hooks.SetupAttempt}}	e.Setup{{.Name}}Attempt(t, input)
+{{end}}{{if $.Hooks.CleanupAttempt}}	t.Cleanup(func() {
 		e.Cleanup{{.Name}}Attempt(t)
 	})
-{{range $.ObserverGroups}}	if err := e.{{.GoField}}.PrepareAttempt(t.Context()); err != nil {
-		t.Fatalf("observer {{.ID}} PrepareAttempt: %v", err)
-	}
-	t.Cleanup(func() {
+{{end}}{{range $.ProviderGroups}}	t.Cleanup(func() {
 		if err := e.{{.GoField}}.CleanupAttempt(context.Background()); err != nil {
-			t.Errorf("observer {{.ID}} CleanupAttempt: %v", err)
+			t.Errorf("provider {{.ID}} CleanupAttempt: %v", err)
 		}
 	})
-{{end}}}
+	if err := e.{{.GoField}}.PrepareAttempt(t.Context()); err != nil {
+		t.Fatalf("provider {{.ID}} PrepareAttempt: %v", err)
+	}
+{{end}}{{range $.ProviderGroups}}{{if .Seed}}	_sgSeedRequest{{.GoName}} := provider.SeedRequest{Values: []provider.SeedValue{
+{{range .Fields}}		{Field: {{printf "%q" .Field.String}}, Value: input.{{if .Metadata}}SgMetadata.ActionCrashed{{else}}Fields.{{.RoleName}}.{{.GoName}}{{end}}},
+{{end}}	}}
+	_sgSeedResult{{.GoName}}, _sgSeedErr{{.GoName}} := e.{{.GoField}}.Seed(t.Context(), provider.CloneSeedRequest(_sgSeedRequest{{.GoName}}))
+	if _sgSeedErr{{.GoName}} != nil {
+		t.Fatalf("provider {{.ID}} Seed: %v", _sgSeedErr{{.GoName}})
+	}
+	if err := provider.ValidateSeedFields(_sgSeedRequest{{.GoName}}, _sgSeedResult{{.GoName}}); err != nil {
+		t.Fatalf("provider {{.ID}} Seed: %v", err)
+	}
+{{$group := .}}{{range $index, $field := .Fields}}	if err := provider.ValidateSeedValue({{printf "%q" .Field.String}}, input.{{if .Metadata}}SgMetadata.ActionCrashed{{else}}Fields.{{.RoleName}}.{{.GoName}}{{end}}, _sgSeedResult{{$group.GoName}}.Values[{{$index}}].Value); err != nil {
+		t.Fatalf("provider {{$group.ID}} Seed %s: %v", {{printf "%q" .Field.String}}, err)
+	}
+{{end}}{{end}}{{end}}}
 
 // Execute{{.Name}} invokes the application action.
 func (e *{{.Role}}ConformanceEnvironment) Execute{{.Name}}(ctx context.Context, input {{.Role}}{{.Name}}Input) ({{.Role}}{{.Name}}Output, error) {
@@ -101,13 +117,13 @@ func (e *{{.Role}}ConformanceEnvironment) Execute{{.Name}}(ctx context.Context, 
 // Observe{{.Name}}State collects the state and output visible after the action.
 func (e *{{.Role}}ConformanceEnvironment) Observe{{.Name}}State(t *testing.T, input Fizzbee{{.Role}}State, output {{.Role}}{{.Name}}Output, actionErr error) *{{.Role}}ObservedState {
 	t.Helper()
-{{range $.Observers}}	value{{.RoleName}}{{.GoName}}, err := e.{{.ObserverField}}.Observe(t.Context(), _sgField{{.RoleName}}{{.GoName}}{{if .Result}}, output, actionErr{{end}})
+{{range $.Providers}}	value{{.RoleName}}{{.GoName}}, err := e.{{.ProviderField}}.{{if .Result}}ObserveResult{{else}}Observe{{end}}(t.Context(), _sgField{{.RoleName}}{{.GoName}}{{if .Result}}, output, actionErr{{end}})
 	if err != nil {
-		t.Fatalf("observer {{.ObserverID}} Observe %s: %v", _sgField{{.RoleName}}{{.GoName}}, err)
+		t.Fatalf("provider {{.ProviderID}} Observe %s: %v", _sgField{{.RoleName}}{{.GoName}}, err)
 	}
-	typed{{.RoleName}}{{.GoName}}, convertErr := observer.Convert[{{.ConvertType}}](value{{.RoleName}}{{.GoName}})
+	typed{{.RoleName}}{{.GoName}}, convertErr := provider.Convert[{{.ConvertType}}](value{{.RoleName}}{{.GoName}})
 	if convertErr != nil {
-		t.Fatalf("observer {{.ObserverID}} Observe %s: %v", _sgField{{.RoleName}}{{.GoName}}, convertErr)
+		t.Fatalf("provider {{.ProviderID}} Observe %s: %v", _sgField{{.RoleName}}{{.GoName}}, convertErr)
 	}
 {{end -}}
 	fetched := {{.Role}}FetchedObservation{
@@ -247,7 +263,7 @@ type {{$role}}{{.Name}}ObservedField struct {
 }
 {{end}}
 {{end}}
-// {{.Role}}FetchedObservation contains fields collected by declared observers.
+// {{.Role}}FetchedObservation contains fields collected by declared providers.
 type {{.Role}}FetchedObservation struct {
 {{if .FetchedRoles}}	Fields {{.Role}}FetchedField
 {{end}}{{if .FetchedActionCrashed}}	SgMetadata guardian.SgFetchedMetadata
@@ -271,11 +287,11 @@ type {{$role}}{{.Name}}FetchedField struct {
 
 // {{.Role}}ManualObservation contains fields supplied by the application.
 type {{.Role}}ManualObservation struct {
-{{if .ManualRoles}}	Fields {{.Role}}{{if .Observers}}Manual{{else}}Observed{{end}}Field
+{{if .ManualRoles}}	Fields {{.Role}}{{if .Providers}}Manual{{else}}Observed{{end}}Field
 {{end}}{{if .ManualActionCrashed}}	SgMetadata guardian.SgObservedMetadata
 {{end}}}
 
-{{if and .Observers (.ManualRoles)}}
+{{if and .Providers (.ManualRoles)}}
 type {{.Role}}ManualField struct {
 {{- range .ManualRoles}}
 	{{.Name}} {{$.Role}}{{.Name}}ManualField

@@ -3,7 +3,6 @@
 package specguardian_test
 
 import (
-	"context"
 	"database/sql"
 	"testing"
 
@@ -58,28 +57,11 @@ type ApplicationWriteInput = *cacheaside.WriteInput
 // ApplicationWriteOutput is the concrete output from Application.Write.
 type ApplicationWriteOutput = *cacheaside.WriteOutput
 
-// SetupWriteCase prepares resources shared by attempts in one case.
-func (e *ApplicationEnvironment) SetupWriteCase(t *testing.T) {
-	t.Helper()
-}
-
 // CleanupWriteCase releases the clients after all attempts.
 func (e *ApplicationEnvironment) CleanupWriteCase(t *testing.T) {
 	t.Helper()
 	e.cache.Close()
 	require.NoError(t, e.db.Close())
-}
-
-// SetupWriteAttempt restores the model's starting state before each fault.
-func (e *ApplicationEnvironment) SetupWriteAttempt(t *testing.T, input FizzbeeApplicationState) {
-	t.Helper()
-	setupRecords(t, e.db, e.cache, input.Fields.DB.Records, input.Fields.Cache.CachedRecords)
-}
-
-// CleanupWriteAttempt clears state independently of the test context.
-func (e *ApplicationEnvironment) CleanupWriteAttempt(t *testing.T) {
-	t.Helper()
-	clearRecords(t, e.db, e.cache)
 }
 
 // BuildWriteInput maps the model's arguments to the real application.
@@ -88,30 +70,8 @@ func (e *ApplicationEnvironment) BuildWriteInput(t *testing.T, input FizzbeeAppl
 	return &cacheaside.WriteInput{Key: input.Params.Application.Key, Value: input.Params.Application.WriteValue}
 }
 
-// BuildWriteManualObservation supplies fields not fetched by observers.
+// BuildWriteManualObservation supplies fields not fetched by providers.
 func (e *ApplicationEnvironment) BuildWriteManualObservation(t *testing.T, fetched ApplicationFetchedObservation, input FizzbeeApplicationState, output ApplicationWriteOutput, actionErr error) ApplicationManualObservation {
 	t.Helper()
 	return ApplicationManualObservation{}
-}
-
-func setupRecords(t *testing.T, db *sql.DB, cache valkey.Client, dbRecords, cacheRecords map[string]string) {
-	t.Helper()
-	clearRecords(t, db, cache)
-
-	for key, value := range dbRecords {
-		_, err := db.ExecContext(t.Context(), "INSERT INTO records(KEY, value) VALUES ($1, $2)", key, value)
-		require.NoError(t, err)
-	}
-	for key, value := range cacheRecords {
-		err := cache.Do(t.Context(), cache.B().Set().Key(key).Value(value).Build()).Error()
-		require.NoError(t, err)
-	}
-}
-
-func clearRecords(t *testing.T, db *sql.DB, cache valkey.Client) {
-	t.Helper()
-	ctx := context.Background()
-	_, err := db.ExecContext(ctx, "TRUNCATE TABLE records")
-	require.NoError(t, err)
-	require.NoError(t, cache.Do(ctx, cache.B().Flushdb().Build()).Error())
 }

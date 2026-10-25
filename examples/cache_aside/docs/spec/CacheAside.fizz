@@ -25,17 +25,23 @@ always assertion CachedValueIsSameWithDbOrOlder:
 
 role DB:
   action Init:
-    self.records = {"db_cache_written": "foo", "db_written": "bar"}
+    self.records = [{"key": "db_cache_written", "value": "foo"}, {"key": "db_written", "value": "bar"}]
     self.committed_values = {"db_cache_written": ["foo"], "db_written": ["bar"], "not_written": []}
 
   atomic func read(key):
-    if key in self.records:
-      return self.records[key]
-    else:
-      return None
+    for record in self.records:
+      if record["key"] == key:
+        return record["value"]
+    return None
 
   atomic func write(key, value):
-    self.records[key] = value
+    found = False
+    for record in self.records:
+      if record["key"] == key:
+        record["value"] = value
+        found = True
+    if not found:
+      self.records.append({"key": key, "value": value})
     self.committed_values[key].append(value)
 
 role Cache:

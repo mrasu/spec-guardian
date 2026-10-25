@@ -16,11 +16,11 @@ properties:
     description: Settings for FizzBee models.
     items:
       $ref: '#/$defs/fizzbeeFile'
-  observers:
+  providers:
     type: array
-    description: Observer settings.
+    description: Provider settings.
     items:
-      $ref: '#/$defs/observer'
+      $ref: '#/$defs/provider'
   dev:
     type: boolean
     default: false
@@ -80,6 +80,13 @@ $defs:
         type: string
         minLength: 1
         description: Directory containing model exploration results, relative to this configuration file.
+      hooks:
+        type: array
+        uniqueItems: true
+        description: User lifecycle hooks enabled for every action. Omission enables none; provider lifecycle methods always run.
+        items:
+          type: string
+          enum: [setup_case, cleanup_case, setup_attempt, cleanup_attempt]
       roles:
         type: array
         description: Settings for the model's roles.
@@ -101,9 +108,9 @@ $defs:
     type: object
     additionalProperties: false
     properties:
-      observer:
-        $ref: '#/$defs/fieldObserver'
-        description: Result observer for this metadata field. When omitted, supply its value through manual observation.
+      provider:
+        $ref: '#/$defs/fieldProvider'
+        description: Result provider for this metadata field. When omitted, supply its value through manual observation.
       compare:
         type: boolean
         description: >-
@@ -157,9 +164,9 @@ $defs:
         $ref: '#/$defs/compare'
       reason:
         $ref: '#/$defs/reason'
-      observer:
-        $ref: '#/$defs/fieldObserver'
-        description: Observer settings for this field.
+      provider:
+        $ref: '#/$defs/fieldProvider'
+        description: Provider settings for this field.
       type:
         $ref: '#/$defs/typeUnderExcludedAncestor'
         description: Type of the field's value.
@@ -282,50 +289,58 @@ $defs:
                     additionalProperties:
                       $ref: '#/$defs/valueType'
 
-  observer:
-    description: Settings for a named observer.
+  provider:
+    description: Settings for a named provider.
     type: object
     additionalProperties: false
-    required: [id, plugin]
+    required: [id, source]
     properties:
       id:
         type: string
         minLength: 1
-        description: Unique identifier used to reference this observer.
-      kind:
-        type: string
-        enum: [state, result]
-        default: state
-        description: State observers read external state; result observers receive the Action output and error.
-      plugin:
-        $ref: '#/$defs/plugin'
-        description: Plugin used by this observer.
+        description: Unique identifier used to reference this provider.
+      source:
+        $ref: '#/$defs/source'
+        description: Source used by this provider.
       config:
-        $ref: '#/$defs/pluginConfig'
-        description: Settings shared by fields using this observer.
+        $ref: '#/$defs/sourceConfig'
+        description: Settings shared by fields using this provider.
 
-  plugin:
-    description: Settings identifying an observer plugin.
+  source:
+    description: Implementation and capabilities of a provider.
     type: object
     additionalProperties: false
     properties:
       builtin:
         enum: [sql, valkey, dynamodb, error_as_crashed]
-        description: Name of a built-in observer plugin.
+        description: Name of a built-in provider.
       go_package:
         type: string
         minLength: 1
-        description: Go import path of an external observer plugin.
+        description: Go import path of an external provider.
+      capabilities:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items:
+          enum: [seed, observe, observe_result]
+        not:
+          allOf:
+            - contains: {const: observe}
+            - contains: {const: observe_result}
+        description: Interfaces implemented by an external provider. Observe and observe_result are mutually exclusive.
     oneOf:
       - required: [builtin]
         not:
-          required: [go_package]
-      - required: [go_package]
+          anyOf:
+            - required: [go_package]
+            - required: [capabilities]
+      - required: [go_package, capabilities]
         not:
           required: [builtin]
 
-  fieldObserver:
-    description: Observer settings for a field.
+  fieldProvider:
+    description: Provider settings for a field.
     type: object
     additionalProperties: false
     required: [id]
@@ -333,12 +348,12 @@ $defs:
       id:
         type: string
         minLength: 1
-        description: Identifier of an observer declared in observers.
+        description: Identifier of an provider declared in providers.
       config:
-        $ref: '#/$defs/pluginConfig'
-        description: Field-specific settings for the selected observer.
+        $ref: '#/$defs/sourceConfig'
+        description: Field-specific settings for the selected provider.
 
-  pluginConfig:
+  sourceConfig:
     type: [object, 'null']
     additionalProperties: true
-    description: Settings defined by the selected plugin.
+    description: Settings defined by the selected source.

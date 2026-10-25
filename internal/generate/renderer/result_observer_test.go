@@ -12,10 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGenerateResultObserver_PassesOutputAndErrorToObservation(t *testing.T) {
+func TestGenerateResultProvider_PassesOutputAndErrorToObservation(t *testing.T) {
 	role := fizzbee.RoleState{Name: "Reader", Fields: fizzbee.JSONObject{"failed": true}}
 	cases := []fizzbee.ActionCase{{Action: fizzbee.ActionRef{Role: "Reader", Action: "Read"}, Input: fizzbee.Input{Roles: []fizzbee.RoleState{role}}, Outputs: []fizzbee.Output{{Roles: []fizzbee.RoleState{role}}}}}
-	declarations := Declarations{Observers: []Observer{{Field: mustField(t, "Reader.failed"), ObserverID: "custom", Result: true, PluginImportPath: "example.test/generated/custom", PluginAlias: "custom", Type: Type{Kind: KindBool}}}}
+	declarations := Declarations{Providers: []Provider{{Field: mustField(t, "Reader.failed"), ProviderID: "custom", Capabilities: []string{"observe_result"}, Result: true, SourceImportPath: "example.test/generated/custom", SourceAlias: "custom", Type: Type{Kind: KindBool}}}}
 	sources, err := GenerateScaffold("example.test/generated", fizzbee.Model{Cases: cases}, declarations)
 	require.NoError(t, err)
 	dir := t.TempDir()
@@ -30,21 +30,21 @@ func TestGenerateResultObserver_PassesOutputAndErrorToObservation(t *testing.T) 
 		"cases_test.go":  sources.RoleCases["Reader"],
 		"common_test.go": sources.Common,
 		"impl_test.go":   []byte(scaffold),
-		"custom/observer.go": []byte(`package custom
+		"custom/provider.go": []byte(`package custom
 import (
  "context"
  "fmt"
- "github.com/mrasu/spec-guardian/guardian/observer"
+ "github.com/mrasu/spec-guardian/guardian/provider"
 )
 type Config struct{}
-type Observer struct { Output any; Err error }
-var _ observer.ResultObserver = (*Observer)(nil)
-func New(Config, map[string]any, []observer.FieldRequest) (*Observer, error) { return &Observer{}, nil }
-func (*Observer) PrepareCase(context.Context) error { return nil }
-func (*Observer) PrepareAttempt(context.Context) error { return nil }
-func (*Observer) CleanupCase(context.Context) error { return nil }
-func (*Observer) CleanupAttempt(context.Context) error { return nil }
-func (o *Observer) Observe(_ context.Context, field string, output any, actionErr error) (any,error) {
+type Provider struct { Output any; Err error }
+var _ provider.ResultObserver = (*Provider)(nil)
+func New(Config, map[string]any, []provider.FieldRequest) (*Provider, error) { return &Provider{}, nil }
+func (*Provider) PrepareCase(context.Context) error { return nil }
+func (*Provider) PrepareAttempt(context.Context) error { return nil }
+func (*Provider) CleanupCase(context.Context) error { return nil }
+func (*Provider) CleanupAttempt(context.Context) error { return nil }
+func (o *Provider) ObserveResult(_ context.Context, field string, output any, actionErr error) (any,error) {
  if field != "Reader.failed" { return nil, fmt.Errorf("unexpected field %s",field) }
  o.Output, o.Err = output, actionErr
  return actionErr != nil,nil
@@ -58,12 +58,12 @@ import (
   "github.com/mrasu/spec-guardian/guardian/gcmp"
 )
 func TestResultObservation(t *testing.T) {
- plugin := &custom.Observer{}
- e := &ReaderConformanceEnvironment{ReaderEnvironment:&ReaderEnvironment{},observerCustom:plugin}
+ source := &custom.Provider{}
+ e := &ReaderConformanceEnvironment{ReaderEnvironment:&ReaderEnvironment{},providerCustom:source}
  actionErr := errors.New("action failed")
  output := ReaderReadOutput{}
  actual := e.ObserveReadState(t,FizzbeeReaderState{},output,actionErr)
- if plugin.Output != output || plugin.Err != actionErr { t.Fatal("action result was not forwarded") }
+ if source.Output != output || source.Err != actionErr { t.Fatal("action result was not forwarded") }
  expected := e.BuildAllowedReadState(t, FizzbeeReaderState{})
  expected.Fields = ReaderComparisonField{Reader:ReaderReaderComparisonField{Failed:gcmp.Equal(true)}}
  comparison := gcmp.NewObservedStateComparator[*ReaderComparisonState](actual)

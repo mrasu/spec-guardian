@@ -28,28 +28,6 @@ type ReaderReadInput struct{}
 // Replace this scaffold with a type alias or local type as needed.
 type ReaderReadOutput struct{}
 
-// SetupReadCase prepares resources and test settings for one conformance case.
-func (e *ReaderEnvironment) SetupReadCase(t *testing.T) {
-	t.Helper()
-}
-
-// CleanupReadCase cleans up after one conformance case.
-func (e *ReaderEnvironment) CleanupReadCase(t *testing.T) {
-	t.Helper()
-}
-
-// SetupReadAttempt prepares application state before Reader.Read.
-func (e *ReaderEnvironment) SetupReadAttempt(t *testing.T, input FizzbeeReaderState) {
-	t.Helper()
-	require.NoError(t, errors.New("TODO: implement me"))
-}
-
-// CleanupReadAttempt removes state left by this attempt. It runs through t.Cleanup, so use a context independent of t.Context when needed.
-func (e *ReaderEnvironment) CleanupReadAttempt(t *testing.T) {
-	t.Helper()
-	require.NoError(t, errors.New("TODO: implement me"))
-}
-
 // BuildReadInput maps the abstract FizzBee input to the application's concrete argument.
 func (e *ReaderEnvironment) BuildReadInput(t *testing.T, input FizzbeeReaderState) ReaderReadInput {
 	t.Helper()
@@ -57,7 +35,7 @@ func (e *ReaderEnvironment) BuildReadInput(t *testing.T, input FizzbeeReaderStat
 	return ReaderReadInput{}
 }
 
-// BuildReadManualObservation returns fields not supplied by declared observers.
+// BuildReadManualObservation returns fields not supplied by declared providers.
 func (e *ReaderEnvironment) BuildReadManualObservation(t *testing.T, fetched ReaderFetchedObservation, input FizzbeeReaderState, output ReaderReadOutput, actionErr error) ReaderManualObservation {
 	t.Helper()
 	require.NoError(t, errors.New("TODO: implement me"))

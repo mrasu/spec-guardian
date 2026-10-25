@@ -11,7 +11,7 @@ type valkeyCache struct {
 }
 
 func (cache *valkeyCache) Get(ctx context.Context, key string) (string, bool, error) {
-	value, err := cache.client.Do(ctx, cache.client.B().Get().Key(key).Build()).ToString()
+	value, err := cache.client.Do(ctx, cache.client.B().Get().Key("records:"+key).Build()).ToString()
 	if valkey.IsValkeyNil(err) {
 		return "", false, nil
 	}
@@ -22,9 +22,9 @@ func (cache *valkeyCache) Get(ctx context.Context, key string) (string, bool, er
 }
 
 func (cache *valkeyCache) Set(ctx context.Context, key string, value string) error {
-	return cache.client.Do(ctx, cache.client.B().Set().Key(key).Value(value).Build()).Error()
+	return cache.client.Do(ctx, cache.client.B().Set().Key("records:"+key).Value(value).Build()).Error()
 }
 
 func (cache *valkeyCache) Delete(ctx context.Context, key string) error {
-	return cache.client.Do(ctx, cache.client.B().Del().Key(key).Build()).Error()
+	return cache.client.Do(ctx, cache.client.B().Del().Key("records:"+key).Build()).Error()
 }

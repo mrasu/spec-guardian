@@ -1,81 +1,100 @@
 version: "0.1"
-observers:
+providers:
   - id: mysql
-    plugin:
+    source:
       builtin: sql
     config:
       driver: mysql
       connection_string: root@tcp(localhost:13306)/idempotent_request?parseTime=true
+      tables:
+        - name: orders
+          columns:
+            - {name: id, type: int64}
+            - {name: request_id, type: string}
+            - {name: payload, type: string}
+            - {name: delivery_id, type: string}
+            - {name: delivery_data, type: string}
+            - {name: status, type: string}
   - id: dynamodb
-    plugin:
+    source:
       builtin: dynamodb
     config:
       endpoint: http://localhost:14566
       region: us-east-1
       access_key_id: test
       secret_access_key: test
+      tables:
+        - name: order_idempotency_records
+          attribute_definitions:
+            - {attribute_name: id, attribute_type: S}
+          key_schema:
+            - {attribute_name: id, key_type: HASH}
+        - name: delivery_records
+          attribute_definitions:
+            - {attribute_name: id, attribute_type: S}
+          key_schema:
+            - {attribute_name: id, key_type: HASH}
   - id: action_crashed
-    kind: result
-    plugin:
-      go_package: spec-guardian/examples/idempotent-request/conformance/specguardian/observer/actionerror
+    source:
+      go_package: spec-guardian/examples/idempotent-request/conformance/specguardian/provider/actionerror
+      capabilities: [observe_result]
 fizzbee_files:
   - output_dir: docs/spec/fizzbee_output
     sg_metadata:
       action_crashed:
-        observer:
+        provider:
           id: action_crashed
     roles:
       - name: DynamoDB
         fields:
           - name: order_idempotency_records
-            observer:
+            provider:
               id: dynamodb
               config:
                 table: order_idempotency_records
                 result:
                   type: item_map
-                  key_attribute: id
             type:
               kind: map
               values:
                 kind: message
                 fields:
-                  order_id: {kind: int64, nullable: true}
+                  order_id: {kind: string, nullable: true, compare: false, reason: generated order ID}
                   payload: {kind: string}
                   status: {kind: string}
           - name: delivery_records
-            observer:
+            provider:
               id: dynamodb
               config:
                 table: delivery_records
                 result:
-                  type: item_map
-                  key_attribute: id
+                  type: item_list
             type:
-              kind: map
+              kind: list
+              compare_order: false
               values:
                 kind: message
                 fields:
-                  order_id: {kind: int64}
+                  id: {kind: string, compare: false, reason: generated delivery ID}
+                  order_id: {kind: string, compare: false, reason: generated order ID}
                   data: {kind: string}
       - name: MySQL
         fields:
           - name: order_records
-            observer:
+            provider:
               id: mysql
               config:
-                query: SELECT id, request_id, payload, delivery_id, delivery_data, status FROM orders
-                result:
-                  type: row_map
-                  key_column: id
+                table: orders
             type:
-              kind: map
+              kind: list
+              compare_order: false
               values:
                 kind: message
                 fields:
+                  id: {kind: int64, compare: false, reason: generated order ID}
                   request_id: {kind: string}
                   payload: {kind: string}
-                  delivery_id: {kind: string, nullable: true}
+                  delivery_id: {kind: string, nullable: true, compare: false, reason: generated delivery ID}
                   delivery_data: {kind: string, nullable: true}
                   status: {kind: string}
           - name: delivery_prepared_count
@@ -84,6 +103,11 @@ fizzbee_files:
           - name: next_order_id
             compare: false
             reason: internal property
+      - name: OrderServer
+        fields:
+          - name: ordered_id
+            compare: false
+            reason: generated order ID
       - name: RequestPreparator
         fields:
           - name: second_delivery_data

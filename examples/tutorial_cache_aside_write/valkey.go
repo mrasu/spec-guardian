@@ -18,5 +18,5 @@ func NewValkeyCache(client valkey.Client) *valkeyCache {
 }
 
 func (cache *valkeyCache) Delete(ctx context.Context, key string) error {
-	return cache.client.Do(ctx, cache.client.B().Del().Key(key).Build()).Error()
+	return cache.client.Do(ctx, cache.client.B().Del().Key("records:"+key).Build()).Error()
 }

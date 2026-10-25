@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -16,27 +17,32 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-type resolvedPlugin struct {
-	ImportPath string
-	Alias      string
+type resolvedSource struct {
+	ImportPath   string
+	Alias        string
+	Capabilities []string
 }
 
-var builtinPlugins = map[string]resolvedPlugin{
+var builtinSources = map[string]resolvedSource{
 	"error_as_crashed": {
-		ImportPath: "github.com/mrasu/spec-guardian/guardian/observer/errorascrashed",
-		Alias:      "errorascrashedobserver",
+		ImportPath:   "github.com/mrasu/spec-guardian/guardian/provider/errorascrashed",
+		Alias:        "errorascrashedprovider",
+		Capabilities: []string{"observe_result"},
 	},
 	"sql": {
-		ImportPath: "github.com/mrasu/spec-guardian/guardian/observer/sql",
-		Alias:      "sqlobserver",
+		ImportPath:   "github.com/mrasu/spec-guardian/guardian/provider/sql",
+		Alias:        "sqlprovider",
+		Capabilities: []string{"seed", "observe"},
 	},
 	"valkey": {
-		ImportPath: "github.com/mrasu/spec-guardian/guardian/observer/valkey",
-		Alias:      "valkeyobserver",
+		ImportPath:   "github.com/mrasu/spec-guardian/guardian/provider/valkey",
+		Alias:        "valkeyprovider",
+		Capabilities: []string{"seed", "observe"},
 	},
 	"dynamodb": {
-		ImportPath: "github.com/mrasu/spec-guardian/guardian/observer/dynamodb",
-		Alias:      "dynamodbobserver",
+		ImportPath:   "github.com/mrasu/spec-guardian/guardian/provider/dynamodb",
+		Alias:        "dynamodbprovider",
+		Capabilities: []string{"seed", "observe"},
 	},
 }
 
@@ -45,10 +51,11 @@ type FileConfig struct {
 	Version      string              `yaml:"version"`
 	FizzbeeFiles []fizzbeeFileConfig `yaml:"fizzbee_files"`
 	Development  bool                `yaml:"dev"`
-	Observers    []observerConfig    `yaml:"observers"`
+	Providers    []providerConfig    `yaml:"providers"`
 }
 
 type fizzbeeFileConfig struct {
+	Hooks      []renderer.Hook  `yaml:"hooks"`
 	OutputDir  string           `yaml:"output_dir"`
 	Roles      []roleConfig     `yaml:"roles"`
 	SgMetadata sgMetadataConfig `yaml:"sg_metadata"`
@@ -60,7 +67,7 @@ type sgMetadataConfig struct {
 
 type actionCrashedConfig struct {
 	Compare  *bool                `yaml:"compare"`
-	Observer *fieldObserverConfig `yaml:"observer"`
+	Provider *fieldProviderConfig `yaml:"provider"`
 }
 
 type roleConfig struct {
@@ -74,7 +81,7 @@ type fieldConfig struct {
 	Name     string               `yaml:"name"`
 	Compare  *bool                `yaml:"compare"`
 	Reason   string               `yaml:"reason"`
-	Observer *fieldObserverConfig `yaml:"observer"`
+	Provider *fieldProviderConfig `yaml:"provider"`
 	Type     typeConfig           `yaml:"type"`
 }
 
@@ -162,21 +169,21 @@ func decodeConfigNode(node *yaml.Node, value any) error {
 	return nil
 }
 
-type fieldObserverConfig struct {
+type fieldProviderConfig struct {
 	ID     string         `yaml:"id"`
 	Config map[string]any `yaml:"config"`
 }
 
-type observerConfig struct {
+type providerConfig struct {
 	ID     string         `yaml:"id"`
-	Kind   string         `yaml:"kind"`
-	Plugin pluginConfig   `yaml:"plugin"`
+	Source sourceConfig   `yaml:"source"`
 	Config map[string]any `yaml:"config"`
 }
 
-type pluginConfig struct {
-	Builtin   string `yaml:"builtin"`
-	GoPackage string `yaml:"go_package"`
+type sourceConfig struct {
+	Builtin      string   `yaml:"builtin"`
+	GoPackage    string   `yaml:"go_package"`
+	Capabilities []string `yaml:"capabilities"`
 }
 
 // Options configures optional generation behavior.
@@ -252,61 +259,55 @@ func readFileConfig(path string) (*FileConfig, error) {
 }
 
 func parseDeclarations(config *FileConfig) (renderer.Declarations, error) {
-	observers, err := validateObserverConfigs(config.Observers)
+	providers, err := validateProviderConfigs(config.Providers)
 	if err != nil {
 		return renderer.Declarations{}, err
 	}
-	return buildDeclarations(config.FizzbeeFiles[0], observers)
+	return buildDeclarations(config.FizzbeeFiles[0], providers)
 }
 
-type resolvedObserver struct {
-	Config observerConfig
-	Plugin resolvedPlugin
+type resolvedProvider struct {
+	Config providerConfig
+	Source resolvedSource
 }
 
-func validateObserverConfigs(configs []observerConfig) (map[string]resolvedObserver, error) {
-	observers := make(map[string]resolvedObserver, len(configs))
-	aliases := make(map[string]string, len(configs)+len(builtinPlugins))
-	for _, plugin := range builtinPlugins {
-		aliases[plugin.ImportPath] = plugin.Alias
+func validateProviderConfigs(configs []providerConfig) (map[string]resolvedProvider, error) {
+	providers := make(map[string]resolvedProvider, len(configs))
+	aliases := make(map[string]string, len(configs)+len(builtinSources))
+	for _, source := range builtinSources {
+		aliases[source.ImportPath] = source.Alias
 	}
-	usedAliases := make(map[string]bool, len(configs)+len(builtinPlugins))
+	usedAliases := make(map[string]bool, len(configs)+len(builtinSources))
 	for _, alias := range aliases {
 		usedAliases[alias] = true
 	}
 	for _, config := range configs {
-		if config.Kind == "" {
-			config.Kind = "state"
+		if _, exists := providers[config.ID]; exists {
+			return nil, fmt.Errorf("duplicate provider %q", config.ID)
 		}
-		if config.Plugin.Builtin != "" && (config.Plugin.Builtin == "error_as_crashed") != (config.Kind == "result") {
-			return nil, fmt.Errorf("observer %q: plugin %s is incompatible with kind %s", config.ID, config.Plugin.Builtin, config.Kind)
-		}
-		if _, exists := observers[config.ID]; exists {
-			return nil, fmt.Errorf("duplicate observer %q", config.ID)
-		}
-		plugin, err := resolvePlugin(config.Plugin)
+		source, err := resolveSource(config.Source)
 		if err != nil {
-			return nil, fmt.Errorf("observer %q: %w", config.ID, err)
+			return nil, fmt.Errorf("provider %q: %w", config.ID, err)
 		}
-		if plugin.Alias == "" {
-			alias, ok := aliases[plugin.ImportPath]
+		if source.Alias == "" {
+			alias, ok := aliases[source.ImportPath]
 			if !ok {
-				base := toPluginAlias(plugin.ImportPath)
+				base := toSourceAlias(source.ImportPath)
 				alias = base
 				for suffix := 1; usedAliases[alias]; suffix++ {
 					alias = fmt.Sprintf("%s%d", base, suffix)
 				}
 				usedAliases[alias] = true
-				aliases[plugin.ImportPath] = alias
+				aliases[source.ImportPath] = alias
 			}
-			plugin.Alias = alias
+			source.Alias = alias
 		}
-		observers[config.ID] = resolvedObserver{Config: config, Plugin: plugin}
+		providers[config.ID] = resolvedProvider{Config: config, Source: source}
 	}
-	return observers, nil
+	return providers, nil
 }
 
-func toPluginAlias(importPath string) string {
+func toSourceAlias(importPath string) string {
 	words := strings.FieldsFunc(path.Base(importPath), func(r rune) bool {
 		return !unicode.IsLetter(r) && !unicode.IsDigit(r)
 	})
@@ -320,14 +321,14 @@ func toPluginAlias(importPath string) string {
 	return name.String()
 }
 
-func buildDeclarations(file fizzbeeFileConfig, observers map[string]resolvedObserver) (renderer.Declarations, error) {
-	var result renderer.Declarations
+func buildDeclarations(file fizzbeeFileConfig, providers map[string]resolvedProvider) (renderer.Declarations, error) {
+	result := renderer.Declarations{Hooks: renderer.ResolveHooks(file.Hooks)}
 	result.CompareActionCrashed = file.SgMetadata.ActionCrashed.Compare
-	metadataObserver, err := buildActionCrashedObserver(file.SgMetadata.ActionCrashed, observers)
+	metadataProvider, err := buildActionCrashedProvider(file.SgMetadata.ActionCrashed, providers)
 	if err != nil {
 		return renderer.Declarations{}, err
 	}
-	result.ActionCrashedObserver = metadataObserver
+	result.ActionCrashedProvider = metadataProvider
 	roles := make(map[string]bool)
 	seen := make(map[string]bool)
 	for _, role := range file.Roles {
@@ -346,7 +347,7 @@ func buildDeclarations(file fizzbeeFileConfig, observers map[string]resolvedObse
 			result.ExcludedRoles = append(result.ExcludedRoles, renderer.ExcludedRole{Name: name, Reason: role.Reason})
 		}
 		for _, entry := range role.Fields {
-			if err := addFieldDeclaration(&result, name, entry, role.Compare != nil && !*role.Compare, observers, seen); err != nil {
+			if err := addFieldDeclaration(&result, name, entry, role.Compare != nil && !*role.Compare, providers, seen); err != nil {
 				return renderer.Declarations{}, err
 			}
 		}
@@ -354,22 +355,22 @@ func buildDeclarations(file fizzbeeFileConfig, observers map[string]resolvedObse
 	return result, nil
 }
 
-func buildActionCrashedObserver(config actionCrashedConfig, observers map[string]resolvedObserver) (*renderer.Observer, error) {
-	if config.Observer == nil || config.Compare != nil && !*config.Compare {
+func buildActionCrashedProvider(config actionCrashedConfig, providers map[string]resolvedProvider) (*renderer.Provider, error) {
+	if config.Provider == nil || config.Compare != nil && !*config.Compare {
 		return nil, nil
 	}
-	declared, ok := observers[config.Observer.ID]
+	declared, ok := providers[config.Provider.ID]
 	if !ok {
-		return nil, fmt.Errorf("sg_metadata.action_crashed: unknown observer %q", config.Observer.ID)
+		return nil, fmt.Errorf("sg_metadata.action_crashed: unknown provider %q", config.Provider.ID)
 	}
-	if declared.Config.Kind != "result" {
-		return nil, fmt.Errorf("sg_metadata.action_crashed: observer %q must have kind result", config.Observer.ID)
+	if !slices.Contains(declared.Source.Capabilities, "observe_result") {
+		return nil, fmt.Errorf("sg_metadata.action_crashed: provider %q must have observe_result capability", config.Provider.ID)
 	}
 	field, err := renderer.NewRoleField("sg_metadata", "action_crashed")
 	if err != nil {
 		return nil, err
 	}
-	declaration, err := buildObserverDeclaration(field, fieldConfig{Observer: config.Observer}, renderer.Type{Kind: renderer.KindBool}, observers)
+	declaration, err := buildProviderDeclaration(field, fieldConfig{Provider: config.Provider}, renderer.Type{Kind: renderer.KindBool}, providers)
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +378,7 @@ func buildActionCrashedObserver(config actionCrashedConfig, observers map[string
 	return &declaration, nil
 }
 
-func addFieldDeclaration(result *renderer.Declarations, role string, entry fieldConfig, excludedRole bool, observers map[string]resolvedObserver, seen map[string]bool) error {
+func addFieldDeclaration(result *renderer.Declarations, role string, entry fieldConfig, excludedRole bool, providers map[string]resolvedProvider, seen map[string]bool) error {
 	field, err := renderer.NewRoleField(role, entry.Name)
 	if err != nil {
 		return err
@@ -401,32 +402,36 @@ func addFieldDeclaration(result *renderer.Declarations, role string, entry field
 	if err != nil {
 		return fmt.Errorf("field %s: %w", field, err)
 	}
-	if entry.Observer == nil {
+	if entry.Provider == nil {
 		result.TypedFields = append(result.TypedFields, renderer.TypedField{Field: field, Type: *spec})
 		return nil
 	}
-	declaration, err := buildObserverDeclaration(field, entry, *spec, observers)
+	declaration, err := buildProviderDeclaration(field, entry, *spec, providers)
 	if err != nil {
 		return err
 	}
-	result.Observers = append(result.Observers, declaration)
+	result.Providers = append(result.Providers, declaration)
 	return nil
 }
 
-func buildObserverDeclaration(field *renderer.Field, entry fieldConfig, spec renderer.Type, observers map[string]resolvedObserver) (renderer.Observer, error) {
-	request := *entry.Observer
-	resolvedObserver, ok := observers[request.ID]
+func buildProviderDeclaration(field *renderer.Field, entry fieldConfig, spec renderer.Type, providers map[string]resolvedProvider) (renderer.Provider, error) {
+	request := *entry.Provider
+	resolvedProvider, ok := providers[request.ID]
 	if !ok {
-		return renderer.Observer{}, fmt.Errorf("field %s: unknown observer %q", field, request.ID)
+		return renderer.Provider{}, fmt.Errorf("field %s: unknown provider %q", field, request.ID)
 	}
-	declaration := renderer.Observer{
+	if !slices.Contains(resolvedProvider.Source.Capabilities, "observe") && !slices.Contains(resolvedProvider.Source.Capabilities, "observe_result") {
+		return renderer.Provider{}, fmt.Errorf("field %s: provider %q requires observe or observe_result capability", field, request.ID)
+	}
+	declaration := renderer.Provider{
 		Field:            field,
-		Result:           resolvedObserver.Config.Kind == "result",
-		ObserverID:       resolvedObserver.Config.ID,
-		PluginImportPath: resolvedObserver.Plugin.ImportPath,
-		PluginAlias:      resolvedObserver.Plugin.Alias,
+		Result:           slices.Contains(resolvedProvider.Source.Capabilities, "observe_result"),
+		ProviderID:       resolvedProvider.Config.ID,
+		SourceImportPath: resolvedProvider.Source.ImportPath,
+		SourceAlias:      resolvedProvider.Source.Alias,
+		Capabilities:     slices.Clone(resolvedProvider.Source.Capabilities),
 		Type:             spec,
-		ObserverConfig:   resolvedObserver.Config.Config,
+		ProviderConfig:   resolvedProvider.Config.Config,
 		FieldConfig:      request.Config,
 	}
 	return declaration, nil
@@ -470,14 +475,14 @@ func toTypeWithParent(config typeConfig, ignored bool) (*renderer.Type, error) {
 	return spec, nil
 }
 
-func resolvePlugin(config pluginConfig) (resolvedPlugin, error) {
+func resolveSource(config sourceConfig) (resolvedSource, error) {
 	if config.GoPackage != "" {
-		return resolvedPlugin{ImportPath: config.GoPackage}, nil
+		return resolvedSource{ImportPath: config.GoPackage, Capabilities: config.Capabilities}, nil
 	}
 
-	plugin, ok := builtinPlugins[config.Builtin]
+	source, ok := builtinSources[config.Builtin]
 	if !ok {
-		return resolvedPlugin{}, fmt.Errorf("unknown plugin.builtin %q", config.Builtin)
+		return resolvedSource{}, fmt.Errorf("unknown source.builtin %q", config.Builtin)
 	}
-	return plugin, nil
+	return source, nil
 }
